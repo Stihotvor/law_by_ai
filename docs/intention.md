@@ -1,170 +1,95 @@
 ---
-status: draft
+status: completed
 ---
 
 # Project Intention
 
-> **Status:** Draft — questions open for discussion.
-> Once all answers are collected, this document becomes the project charter.
-
-> **Note to reviewers:** Please answer the 43 questions below. Every answer
-> shapes the architecture and scope. If a question doesn't apply, explain why.
-> If something is missing, add it.
+> **Status:** Completed — all clarification questions answered.
+> This document now serves as the project charter.
 
 ---
 
 ## 👁️ Vision & Purpose
 
-**1.** What is the single-sentence elevator pitch for "Law by AI"?
-
-**2.** What specific pain point in the legal domain does this project solve?
-
-**3.** Who is the **primary target user** — lawyers, paralegals, legal firms,
-    pro-se litigants, researchers, or the general public?
-
-**4.** Is this a **commercial product**, an **open-source community tool**, or a
-    **personal portfolio / research project**?
-
-**5.** What is the **north star metric** — what one thing tells us we've
-    succeeded (e.g., "hours saved per case", "documents indexed")?
-
-**6.** What is the **scope boundary** — what will this project explicitly
-    **not** do?
+**1.** *Elevator pitch* – A self-hosted AI lawyer that helps protect citizens' rights and assists with local bureaucracy.
+**2.** *Pain point* – Civil-human-rights, family and private law, and daily routine tasks that require legal assistance.
+**3.** *Primary target user* – EU (Poland) citizens and expats.
+**4.** *Project type* – Open-source community tool **plus** a personal research project.
+**5.** *North-star metric* – **Time and money saved per user** while tracking legal changes and protecting rights.
+**6.** *Scope boundary* – The system will **not bypass or trick the law**.
 
 ---
 
 ## ⚖️ Legal Domain Scope
 
-**7.** Which **jurisdictions** will be supported initially (e.g., Ukraine, EU,
-    US federal, UK)?
-
-**8.** Which **areas of law** are in scope (e.g., contract law, criminal code,
-    tax law, constitutional law)?
-
-**9.** Will the system work with **legislation only**, or also with **case law,
-    commentaries, contracts, and procedural documents**?
-
-**10.** How will **legal updates** be handled — automatic re-fetching of changed
-     laws, manual triggers, or periodic?
-
-**11.** What **document formats** must be supported (PDF, DOCX, HTML, scanned
-     images via OCR, plain text)?
-
-**12.** Does the system need to track **cross-references and amendments** between
-     legal documents?
+**7.** *Jurisdictions* – Poland (EU).
+**8.** *Areas of law* – Family, child care, taxes, anti-xenophobic law.
+**9.** *Source material* – **All** legal material (legislation, case law, commentaries, contracts, procedural documents, etc.).
+**10.** *Legal-updates handling* – **Manual fetching** at the beginning.
+**11.** *Supported formats* – **All** (PDF, DOCX, HTML, scanned images → OCR, plain text).
+**12.** *Cross-reference tracking* – **Yes** – a graph database is required.
 
 ---
 
 ## 📐 Architecture & Technology
 
-**13.** What is the **deployment model** — self-hosted Docker, cloud SaaS,
-     desktop app, or all of the above?
-
-**14.** Which **vector database** should we use — Qdrant (as listed in issues),
-     Pinecone, Weaviate, or pgvector?
-
-**15.** Should the **graph database** be kept — is tracking citation /
-     cross-reference graphs a core feature or a nice-to-have?
-
-**16.** What **LLM provider** will be used — OpenAI, Azure OpenAI, local models
-     (Llama / Mistral via Ollama), or a mix?
-
-**17.** What **embedding model** is preferred — `text-embedding-3-small`,
-     `multilingual-e5`, or sentence-transformers for local inference?
-
-**18.** Should the system support **multi-tenant isolation** (different law firms
-     with separate data) from day one?
-
-**19.** What is the **expected data volume** — thousands, millions, or billions
-     of documents?
-
-**20.** Do we need **real-time** document processing, or is batch / async
-     (Celery) sufficient?
+**13.** *Deployment model* – **Docker-Compose** (self-hosted).
+**14.** *Vector database* – **In-memory Chroma** for the MVP, later **Qdrant**.
+**15.** *Graph database* – **NetworkX** initially, later **Neo4j** and **Memgraph**.
+**16.** *LLM provider* – **Multi-provider** via your liteLLM proxy.
+**17.** *Embedding model* – **Mistral embed** or **Gemini-mini embed 2** (local).
+**18.** *Multi-tenant isolation* – **Yes**, from day 1.
+**19.** *Expected data volume* – **All Polish law**, including tax and foreign statutes (tens of thousands of documents).
+**20.** *Processing model* – **Celery + Redis** (asynchronous batch processing).
 
 ---
 
 ## 🔍 Search & Retrieval
 
-**21.** What **search modes** are required — keyword (full-text), semantic
-     (vector), hybrid, or all three?
-
-**22.** Should we support **cross-language search** (e.g., query in English,
-     find Ukrainian legal documents)?
-
-**23.** What **retrieval strategy** — simple top-K, RAG with re-ranking, or
-     multi-hop retrieval over a graph?
-
-**24.** Should search results include **confidence scores** and **citation
-     references** back to source documents?
-
-**25.** Are **faceted filters** needed (by jurisdiction, document type, date,
-     court, etc.)?
-
-**26.** Should the system offer **"Find similar documents"** for any given legal
-     text?
+**21.** *Search modes* – Keyword, semantic, and hybrid (all three).
+**22.** *Cross-language search* – Supported (e.g., English queries against Polish legal texts).
+**23.** *Retrieval strategy* – Hybrid RAG with re-ranking, graph-guided multi-hop retrieval.
+**24.** *Citation & confidence* – Search results will include **confidence scores** and **exact law article citations** with direct source links.
+**25.** *Faceted filters* – Yes (by jurisdiction, document type, date, court, etc.).
+**26.** *Find similar documents* – Feature will be available.
 
 ---
 
 ## 🤖 Agents & Automation
 
-**27.** What **types of agents** are prioritized — DocumentFetcher,
-     DocumentProcessor, LegalResearch, ChangeTracker, KnowledgeGraph, Analysis?
-
-**28.** Should agents operate **autonomously** (scheduled, unsupervised) or
-     **human-in-the-loop** (review before action)?
-
-**29.** Do we need a **change-tracking agent** that monitors legal databases for
-     new / amended laws and alerts users?
-
-**30.** Should the **analysis agent** produce structured outputs (e.g., "this
-     clause contradicts Article 14.3") or free-text summaries?
-
-**31.** What is the **granularity of change tracking** — document-level,
-     section-level, or line-by-line diff?
-
-**32.** Can users **create custom agents / workflows** via a DSL or UI, or are
-     agents pre-defined?
+**27.** *Priority agents* – DocumentFetcher (code + OCR), DocumentProcessor (graph manager), LegalResearch, KnowledgeGraph, plus others later.
+**28.** *Execution style* – **Human-in-the-loop** (user triggers/approves steps).
+**29.** *Change-tracker granularity* – **Document-level**.
+**30.** *Analysis output* – **Free-text** for now.
+**31.** *Workflow customization* – **Pre-configured** pipelines (MVP).
+**32.** *Bureaucracy/Form Assistant* – **Yes**, a dedicated agent to guide users through administrative procedures.
 
 ---
 
 ## 🖥️ User Interface
 
-**33.** What is the **primary UI** — Streamlit (as in issues), a React SPA, or a
-     CLI / API-first approach?
-
-**34.** Should there be a **public API** (REST / GraphQL) for third-party
-     integrations?
-
-**35.** What **visualizations** are needed — knowledge graphs, citation
-     networks, timeline of legal changes?
-
-**36.** Should users be able to **annotate and comment** on documents within the
-     system?
-
-**37.** Is **collaboration** required — shared workspaces, comments, document
-     sharing between users?
+**33.** *Primary UI* – **Streamlit** (as used in existing issues).
+**34.** *Public API* – No built-in API server; **API clients** will fetch data from the UI/backend.
+**35.** *Visualizations* – Knowledge-graph, citation network, and timeline visualizations (planned, not in MVP).
+**36.** *Annotation & comments* – Not needed now; may be added in future versions.
+**37.** *Collaboration* – Not required at present.
 
 ---
 
 ## 🚀 Delivery & Timeline
 
-**38.** What is the **minimum viable product (MVP)** — the smallest thing we can
-     ship that provides value?
-
-**39.** What is the **target timeline** for MVP, beta, and v1.0?
-
-**40.** What is the **long-term vision** — a comprehensive legal AI platform, or
-     a focused tool for one specific task?
+**38.** *Minimum Viable Product* – Data collection, processing, annotation, push to PostgreSQL, vector store, graph store, and answering complex questions / internal data research.
+**39.** *Target timeline* – **MVP**: end of **next month**. **v1**: end of **this year**.
+**40.** *Long-term vision* – A **legal-AI platform** for personal and family use, with the possibility of a free online service or bot for answering questions and a legal-tracker component.
 
 ---
 
 ## 🛠️ Meta
 
-**41.** What **license** should the project use (MIT, Apache 2.0, AGPL, or
-     proprietary)?
+**41.** *License* – **MIT**.
+**42.** *Contributions* – **Invite-only** (initially).
+**43.** *Documentation language* – **English** now; later **Ukrainian** and **Polish**.
 
-**42.** How will **contributions** be managed — open for all, invite-only, or
-     solo?
+---
 
-**43.** Should documentation be in **English only**, or **multi-language**
-     (English + Ukrainian / other languages for local users)?
+*The charter above defines the scope, technology stack, and roadmap for "Law by AI". All subsequent design, implementation, and testing decisions should be aligned with these constraints and goals.*
