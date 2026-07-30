@@ -7,6 +7,10 @@ status: draft
 > **Status:** Draft — questions open for discussion.
 > Once all answers are collected, this document becomes the project charter.
 
+> **Note to reviewers:** Please answer the 43 questions below. Every answer
+> shapes the architecture and scope. If a question doesn't apply, explain why.
+> If something is missing, add it.
+
 ---
 
 ## 👁️ Vision & Purpose
