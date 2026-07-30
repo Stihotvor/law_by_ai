@@ -28,11 +28,21 @@ change tracking and knowledge graph exploration.
 
     [:octicons-arrow-right-24: Read the Intention](intention.md)
 
+-   __Architecture__
+
+    ---
+
+    System design, plugin system, data flow, and implementation phases.
+
+    [:octicons-arrow-right-24: Explore the Architecture](architecture.md)
+
 </div>
 
 ---
 
 ## 🚧 Status
 
-This project is in early planning. The Intention doc captures our scope,
-architecture decisions, and roadmap — and it's still evolving.
+This project is in early implementation. The Intention doc captures our scope,
+the Architecture doc details the plugin-based design, and the
+[project board](https://github.com/Stihotvor/law_by_ai/issues) tracks all
+active work across 7 milestones.
