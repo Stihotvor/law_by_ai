@@ -92,3 +92,17 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Intention: intention.md
+  - Architecture: architecture.md
+  - ADRs:
+      - ADR Index: adr/index.md
+      - 0001 - Plugin Architecture: adr/0001-plugin-architecture.md
+      - 0002 - Graph Database: adr/0002-graph-database.md
+      - 0003 - Multi-Tenancy: adr/0003-multi-tenancy.md
+      - 0004 - Auth & RBAC: adr/0004-auth-rbac.md
+      - 0005 - Observability: adr/0005-observability.md
+      - 0006 - Celery Reliability: adr/0006-celery-reliability.md
+      - 0007 - Document Diffs: adr/0007-document-diffs.md
+      - 0008 - MVP Scope: adr/0008-mvp-scope.md
+      - 0009 - Model Evals: adr/0009-model-evals.md
+      - 0010 - Health Checks: adr/0010-health-checks.md
+      - 0011 - SLA & Budget: adr/0011-sla-budget.md

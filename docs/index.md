@@ -36,6 +36,14 @@ change tracking and knowledge graph exploration.
 
     [:octicons-arrow-right-24: Explore the Architecture](architecture.md)
 
+-   __ADR__
+
+    ---
+
+    Architecture Decision Records — the "why" behind each significant choice.
+
+    [:octicons-arrow-right-24: Read the ADRs](adr/index.md)
+
 </div>
 
 ---
