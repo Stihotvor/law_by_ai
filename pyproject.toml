@@ -1,0 +1,46 @@
+[project]
+name = "law-by-ai"
+version = "0.1.0"
+description = "AI-powered legal document ingestion, processing, retrieval, and analysis platform."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Yevhen D." }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "pre-commit>=3.8",
+]
+docs = [
+    "mkdocs-material==9.7.7",
+    "pymdown-extensions==11.0.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "plugins*", "agents*", "tasks*", "ui*", "data*", "config*"]
+exclude = ["docs*", "site*", "tests*", "scripts*", "evals*"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["core", "plugins", "agents", "tasks", "ui", "data", "config", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RUF", "ASYNC"]
+ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: integration tests that need external services",
+    "security: auth, RBAC, and tenant isolation tests",
+]

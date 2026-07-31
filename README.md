@@ -1,6 +1,6 @@
 # Law by AI
 
-![Docs Build](https://github.com/Stihotvor/law_by_ai/actions/workflows/ci.yml/badge.svg)
+![Docs Build](https://github.com/Stihotvor/law_by_ai/actions/workflows/docs.yml/badge.svg)
 
 AI-powered platform for legal document ingestion, processing, retrieval, and analysis.
 
@@ -43,6 +43,39 @@ Early implementation phase. The work is organized into **7 milestones**:
 | **5 — Agents** | All 6 agents (Fetcher, Processor, Researcher, etc.) |
 | **6 — Tasks & UI** | Celery tasks + full Streamlit UI |
 | **7 — Test & Polish** | Unit tests, integration tests, docs |
+
+## Development
+
+This project is managed with **[uv](https://docs.astral.sh/uv/)**. Install uv
+globally (it is **not** a project dependency and must not be installed into the
+project venv):
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+uv creates and manages the project `.venv` for you — no manual
+`python -m venv` or `source .venv/bin/activate` needed.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
+
+```bash
+uv sync --extra dev --extra docs
+```
+
+```bash
+uv run ruff check .          # lint
+uv run ruff format --check . # format
+uv run pytest                # tests
+uv run mkdocs build --strict -f docs/mkdocs.yml # docs build
+```
+
+Two CI workflows run on PRs:
+- **`ci`** — lint + tests, runs on any change outside `docs/`.
+- **`docs`** — builds the docs, runs only on changes under `docs/` (with the
+  config at `docs/mkdocs.yml`).
+
+On `main`, the `docs` workflow also deploys the site to GitHub Pages.
 
 👉 See the [**project board**](https://github.com/Stihotvor/law_by_ai/issues)
 for all active issues.

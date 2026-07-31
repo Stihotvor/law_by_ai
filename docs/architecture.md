@@ -525,9 +525,14 @@ law_by_ai/
 │   └── test_security/       # auth, rbac, tenant leak tests
 ├── scripts/
 ├── docs/                    # mkdocs documentation
-├── requirements.txt
+├── pyproject.toml           # project metadata, deps, ruff + pytest config
+├── uv.lock                  # locked dependency graph (uv)
 └── README.md
 ```
+
+**Tooling note:** the project is managed by a **globally-installed `uv`**
+(standalone installer). `uv` is not a project dependency — it manages `.venv`
+from the OS level. See the repo root `CONTRIBUTING.md` for setup.
 
 ---
 
