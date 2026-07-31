@@ -1,13 +1,13 @@
-name: ci
+name: docs
 
 on:
   push:
     branches:
       - main
-    paths-ignore:
+    paths:
       - 'docs/**'
   pull_request:
-    paths-ignore:
+    paths:
       - 'docs/**'
 
 concurrency:
@@ -15,23 +15,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: pip install ruff
-      - run: ruff check .
-      - run: ruff format --check .
+      - run: pip install mkdocs-material pymdown-extensions
+      - run: mkdocs build --strict -f docs/mkdocs.yml
 
-  test:
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
-      - run: pytest -m "not integration" --cov=core --cov=plugins --cov-report=term-missing
+      - run: pip install mkdocs-material pymdown-extensions
+      - run: mkdocs gh-deploy --force -f docs/mkdocs.yml
