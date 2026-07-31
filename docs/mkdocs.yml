@@ -7,6 +7,9 @@ site_description: >-
 repo_name: Stihotvor/law_by_ai
 repo_url: https://github.com/Stihotvor/law_by_ai
 
+docs_dir: .
+site_dir: ../site
+
 copyright: Copyright &copy; 2025 &ndash;2026 Yevhen D.
 
 theme:

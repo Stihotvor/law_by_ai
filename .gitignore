@@ -13,3 +13,7 @@ build/
 .opencode/
 node_modules/
 site/
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
