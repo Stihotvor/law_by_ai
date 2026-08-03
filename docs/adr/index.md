@@ -23,6 +23,7 @@ status: new
 | [ADR-0009](0009-model-evals.md) | Embedding/OCR/hybrid-search evaluation for Polish | Proposed | 2026-07-31 |
 | [ADR-0010](0010-health-checks.md) | Container health checks | Proposed | 2026-07-31 |
 | [ADR-0011](0011-sla-budget.md) | Efficiency budget (4–6 GB + SLM) and basic SLAs | Proposed | 2026-07-31 |
+| [ADR-0012](0012-license-contribution-model.md) | MIT license + contribution model (DCO, invite-only) | Proposed | 2026-08-03 |
 
 ## How to add an ADR
 

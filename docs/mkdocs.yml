@@ -109,3 +109,4 @@ nav:
       - 0009 - Model Evals: adr/0009-model-evals.md
       - 0010 - Health Checks: adr/0010-health-checks.md
       - 0011 - SLA & Budget: adr/0011-sla-budget.md
+      - 0012 - License & Contribution Model: adr/0012-license-contribution-model.md

@@ -8,7 +8,8 @@ to understand the scope and design constraints.
 ## Code of conduct
 
 Be respectful and constructive. This is a community tool meant to protect
-citizens' rights — keep the focus on the mission.
+citizens' rights — keep the focus on the mission. All participants must follow
+the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Getting started
 
@@ -64,7 +65,31 @@ formatting and lint issues.
 Significant decisions are tracked as [ADRs](docs/adr/index.md). If your change
 has architectural impact, add or update an ADR.
 
+## Contribution model
+
+The governance model is defined in [ADR-0012](docs/adr/0012-license-contribution-model.md).
+In short:
+
+- **License**: the project is released under the [MIT License](LICENSE).
+- **Access**: contributions are **invite-only** during the early
+  implementation phase. The project will open to public contributions once v1
+  is stable, at the maintainer's discretion.
+- **DCO**: every commit must include a `Signed-off-by` trailer certifying the
+  [Developer Certificate of Origin](DCO). There is no separate CLA:
+  ```bash
+  git commit -s -m "feat: ..."
+  ```
+  A commit is compliant when it has a line like
+  `Signed-off-by: Your Name <you@example.com>` at the end of the message.
+- **License grant**: by contributing you agree that your contributions are
+  licensed under the MIT License.
+- **Process**: branches named after the issue (`feature/`, `fix/`, `docs/`),
+  PRs reference the issue (`Closes #N` / `Refs #N`), and all checks must pass
+  (see below).
+
 ## License
 
-By contributing you agree that your contributions are licensed under the
-[MIT License](LICENSE).
+The project is licensed under the [MIT License](LICENSE). By contributing you
+agree that your contributions are licensed under the MIT License and that you
+certify the [Developer Certificate of Origin](DCO) via a `Signed-off-by`
+trailer on each commit.
