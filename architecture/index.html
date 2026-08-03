@@ -1,0 +1,2560 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered legal document processing, retrieval, and analysis platform.">
+      
+      
+        <meta name="author" content="Yevhen D.">
+      
+      
+        <link rel="canonical" href="https://stihotvor.github.io/law_by_ai/architecture/">
+      
+      
+        <link rel="prev" href="../intention/">
+      
+      
+        <link rel="next" href="../adr/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Architecture - Law by AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#system-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Law by AI" class="md-header__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Law by AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../intention/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Intention
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adr/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Law by AI" class="md-nav__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    Law by AI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../intention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugin Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-databaseplugin-corepluginsprotocolspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. DatabasePlugin (core/plugins/protocols.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-vectordbplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. VectorDBPlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-graphdbplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. GraphDBPlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-etlsourceplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. ETLSourcePlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-embeddingplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. EmbeddingPlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pluginmanager-corepluginsmanagerpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PluginManager (core/plugins/manager.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#services" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Services
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-streamlit-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Streamlit UI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-agents-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Agents Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-celery-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Celery + Redis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-postgresql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. PostgreSQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-chroma-mvp-qdrant-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Chroma (MVP) → Qdrant (Production)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-memgraph-mvp-neo4j-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Memgraph (MVP) → Neo4j (Production)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-embedding-ocr-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Embedding &amp; OCR Models
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability-adr-0005" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability (ADR-0005)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-adr-0004" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security (ADR-0004)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#document-ingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document Ingestion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search-qa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search &amp; Q&amp;A
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#directory-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directory Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-tenant-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Tenant Isolation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-model-conceptual" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Model (Conceptual)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technology-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technology Stack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Phases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Paths
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-register" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR Register
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-plugin-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 - Plugin Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-graph-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 - Graph Database
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 - Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0004-auth-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 - Auth & RBAC
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0005-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 - Observability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0006-celery-reliability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 - Celery Reliability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0007-document-diffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 - Document Diffs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0008-mvp-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 - MVP Scope
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0009-model-evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 - Model Evals
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0010-health-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 - Health Checks
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0011-sla-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 - SLA & Budget
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0012-license-contribution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 - License & Contribution Model
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture Principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugin Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-databaseplugin-corepluginsprotocolspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. DatabasePlugin (core/plugins/protocols.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-vectordbplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. VectorDBPlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-graphdbplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. GraphDBPlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-etlsourceplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. ETLSourcePlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-embeddingplugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. EmbeddingPlugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pluginmanager-corepluginsmanagerpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PluginManager (core/plugins/manager.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#services" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Services
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-streamlit-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Streamlit UI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-agents-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Agents Layer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-celery-redis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Celery + Redis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-postgresql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. PostgreSQL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-chroma-mvp-qdrant-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Chroma (MVP) → Qdrant (Production)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-memgraph-mvp-neo4j-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Memgraph (MVP) → Neo4j (Production)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-embedding-ocr-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Embedding &amp; OCR Models
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability-adr-0005" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability (ADR-0005)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-adr-0004" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security (ADR-0004)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#document-ingestion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Document Ingestion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search-qa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search &amp; Q&amp;A
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#directory-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directory Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multi-tenant-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Tenant Isolation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-model-conceptual" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Model (Conceptual)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technology-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technology Stack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Phases
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration Paths
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adr-register" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR Register
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="system-architecture">System Architecture<a class="headerlink" href="#system-architecture" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Status:</strong> Draft (Rev. 2) — reflects the revised architecture plan defined in
+the <a href="../intention/">Intention doc</a> and tracked as <strong>ADRs</strong> in the
+<a href="#adr-register">ADR Register</a> below.</p>
+</blockquote>
+<hr />
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Law by AI is a self-hosted, multi-tenant platform for legal document ingestion,
+processing, retrieval, and analysis. The system is built around a
+<strong>protocol-based plugin architecture</strong> where five core plugin types (Database,
+Vector DB, Graph DB, ETL Source, Embedding) are registered in a YAML config and
+routed dynamically by a <code>PluginManager</code>.</p>
+<p>All services run under Docker-Compose and communicate over the internal network.</p>
+<blockquote>
+<p><strong>Efficiency budget:</strong> the whole stack must run <strong>fast on ~4–6 GB RAM with a
+small local model (SLM)</strong>. This constrains model choices, plugin
+implementations, and task design.</p>
+</blockquote>
+<hr />
+<h2 id="architecture-principles">Architecture Principles<a class="headerlink" href="#architecture-principles" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Protocols over ABCs</strong> — plugins are defined as <code>typing.Protocol</code>s and
+   registered via YAML; no inheritance hierarchy. (ADR-0001)</li>
+<li><strong>Swappable backends</strong> — every backend (DB, vector, graph, ETL, embedding)
+   is replaceable without touching agent code.</li>
+<li><strong>Efficiency first</strong> — 4–6 GB RAM + SLM budget governs every decision.</li>
+<li><strong>Observable by default</strong> — <code>structlog</code> JSON + OTel metrics/traces, shipped
+   via Grafana Alloy → Grafana Cloud, anonymized. (ADR-0005)</li>
+<li><strong>Tenant-safe by construction</strong> — multi-tenant isolation with automated
+   leak tests. (ADR-0003)</li>
+<li><strong>Resilient tasks</strong> — Celery tasks with retry policies and in-DB failure
+   monitoring. (ADR-0006)</li>
+</ol>
+<hr />
+<h2 id="plugin-architecture">Plugin Architecture<a class="headerlink" href="#plugin-architecture" title="Permanent link">&para;</a></h2>
+<p>The system defines <strong>five plugin types</strong>. Each is a <strong>Protocol</strong> (duck-typed
+interface, no ABC inheritance). Concrete implementations are registered in
+<code>config/plugins.yaml</code> and loaded by <code>PluginManager</code>. (ADR-0001)</p>
+<h3 id="1-databaseplugin-corepluginsprotocolspy">1. DatabasePlugin (<code>core/plugins/protocols.py</code>)<a class="headerlink" href="#1-databaseplugin-corepluginsprotocolspy" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>classDiagram
+    class DatabasePlugin {
+        &lt;&lt;protocol&gt;&gt;
+        +save_document()
+        +get_document()
+        +search_documents()
+        +get_recent_changes()
+        +delete_document()
+        +update_document()
+    }</code></pre>
+<p><strong>Default implementation</strong>: PostgreSQL plugin (<code>plugins/postgresql.py</code>).
+<strong>MVP note</strong>: shared document storage; per-tenant notes/states/chats isolated
+via RLS (<code>tenant_id</code>). (ADR-0003)</p>
+<h3 id="2-vectordbplugin">2. VectorDBPlugin<a class="headerlink" href="#2-vectordbplugin" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>classDiagram
+    class VectorDBPlugin {
+        &lt;&lt;protocol&gt;&gt;
+        +upsert_embeddings()
+        +search_embeddings()
+        +delete_embeddings()
+        +create_collection()
+        +delete_collection()
+    }</code></pre>
+<p><strong>Default implementation</strong>: Chroma (in-memory) for the MVP, Qdrant for
+production (<code>plugins/chroma.py</code>, <code>plugins/qdrant.py</code>).</p>
+<h3 id="3-graphdbplugin">3. GraphDBPlugin<a class="headerlink" href="#3-graphdbplugin" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>classDiagram
+    class GraphDBPlugin {
+        &lt;&lt;protocol&gt;&gt;
+        +add_node()
+        +add_edge()
+        +get_related_nodes()
+        +get_node()
+        +delete_node()
+        +delete_edge()
+        +get_all_nodes()
+        +get_all_edges()
+    }</code></pre>
+<p><strong>Default implementation</strong>: Memgraph plugin (<code>plugins/memgraph.py</code>) for the MVP.
+<strong>Production target</strong>: Neo4j (<code>plugins/neo4j.py</code>). (ADR-0002)</p>
+<h3 id="4-etlsourceplugin">4. ETLSourcePlugin<a class="headerlink" href="#4-etlsourceplugin" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>classDiagram
+    class ETLSourcePlugin {
+        &lt;&lt;protocol&gt;&gt;
+        +fetch()
+        +validate_config()
+        +list_sources()
+    }</code></pre>
+<p><strong>Implementations</strong>: Web ETL (<code>plugins/web_etl.py</code>), Git ETL (<code>plugins/git_etl.py</code>).</p>
+<h3 id="5-embeddingplugin">5. EmbeddingPlugin<a class="headerlink" href="#5-embeddingplugin" title="Permanent link">&para;</a></h3>
+<pre class="mermaid"><code>classDiagram
+    class EmbeddingPlugin {
+        &lt;&lt;protocol&gt;&gt;
+        +generate_embeddings()
+        +get_model_info()
+        +get_embedding_dimension()
+    }</code></pre>
+<p><strong>Default implementation</strong>: Sentence Transformers (<code>plugins/sentence_transformers.py</code>),
+model selected by evaluation on Polish legal texts. (ADR-0009)</p>
+<h3 id="pluginmanager-corepluginsmanagerpy">PluginManager (<code>core/plugins/manager.py</code>)<a class="headerlink" href="#pluginmanager-corepluginsmanagerpy" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>YAML registration</strong> — plugin classes listed in <code>config/plugins.yaml</code> and
+  loaded via <code>importlib</code>. (ADR-0001)</li>
+<li><strong>Type routing</strong> — <code>get_plugin(type)</code> returns the correct initialized plugin.</li>
+<li><strong>Configuration-based</strong> — plugin selection driven by <code>config/settings.py</code>.</li>
+<li><strong>Lifecycle</strong> — <code>initialize()</code> → use → <code>close()</code> for clean shutdown.</li>
+<li><strong>Singleton</strong> — global <code>plugin_manager</code> instance.</li>
+</ul>
+<hr />
+<h2 id="services">Services<a class="headerlink" href="#services" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph TB
+    subgraph Client
+        User[User browser]
+    end
+    subgraph LawAI[Law by AI]
+        UI[Streamlit UI]
+        Auth[JWT Auth + RBAC]
+        Agents[Agents Layer]
+        PM[PluginManager]
+        Celery[Celery + Redis]
+    end
+    subgraph Stores
+        PG[(PostgreSQL)]
+        VDB[(Chroma/Qdrant)]
+        GDB[(Memgraph/Neo4j)]
+        EMB[Embedding Models]
+        OCR[OCR Models]
+    end
+    subgraph Obs[Observability]
+        Logs[structlog JSON]
+        OTel[OpenTelemetry]
+        Alloy[Grafana Alloy]
+        Cloud[Grafana Cloud]
+    end
+
+    User --&gt;|HTTPS Streamlit| UI
+    UI --&gt; Auth
+    UI --&gt; Celery
+    UI --&gt; Agents
+    Agents --&gt; PM
+    PM --&gt; PG
+    PM --&gt; VDB
+    PM --&gt; GDB
+    PM --&gt; EMB
+    PM --&gt; OCR
+    Celery --&gt;|queues| Agents
+    UI --&gt;|spans/metrics| OTel
+    Agents --&gt;|spans/metrics| OTel
+    OTel --&gt; Alloy --&gt; Cloud</code></pre>
+<h3 id="1-streamlit-ui">1. Streamlit UI<a class="headerlink" href="#1-streamlit-ui" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Role</strong>: Primary user interface — fetch, browse, search, analysis, knowledge
+  graph, changes tracking, bureaucracy assistant.</li>
+<li><strong>Pages planned</strong>:</li>
+<li><strong>Fetch Documents</strong> (P1) — trigger ETL, upload files</li>
+<li><strong>Browse Documents</strong> (P1) — list, filter, view metadata</li>
+<li><strong>Search</strong> (P1) — keyword + semantic + hybrid, <strong>faceted filters</strong>
+    (document type, dates, jurisdiction), <strong>citations with confidence</strong></li>
+<li><strong>Analysis</strong> (P2) — impact, compliance, citation</li>
+<li><strong>Knowledge Graph</strong> (P2) — visual exploration</li>
+<li><strong>Changes Tracking</strong> (P2) — <strong>Git-backed diff-based</strong> version comparison</li>
+<li><strong>Bureaucracy Assistant</strong> (P1) — step-by-step administrative procedures</li>
+<li><strong>Auth</strong>: all pages behind <strong>JWT</strong>; <strong>RBAC</strong> limits data management to
+  <code>admin</code> (users read-only). (ADR-0004)</li>
+<li><strong>Frameworks</strong>: Streamlit + custom components.</li>
+<li><strong>No public API</strong> — API clients fetch data from the UI/backend directly.</li>
+</ul>
+<h3 id="2-agents-layer">2. Agents Layer<a class="headerlink" href="#2-agents-layer" title="Permanent link">&para;</a></h3>
+<p>Each agent is a Python class that consumes one or more plugins via the
+<code>PluginManager</code>. Agents are invoked by Celery tasks (async) or directly
+from the UI (synchronous).</p>
+<pre class="mermaid"><code>classDiagram
+    class DocumentFetcherAgent {
+        +fetch_documents()
+        +run_ocr()
+        +store_raw_text()
+    }
+    class DocumentProcessorAgent {
+        +chunk_text()
+        +embed_text()
+        +store_vectors()
+        +build_graph_edges()
+    }
+    class LegalResearchAgent {
+        +answer_question()
+        +retrieve_citations()
+    }
+    class ChangeTrackerAgent {
+        +track_changes()
+        +generate_diff()
+    }
+    class KnowledgeGraphAgent {
+        +parse_citations()
+        +build_dependency_graph()
+    }
+    class AnalysisAgent {
+        +analyze_impact()
+        +check_compliance()
+        +analyze_citations()
+    }
+    class BureaucracyAssistantAgent {
+        +get_procedure_steps()
+        +generate_documents()
+        +track_progress()
+    }
+
+    DocumentFetcherAgent --&gt; ETLSourcePlugin
+    DocumentFetcherAgent --&gt; DatabasePlugin
+    DocumentProcessorAgent --&gt; DatabasePlugin
+    DocumentProcessorAgent --&gt; VectorDBPlugin
+    DocumentProcessorAgent --&gt; GraphDBPlugin
+    DocumentProcessorAgent --&gt; EmbeddingPlugin
+    LegalResearchAgent --&gt; VectorDBPlugin
+    LegalResearchAgent --&gt; GraphDBPlugin
+    LegalResearchAgent --&gt; EmbeddingPlugin
+    ChangeTrackerAgent --&gt; DatabasePlugin
+    ChangeTrackerAgent --&gt; GraphDBPlugin
+    KnowledgeGraphAgent --&gt; GraphDBPlugin
+    KnowledgeGraphAgent --&gt; DatabasePlugin
+    AnalysisAgent --&gt; VectorDBPlugin
+    AnalysisAgent --&gt; GraphDBPlugin
+    AnalysisAgent --&gt; EmbeddingPlugin
+    BureaucracyAssistantAgent --&gt; DatabasePlugin
+    BureaucracyAssistantAgent --&gt; VectorDBPlugin</code></pre>
+<ul>
+<li><strong>Execution model</strong>: Human-in-the-loop — user triggers or approves each step.</li>
+<li><strong>Pre-configured pipelines</strong> for the MVP.</li>
+<li><strong>MVP priority</strong>: citations in LegalResearch/Analysis output; bureaucracy
+  assistant delivered in MVP. (ADR-0008)</li>
+</ul>
+<h3 id="3-celery-redis">3. Celery + Redis<a class="headerlink" href="#3-celery-redis" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Role</strong>: Async task queue for long-running operations (document fetching,
+  processing, analysis).</li>
+<li><strong>Broker</strong>: Redis.</li>
+<li><strong>Result backend</strong>: Redis (MVP) → PostgreSQL (production).</li>
+<li><strong>Tasks</strong>: Wrappers around agent methods (e.g., <code>fetch_document</code>,
+  <code>process_document</code>, <code>track_changes</code>).</li>
+<li><strong>Efficiency</strong>: task weights, timeouts, and concurrency tuned for the
+  RAM budget.</li>
+<li><strong>Reliability (ADR-0006)</strong>:</li>
+<li>Retry policies with exponential backoff.</li>
+<li>Failed tasks persisted to a <strong>PostgreSQL <code>failed_tasks</code> table</strong>.</li>
+<li>UI exposes "re-run failed task" for any unprocessed/stuck in-DB task.</li>
+</ul>
+<h3 id="4-postgresql">4. PostgreSQL<a class="headerlink" href="#4-postgresql" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Role</strong>: Primary relational store.</li>
+<li><strong>Stores</strong>: Users, tenants, document metadata, text chunks, annotations,
+  processing state, <strong>failed-task registry</strong>, full-text search index,
+  per-tenant notes/chats.</li>
+<li><strong>Multi-tenancy</strong>: row-level security (RLS) with <code>tenant_id</code>. (ADR-0003)</li>
+<li><strong>Accessed via</strong>: <code>DatabasePlugin</code>.</li>
+</ul>
+<h3 id="5-chroma-mvp-qdrant-production">5. Chroma (MVP) → Qdrant (Production)<a class="headerlink" href="#5-chroma-mvp-qdrant-production" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Role</strong>: Vector store for semantic search.</li>
+<li><strong>Data</strong>: Document chunk embeddings.</li>
+<li><strong>Multi-tenant</strong>: collection/partition per tenant.</li>
+<li><strong>MVP choice</strong>: in-memory Chroma keeps RAM footprint low on 4–6 GB budget.</li>
+<li><strong>Accessed via</strong>: <code>VectorDBPlugin</code>.</li>
+</ul>
+<h3 id="6-memgraph-mvp-neo4j-production">6. Memgraph (MVP) → Neo4j (Production)<a class="headerlink" href="#6-memgraph-mvp-neo4j-production" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Role</strong>: Graph store for cross-reference tracking.</li>
+<li><strong>Data</strong>: Law articles and their relationships (amends, refers-to, depends-on,
+  cited-by).</li>
+<li><strong>MVP choice</strong>: Memgraph — Cypher-compatible, low operational overhead.</li>
+<li><strong>Migration</strong>: same <code>GraphDBPlugin</code> Protocol; export graph, swap config.
+  (ADR-0002)</li>
+<li><strong>Accessed via</strong>: <code>GraphDBPlugin</code>.</li>
+</ul>
+<h3 id="7-embedding-ocr-models">7. Embedding &amp; OCR Models<a class="headerlink" href="#7-embedding-ocr-models" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>EmbeddingPlugin</strong> — local Sentence Transformers model, chosen by
+  <strong>evaluation on Polish legal texts</strong>. (ADR-0009)</li>
+<li><strong>OCR</strong> — model chosen by <strong>evaluation on Polish documents</strong>; runs inside
+  <code>DocumentFetcherAgent</code> under the RAM budget.</li>
+<li><strong>LLM</strong> — liteLLM proxy to <strong>open-source lite models</strong> (Gemma 4, Mistral
+  Nano, Ministral, etc.). (ADR-0009)</li>
+</ul>
+<hr />
+<h2 id="observability-adr-0005">Observability (ADR-0005)<a class="headerlink" href="#observability-adr-0005" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Logs</strong>: <code>structlog</code> emitting <strong>JSON</strong>; PII is stripped at the source
+  (anonymized).</li>
+<li><strong>Metrics</strong>: counters/histograms (task duration, queue depth, search latency,
+  error rates) exported via OTel.</li>
+<li><strong>Traces</strong>: OpenTelemetry distributed tracing across UI → Celery → agents →
+  plugins.</li>
+<li><strong>Export path</strong>: OTel → <strong>Grafana Alloy</strong> → <strong>Grafana Cloud</strong>.</li>
+<li><strong>Privacy</strong>: no tenant/user identifiers, document content, or query text in
+  telemetry; tenant ID is hashed.</li>
+</ul>
+<pre class="mermaid"><code>graph LR
+    UI[Streamlit] --&gt;|OTel SDK| Alloy[Grafana Alloy]
+    Celery[Celery workers] --&gt;|OTel SDK| Alloy
+    Agents[Agents] --&gt;|OTel SDK| Alloy
+    Alloy --&gt; Cloud[Grafana Cloud]
+    Logs[structlog JSON] --&gt; Alloy</code></pre>
+<hr />
+<h2 id="security-adr-0004">Security (ADR-0004)<a class="headerlink" href="#security-adr-0004" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Authentication</strong>: JWT issued at login; validated on every request.</li>
+<li><strong>Authorization (RBAC)</strong>:</li>
+<li><code>admin</code> — manage data (ingest, edit, delete documents, manage users).</li>
+<li><code>user</code> — read-only (search, browse, query, diffs).</li>
+<li><strong>Multi-tenant isolation</strong>: <code>tenant_id</code> enforced in every query path
+  (PostgreSQL RLS, vector collection partitioning, graph subgraphs).</li>
+<li><strong>Automated leak tests</strong> assert cross-tenant access is impossible.
+  (ADR-0003)</li>
+</ul>
+<hr />
+<h2 id="data-flow">Data Flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
+<h3 id="document-ingestion">Document Ingestion<a class="headerlink" href="#document-ingestion" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Source (PDF / DOCX / HTML / Web / Git)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>         │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>         ▼
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  ┌──────────────┐
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  │ ETLSource    │  ← Web ETL Plugin / Git ETL Plugin
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  │ Plugin       │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  └──────┬───────┘
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>         │ raw text
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>         ▼
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>  ┌──────────────────┐
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>  │ DocumentFetcher  │  ← Agent (via Celery task) + OCR
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  │ Agent            │
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>  └──────┬───────────┘
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>         │ LegalDocument
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>         ▼
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  ┌──────────────────┐
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>  │ DatabasePlugin   │  → PostgreSQL (save document metadata)
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>  └──────┬───────────┘
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>         │
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>         ▼
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>  ┌──────────────────┐
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>  │ DocumentProcessor│  ← Agent
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>  │ Agent            │
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>  └──┬───────┬───────┘
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>     │       │
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>     ▼       ▼
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>  Embedding    Graph
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>  Plugin      Plugin
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>     │           │
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>     ▼           ▼
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>  VectorDB    GraphDB     Database
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>  Plugin      Plugin      Plugin
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>  (Chroma/    (Memgraph/  (PG: chunks)
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>   Qdrant)     Neo4j)
+</code></pre></div>
+<ol>
+<li><strong>ETL Source Plugin</strong> fetches raw text from the source (web, Git, file, API).</li>
+<li><strong>DocumentFetcherAgent</strong> runs OCR if needed, wraps the result in a
+   <code>LegalDocument</code> model, and persists it via <code>DatabasePlugin</code>.</li>
+<li><strong>DocumentProcessorAgent</strong> chunks the text, generates embeddings via
+   <code>EmbeddingPlugin</code>, stores vectors via <code>VectorDBPlugin</code>, and builds graph
+   edges via <code>GraphDBPlugin</code>.</li>
+</ol>
+<h3 id="search-qa">Search &amp; Q&amp;A<a class="headerlink" href="#search-qa" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>User Query
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    │
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    ▼
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>┌──────────────────────┐
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│ Hybrid Retriever      │
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│ (keyword + semantic   │
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│  + faceted filters)   │
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>└──┬─────────┬──────────┘
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>   │         │
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>   ▼         ▼
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>Database   VectorDB
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>Plugin     Plugin
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>(Postgres  (Chroma/
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a> FTS)       Qdrant)
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>   │         │
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>   └────┬────┘
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        ▼
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>┌──────────────┐
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>│ Re-ranker     │  (cross-encoder)
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>└──────┬───────┘
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>       │
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>       ▼
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>┌──────────────────┐
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>│ Graph-Guided     │  GraphDBPlugin (Memgraph/Neo4j traversal)
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>│ Multi-Hop        │
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>└──────┬───────────┘
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>       │
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>       ▼
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>┌──────────────────────────────────────┐
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>│ Context + Prompt → liteLLM → SLM     │
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>│ → Answer + Citations + Confidence    │
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>└──────────────────────────────────────┘
+</code></pre></div>
+<p><strong>MVP additions</strong>: faceted filters (document type, dates, jurisdiction),
+citations with confidence scores, and precision evaluation. (ADR-0008 / ADR-0009)</p>
+<hr />
+<h2 id="directory-structure">Directory Structure<a class="headerlink" href="#directory-structure" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>law_by_ai/
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── core/
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│   ├── __init__.py
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│   ├── plugins/
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>│   │   ├── __init__.py
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>│   │   ├── protocols.py     # Plugin Protocols (all 5 types)
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>│   │   ├── manager.py       # PluginManager (YAML-driven loading)
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>│   │   ├── exceptions.py    # Plugin-specific errors
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>│   │   └── utils.py         # Shared utilities
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>│   ├── security/
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>│   │   ├── auth.py          # JWT issue/verify
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>│   │   ├── rbac.py          # Role checks (admin/user)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>│   │   └── tenant.py        # tenant_id context helpers
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>│   └── observability/
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>│       ├── logging.py       # structlog JSON config (anonymized)
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>│       ├── metrics.py       # OTel metrics
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>│       └── tracing.py       # OTel traces
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>├── plugins/                 # Concrete plugin implementations
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>│   ├── postgresql.py
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>│   ├── chroma.py
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>│   ├── qdrant.py
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>│   ├── memgraph.py
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>│   ├── neo4j.py
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>│   ├── web_etl.py
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>│   ├── git_etl.py
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>│   └── sentence_transformers.py
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>├── agents/
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>│   ├── document_fetcher.py
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>│   ├── document_processor.py
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>│   ├── legal_research.py
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>│   ├── change_tracker.py
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>│   ├── knowledge_graph.py
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>│   ├── analysis.py
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>│   └── bureaucracy_assistant.py
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>├── tasks/                   # Celery task definitions
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>│   ├── celery_app.py
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>│   ├── etl_tasks.py
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>│   └── failed_tasks.py      # in-DB failure registry + re-run
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>├── ui/                      # Streamlit pages
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>│   ├── app.py
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>│   ├── pages/
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>│   │   ├── fetch.py
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>│   │   ├── browse.py
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>│   │   ├── search.py
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>│   │   ├── analysis.py
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>│   │   ├── knowledge_graph.py
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>│   │   ├── changes.py
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>│   │   └── bureaucracy.py
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>│   └── components/
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>├── config/
+<a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>│   ├── settings.py          # Environment-based configuration
+<a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>│   ├── plugins.yaml         # Protocol → implementation registration
+<a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>│   └── .env.example
+<a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>├── data/                    # Data models
+<a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>│   └── models.py            # LegalDocument, DocumentChunk, GraphNode,
+<a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a>│                            # AnalysisResult, FailedTask, Note/Chat
+<a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a>├── evals/                   # Model &amp; retrieval evaluations
+<a id="__codelineno-2-58" name="__codelineno-2-58" href="#__codelineno-2-58"></a>│   ├── embedding_evals.py   # Polish embedding model comparison
+<a id="__codelineno-2-59" name="__codelineno-2-59" href="#__codelineno-2-59"></a>│   ├── ocr_evals.py         # Polish OCR model comparison
+<a id="__codelineno-2-60" name="__codelineno-2-60" href="#__codelineno-2-60"></a>│   └── hybrid_search_evals.py  # precision/recall on legal queries
+<a id="__codelineno-2-61" name="__codelineno-2-61" href="#__codelineno-2-61"></a>├── docker/
+<a id="__codelineno-2-62" name="__codelineno-2-62" href="#__codelineno-2-62"></a>│   ├── Dockerfile
+<a id="__codelineno-2-63" name="__codelineno-2-63" href="#__codelineno-2-63"></a>│   └── docker-compose.yml   # services + healthchecks
+<a id="__codelineno-2-64" name="__codelineno-2-64" href="#__codelineno-2-64"></a>├── tests/
+<a id="__codelineno-2-65" name="__codelineno-2-65" href="#__codelineno-2-65"></a>│   ├── test_plugins/
+<a id="__codelineno-2-66" name="__codelineno-2-66" href="#__codelineno-2-66"></a>│   ├── test_agents/
+<a id="__codelineno-2-67" name="__codelineno-2-67" href="#__codelineno-2-67"></a>│   ├── test_tasks/
+<a id="__codelineno-2-68" name="__codelineno-2-68" href="#__codelineno-2-68"></a>│   └── test_security/       # auth, rbac, tenant leak tests
+<a id="__codelineno-2-69" name="__codelineno-2-69" href="#__codelineno-2-69"></a>├── scripts/
+<a id="__codelineno-2-70" name="__codelineno-2-70" href="#__codelineno-2-70"></a>├── docs/                    # mkdocs documentation
+<a id="__codelineno-2-71" name="__codelineno-2-71" href="#__codelineno-2-71"></a>├── pyproject.toml           # project metadata, deps, ruff + pytest config
+<a id="__codelineno-2-72" name="__codelineno-2-72" href="#__codelineno-2-72"></a>├── uv.lock                  # locked dependency graph (uv)
+<a id="__codelineno-2-73" name="__codelineno-2-73" href="#__codelineno-2-73"></a>└── README.md
+</code></pre></div>
+<p><strong>Tooling note:</strong> the project is managed by a <strong>globally-installed <code>uv</code></strong>
+(standalone installer). <code>uv</code> is not a project dependency — it manages <code>.venv</code>
+from the OS level. See the repo root <code>CONTRIBUTING.md</code> for setup.</p>
+<hr />
+<h2 id="multi-tenant-isolation">Multi-Tenant Isolation<a class="headerlink" href="#multi-tenant-isolation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Shared document storage</strong> — documents live in shared tables/collections;
+  access is scoped by <code>tenant_id</code>.</li>
+<li><strong>Per-tenant state</strong> — notes, states, chats, and annotations are isolated
+  per tenant.</li>
+<li><strong>PostgreSQL</strong>: row-level security (RLS) keyed on <code>tenant_id</code>.</li>
+<li><strong>Chroma/Qdrant</strong>: collection or partition per tenant.</li>
+<li><strong>Memgraph/Neo4j</strong>: subgraph per tenant (label-based).</li>
+<li>Tenant context is threaded through agents and plugins via the <code>tenant_id</code>
+  field and enforced by middleware.</li>
+<li><strong>Leak tests</strong> (ADR-0003): automated tests assert no cross-tenant read/write.</li>
+</ul>
+<hr />
+<h2 id="data-model-conceptual">Data Model (Conceptual)<a class="headerlink" href="#data-model-conceptual" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Tenant
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  ├── User (role: admin | user)
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  ├── Document (LegalDocument)          [shared, tenant-scoped]
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  │     ├── metadata (title, date, source, type, jurisdiction)
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  │     ├── Chunk[] (DocumentChunk)
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  │     │     ├── text
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  │     │     ├── embedding (→ VectorDBPlugin)
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  │     │     └── position (page, offset)
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>  │     └── GraphNode (→ GraphDBPlugin)
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>  │            ├── article_id
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  │            └── relationships: amends, refers-to, depends-on, cited-by
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  ├── Citation (law, article, paragraph, confidence, source_url)
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>  ├── Note / Chat / State              [per-tenant]
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>  ├── FailedTask                       [re-run registry]
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>  └── Query / Session log
+</code></pre></div>
+<hr />
+<h2 id="technology-stack">Technology Stack<a class="headerlink" href="#technology-stack" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>MVP</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>UI</strong></td>
+<td>Streamlit</td>
+<td>Streamlit</td>
+</tr>
+<tr>
+<td><strong>Auth</strong></td>
+<td>JWT + RBAC</td>
+<td>JWT + RBAC</td>
+</tr>
+<tr>
+<td><strong>Task queue</strong></td>
+<td>Celery + Redis</td>
+<td>Celery + Redis</td>
+</tr>
+<tr>
+<td><strong>Plugin system</strong></td>
+<td>Protocol + YAML registration</td>
+<td>Protocol + YAML</td>
+</tr>
+<tr>
+<td><strong>Relational DB</strong></td>
+<td>PostgreSQL (DatabasePlugin)</td>
+<td>PostgreSQL</td>
+</tr>
+<tr>
+<td><strong>Vector store</strong></td>
+<td>Chroma (in-memory)</td>
+<td>Qdrant</td>
+</tr>
+<tr>
+<td><strong>Graph store</strong></td>
+<td>Memgraph</td>
+<td>Neo4j</td>
+</tr>
+<tr>
+<td><strong>Embeddings</strong></td>
+<td>Sentence Transformers (eval-selected)</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><strong>OCR</strong></td>
+<td>Tesseract/EasyOCR (eval-selected)</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><strong>LLM gateway</strong></td>
+<td>liteLLM → open-source SLMs (Gemma 4, Mistral Nano, Ministral)</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><strong>Observability</strong></td>
+<td>structlog JSON + OTel → Grafana Alloy → Grafana Cloud</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><strong>Health checks</strong></td>
+<td>Docker healthchecks per service</td>
+<td>Same + probes</td>
+</tr>
+<tr>
+<td><strong>Deployment</strong></td>
+<td>Docker-Compose</td>
+<td>Docker-Compose</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="implementation-phases">Implementation Phases<a class="headerlink" href="#implementation-phases" title="Permanent link">&para;</a></h2>
+<p>The work is tracked in <a href="https://github.com/Stihotvor/law_by_ai/milestones">7 milestones</a>:</p>
+<pre class="mermaid"><code>gantt
+    title Project Phases
+    section Phase 1
+    Minimal Example :a1, 2026-01-01, 30d
+    section Phase 2
+    Foundation :a2, after a1, 30d
+    section Phase 3
+    Core Plugins :a3, after a2, 30d
+    section Phase 4
+    ETL &amp; Embedding :a4, after a3, 30d
+    section Phase 5
+    Agents :a5, after a4, 30d
+    section Phase 6
+    Tasks &amp; UI :a6, after a5, 30d
+    section Phase 7
+    Test &amp; Polish :a7, after a6, 30d</code></pre>
+<hr />
+<h2 id="migration-paths">Migration Paths<a class="headerlink" href="#migration-paths" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Plugin implementations</strong> can be swapped without changing agent code — the
+   <code>PluginManager</code> + Protocol abstraction makes each backend replaceable.</li>
+<li><strong>Chroma → Qdrant</strong>: implement <code>QdrantPlugin</code> against the same
+   <code>VectorDBPlugin</code> Protocol; re-embed/export and swap the YAML config.</li>
+<li><strong>Memgraph → Neo4j</strong>: implement <code>Neo4jPlugin</code> against the same
+   <code>GraphDBPlugin</code> Protocol; export the graph and swap the config. (ADR-0002)</li>
+<li><strong>Manual → Automated legal updates</strong>: Celery Beat schedule replaces manual
+   triggers.</li>
+</ol>
+<hr />
+<h2 id="adr-register">ADR Register<a class="headerlink" href="#adr-register" title="Permanent link">&para;</a></h2>
+<p>Significant architecture decisions are tracked as Architecture Decision
+Records. See the <a href="../adr/">ADR index</a> for full records.</p>
+<table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../adr/0001-plugin-architecture/">ADR-0001</a></td>
+<td>Protocol-based plugins with YAML registration</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0002-graph-database/">ADR-0002</a></td>
+<td>Memgraph (MVP) → Neo4j (production)</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0003-multi-tenancy/">ADR-0003</a></td>
+<td>Shared document storage, per-tenant state</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0004-auth-rbac/">ADR-0004</a></td>
+<td>JWT auth + RBAC (admin/user)</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0005-observability/">ADR-0005</a></td>
+<td>structlog + OTel → Grafana Alloy → Grafana Cloud</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0006-celery-reliability/">ADR-0006</a></td>
+<td>Celery retries + in-DB failed-task registry + re-run</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0007-document-diffs/">ADR-0007</a></td>
+<td>Git-backed document-level diffs</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0008-mvp-scope/">ADR-0008</a></td>
+<td>Citations, filters, bureaucracy assistant in MVP</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0009-model-evals/">ADR-0009</a></td>
+<td>Embedding/OCR/hybrid-search evaluation for Polish</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0010-health-checks/">ADR-0010</a></td>
+<td>Container health checks</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0011-sla-budget/">ADR-0011</a></td>
+<td>Efficiency budget (4–6 GB + SLM) and basic SLAs</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="../adr/0012-license-contribution-model/">ADR-0012</a></td>
+<td>MIT license + contribution model (DCO, invite-only)</td>
+<td>Proposed</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="future-considerations">Future Considerations<a class="headerlink" href="#future-considerations" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Public API server</strong> (FastAPI) for third-party integrations.</li>
+<li><strong>Additional plugin types</strong> (e.g., notification plugin).</li>
+<li><strong>Annotations and comments</strong> on documents.</li>
+<li><strong>Collaboration features</strong> (shared tenants).</li>
+<li><strong>Multi-language UI</strong> (Ukrainian, Polish).</li>
+<li><strong>Automated legal-update fetching</strong> via Celery Beat.</li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 &ndash;2026 Yevhen D.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

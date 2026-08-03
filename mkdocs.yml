@@ -1,0 +1,112 @@
+site_name: Law by AI
+site_url: https://stihotvor.github.io/law_by_ai/
+site_author: Yevhen D.
+site_description: >-
+  AI-powered legal document processing, retrieval, and analysis platform.
+
+repo_name: Stihotvor/law_by_ai
+repo_url: https://github.com/Stihotvor/law_by_ai
+
+docs_dir: .
+site_dir: ../site
+
+copyright: Copyright &copy; 2025 &ndash;2026 Yevhen D.
+
+theme:
+  name: material
+  features:
+    - content.code.annotate
+    - content.tooltips
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Roboto
+    code: Roboto Mono
+  icon:
+    logo: logo
+
+plugins:
+  - search
+
+extra:
+  status:
+    new: Recently added
+    draft: Work in progress
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: Stihotvor
+      repo: law_by_ai
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+nav:
+  - Home: index.md
+  - Intention: intention.md
+  - Architecture: architecture.md
+  - ADRs:
+      - ADR Index: adr/index.md
+      - 0001 - Plugin Architecture: adr/0001-plugin-architecture.md
+      - 0002 - Graph Database: adr/0002-graph-database.md
+      - 0003 - Multi-Tenancy: adr/0003-multi-tenancy.md
+      - 0004 - Auth & RBAC: adr/0004-auth-rbac.md
+      - 0005 - Observability: adr/0005-observability.md
+      - 0006 - Celery Reliability: adr/0006-celery-reliability.md
+      - 0007 - Document Diffs: adr/0007-document-diffs.md
+      - 0008 - MVP Scope: adr/0008-mvp-scope.md
+      - 0009 - Model Evals: adr/0009-model-evals.md
+      - 0010 - Health Checks: adr/0010-health-checks.md
+      - 0011 - SLA & Budget: adr/0011-sla-budget.md
+      - 0012 - License & Contribution Model: adr/0012-license-contribution-model.md

@@ -1,0 +1,1477 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered legal document processing, retrieval, and analysis platform.">
+      
+      
+        <meta name="author" content="Yevhen D.">
+      
+      
+        <link rel="canonical" href="https://stihotvor.github.io/law_by_ai/intention/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../architecture/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Intention - Law by AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#project-intention" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Law by AI" class="md-header__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Law by AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Intention
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Intention
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../adr/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Law by AI" class="md-nav__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    Law by AI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#vision-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👁️ Vision &amp; Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legal-domain-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚖️ Legal Domain Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-technology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📐 Architecture &amp; Technology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Search &amp; Retrieval
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agents-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Agents &amp; Automation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖥️ User Interface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sla-standards-basic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📈 SLA Standards (basic)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delivery-timeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Delivery &amp; Timeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meta" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛠️ Meta
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-plugin-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 - Plugin Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-graph-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 - Graph Database
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 - Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0004-auth-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 - Auth & RBAC
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0005-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 - Observability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0006-celery-reliability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 - Celery Reliability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0007-document-diffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 - Document Diffs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0008-mvp-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 - MVP Scope
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0009-model-evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 - Model Evals
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0010-health-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 - Health Checks
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0011-sla-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 - SLA & Budget
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0012-license-contribution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 - License & Contribution Model
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#vision-purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        👁️ Vision &amp; Purpose
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legal-domain-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚖️ Legal Domain Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-technology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📐 Architecture &amp; Technology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-retrieval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔍 Search &amp; Retrieval
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agents-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤖 Agents &amp; Automation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🖥️ User Interface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🔐 Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sla-standards-basic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📈 SLA Standards (basic)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delivery-timeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🚀 Delivery &amp; Timeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meta" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🛠️ Meta
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="project-intention">Project Intention<a class="headerlink" href="#project-intention" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>Status:</strong> Completed — all clarification questions answered.
+This document now serves as the project charter.
+Rev. 2 — incorporates the revised architecture plan (ADRs 1–11).</p>
+</blockquote>
+<hr />
+<h2 id="vision-purpose">👁️ Vision &amp; Purpose<a class="headerlink" href="#vision-purpose" title="Permanent link">&para;</a></h2>
+<p><strong>1.</strong> <em>Elevator pitch</em> – A self-hosted AI lawyer that helps protect citizens' rights and assists with local bureaucracy.</p>
+<p><strong>2.</strong> <em>Pain point</em> – Civil-human-rights, family and private law, and daily routine tasks that require legal assistance.</p>
+<p><strong>3.</strong> <em>Primary target user</em> – EU (Poland) citizens and expats.</p>
+<p><strong>4.</strong> <em>Project type</em> – Open-source community tool <strong>plus</strong> a personal research project.</p>
+<p><strong>5.</strong> <em>North-star metric</em> – <strong>Time and money saved per user</strong> while tracking legal changes and protecting rights.</p>
+<p><strong>6.</strong> <em>Scope boundary</em> – The system will <strong>not bypass or trick the law</strong>.</p>
+<p><strong>7.</strong> <em>Efficiency mandate</em> – The application must run <strong>fast on ~4–6 GB RAM with a small local model (SLM)</strong>. Efficiency is a hard requirement, not a nice-to-have. Every architectural choice (plugin type, model size, task queue) is made with this budget in mind.</p>
+<hr />
+<h2 id="legal-domain-scope">⚖️ Legal Domain Scope<a class="headerlink" href="#legal-domain-scope" title="Permanent link">&para;</a></h2>
+<p><strong>8.</strong> <em>Jurisdictions</em> – Poland (EU).</p>
+<p><strong>9.</strong> <em>Areas of law</em> – Family, child care, taxes, anti-xenophobic law.</p>
+<p><strong>10.</strong> <em>Source material</em> – <strong>All</strong> legal material (legislation, case law, commentaries, contracts, procedural documents, etc.).</p>
+<p><strong>11.</strong> <em>Legal-updates handling</em> – <strong>Manual fetching</strong> at the beginning.</p>
+<p><strong>12.</strong> <em>Supported formats</em> – <strong>All</strong> (PDF, DOCX, HTML, scanned images → OCR, plain text).</p>
+<p><strong>13.</strong> <em>Cross-reference tracking</em> – <strong>Yes</strong> – a graph database is required.</p>
+<p><strong>14.</strong> <em>OCR model</em> – Selected by <strong>evaluation on Polish documents</strong> (e.g., Tesseract, EasyOCR, PaddleOCR candidates). The chosen model must fit the 4–6 GB RAM budget.</p>
+<p><strong>15.</strong> <em>Citations</em> – <strong>MUST be in the MVP</strong> — every search/analysis result must include exact law article citations with confidence scores and direct source links.</p>
+<hr />
+<h2 id="architecture-technology">📐 Architecture &amp; Technology<a class="headerlink" href="#architecture-technology" title="Permanent link">&para;</a></h2>
+<p><strong>16.</strong> <em>Deployment model</em> – <strong>Docker-Compose</strong> (self-hosted).</p>
+<p><strong>17.</strong> <em>Vector database</em> – <strong>In-memory Chroma</strong> for the MVP, later <strong>Qdrant</strong>.</p>
+<p><strong>18.</strong> <em>Graph database</em> – <strong>Memgraph</strong> for the MVP, <strong>Neo4j</strong> for production. (ADR-0002)</p>
+<p><strong>19.</strong> <em>LLM provider</em> – <strong>Multi-provider</strong> via your liteLLM proxy, targeting <strong>open-source lite models</strong> (e.g., Gemma 4, Mistral Nano, Ministral) to satisfy the RAM/SLM budget.</p>
+<p><strong>20.</strong> <em>Embedding model</em> – <strong>Mistral embed</strong> or <strong>Gemini-mini embed 2</strong> (local) candidates; <strong>final model selected by evaluation on Polish legal texts</strong>. (ADR-0009)</p>
+<p><strong>21.</strong> <em>Multi-tenant isolation</em> – <strong>Yes</strong>, from day 1. Documents are <strong>shared storage</strong>; per-tenant data (notes, states, chats, annotations) is isolated. (ADR-0003)</p>
+<p><strong>22.</strong> <em>Expected data volume</em> – <strong>All Polish law</strong>, including tax and foreign statutes (tens of thousands of documents).</p>
+<p><strong>23.</strong> <em>Processing model</em> – <strong>Celery + Redis</strong> (asynchronous batch processing) with <strong>efficient tasks</strong>, retry policies, and in-DB task monitoring so users can re-run failed tasks. (ADR-0006)</p>
+<p><strong>24.</strong> <em>Plugin approach</em> – <strong>Protocol-based</strong> (not ABC), registered via a <strong>YAML config</strong> and loaded by <code>PluginManager</code>. (ADR-0001)</p>
+<p><strong>25.</strong> <em>Observability</em> – <strong>MUST in the MVP</strong>: <code>structlog</code> (JSON logs) + metrics + traces via <strong>OpenTelemetry</strong>, shipped through <strong>Grafana Alloy → Grafana Cloud</strong>. <strong>All telemetry must be anonymized</strong> (no PII). (ADR-0005)</p>
+<p><strong>26.</strong> <em>Health checks</em> – Every container exposes a <strong>health check</strong> endpoint for monitoring and orchestration. (ADR-0010)</p>
+<p><strong>27.</strong> <em>Security</em> – <strong>JWT auth (MUST)</strong> + <strong>RBAC</strong>: an <strong>admin</strong> manages data, a <strong>user</strong> can only read it. Multi-tenant isolation is enforced and tested with <strong>leak tests</strong>. (ADR-0004)</p>
+<p><strong>28.</strong> <em>SLAs</em> – Basic <strong>SLA standards</strong> are defined and tracked (search latency, processing time, availability). (ADR-0011)</p>
+<hr />
+<h2 id="search-retrieval">🔍 Search &amp; Retrieval<a class="headerlink" href="#search-retrieval" title="Permanent link">&para;</a></h2>
+<p><strong>29.</strong> <em>Search modes</em> – Keyword, semantic, and hybrid (all three).</p>
+<p><strong>30.</strong> <em>Cross-language search</em> – Supported (e.g., English queries against Polish legal texts).</p>
+<p><strong>31.</strong> <em>Retrieval strategy</em> – Hybrid RAG with re-ranking, graph-guided multi-hop retrieval.</p>
+<p><strong>32.</strong> <em>Citation &amp; confidence</em> – <strong>MUST in the MVP</strong> — confidence scores and exact law article citations with direct source links.</p>
+<p><strong>33.</strong> <em>Faceted filters</em> – <strong>MUST in the MVP</strong> — by jurisdiction, <strong>document type</strong>, <strong>dates</strong>, court, etc.</p>
+<p><strong>34.</strong> <em>Find similar documents</em> – Feature will be available.</p>
+<p><strong>35.</strong> <em>Hybrid search precision</em> – Validated with an <strong>evaluation on Polish legal queries</strong>; precision/recall targets are defined and measured. (ADR-0005 / ADR-0009)</p>
+<hr />
+<h2 id="agents-automation">🤖 Agents &amp; Automation<a class="headerlink" href="#agents-automation" title="Permanent link">&para;</a></h2>
+<p><strong>36.</strong> <em>Priority agents</em> – DocumentFetcher (code + OCR), DocumentProcessor (graph manager), LegalResearch, KnowledgeGraph, plus others later.</p>
+<p><strong>37.</strong> <em>Execution style</em> – <strong>Human-in-the-loop</strong> (user triggers/approves steps).</p>
+<p><strong>38.</strong> <em>Change-tracker granularity</em> – <strong>Document-level diffs</strong>, most likely backed by <strong>Git</strong> for versioning and comparison. (ADR-0007)</p>
+<p><strong>39.</strong> <em>Analysis output</em> – <strong>Free-text</strong> for now.</p>
+<p><strong>40.</strong> <em>Workflow customization</em> – <strong>Pre-configured</strong> pipelines (MVP).</p>
+<p><strong>41.</strong> <em>Bureaucracy/Form Assistant</em> – <strong>MUST be in the MVP</strong> — a dedicated agent that guides users through administrative procedures step by step.</p>
+<p><strong>42.</strong> <em>Celery task reliability</em> – Tasks are efficient, failures are persisted in-DB, and the UI lets users <strong>re-run failed tasks</strong>. (ADR-0006)</p>
+<hr />
+<h2 id="user-interface">🖥️ User Interface<a class="headerlink" href="#user-interface" title="Permanent link">&para;</a></h2>
+<p><strong>43.</strong> <em>Primary UI</em> – <strong>Streamlit</strong> (as used in existing issues).</p>
+<p><strong>44.</strong> <em>Public API</em> – No built-in API server; <strong>API clients</strong> will fetch data from the UI/backend directly.</p>
+<p><strong>45.</strong> <em>Visualizations</em> – Knowledge-graph, citation network, and timeline visualizations (planned, not in MVP).</p>
+<p><strong>46.</strong> <em>Annotation &amp; comments</em> – Not needed now; may be added in future versions.</p>
+<p><strong>47.</strong> <em>Collaboration</em> – Not required at present.</p>
+<hr />
+<h2 id="security">🔐 Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p><strong>48.</strong> <em>Authentication</em> – <strong>JWT-based auth (MUST)</strong> for all users.</p>
+<p><strong>49.</strong> <em>Authorization</em> – <strong>RBAC (MUST)</strong>: <code>admin</code> role can manage data (ingest, edit, delete); <code>user</code> role is <strong>read-only</strong>.</p>
+<p><strong>50.</strong> <em>Multi-tenant isolation</em> – Enforced at every layer:
+- PostgreSQL — row-level isolation with <code>tenant_id</code> (shared document store, per-tenant notes/states/chats).
+- Chroma/Qdrant — collection or partition per tenant.
+- Memgraph/Neo4j — subgraph per tenant.</p>
+<p><strong>51.</strong> <em>Tenant leak tests</em> – Automated tests assert that no tenant can access another tenant's data. (ADR-0003)</p>
+<hr />
+<h2 id="sla-standards-basic">📈 SLA Standards (basic)<a class="headerlink" href="#sla-standards-basic" title="Permanent link">&para;</a></h2>
+<p><strong>52.</strong> <em>Search latency</em> – Hybrid search responds within <strong>target latency</strong> (e.g., &lt; 3 s for MVP on the 4–6 GB budget); measured and reported via OTel.</p>
+<p><strong>53.</strong> <em>Document processing</em> – Ingest → chunk → embed → graph completes within a defined <strong>processing budget</strong>; tracked per task.</p>
+<p><strong>54.</strong> <em>Availability</em> – Docker-Compose with health checks; service health is visible via the OTel/Grafana stack.</p>
+<p>Detailed targets live in ADR-0011.</p>
+<hr />
+<h2 id="delivery-timeline">🚀 Delivery &amp; Timeline<a class="headerlink" href="#delivery-timeline" title="Permanent link">&para;</a></h2>
+<p><strong>55.</strong> <em>Minimum Viable Product</em> – Data collection, processing, annotation, push to PostgreSQL, vector store, graph store, <strong>citations with confidence</strong>, <strong>filters</strong>, <strong>document diffs</strong>, <strong>bureaucracy assistant</strong>, and answering complex questions / internal data research — all on the <strong>4–6 GB RAM + SLM</strong> budget.</p>
+<p><strong>56.</strong> <em>Target timeline</em> – <strong>MVP</strong>: end of <strong>next month</strong>. <strong>v1</strong>: end of <strong>this year</strong>.</p>
+<p><strong>57.</strong> <em>Long-term vision</em> – A <strong>legal-AI platform</strong> for personal and family use, with the possibility of a free online service or bot for answering questions and a legal-tracker component.</p>
+<hr />
+<h2 id="meta">🛠️ Meta<a class="headerlink" href="#meta" title="Permanent link">&para;</a></h2>
+<p><strong>58.</strong> <em>License</em> – <strong>MIT</strong>.</p>
+<p><strong>59.</strong> <em>Contributions</em> – <strong>Invite-only</strong> (initially).</p>
+<p><strong>60.</strong> <em>Documentation language</em> – <strong>English</strong> now; later <strong>Ukrainian</strong> and <strong>Polish</strong>.</p>
+<p><strong>61.</strong> <em>ADR tracking</em> – All significant architecture decisions are tracked as <strong>ADRs</strong> in <a href="../architecture/#adr-register">Architecture &amp; ADRs</a>.</p>
+<hr />
+<p><em>The charter above defines the scope, technology stack, and roadmap for "Law by AI". All subsequent design, implementation, and testing decisions should be aligned with these constraints and goals.</em></p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 &ndash;2026 Yevhen D.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
