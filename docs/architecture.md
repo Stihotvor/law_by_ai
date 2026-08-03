@@ -649,6 +649,7 @@ Records. See the [ADR index](adr/index.md) for full records.
 | [ADR-0009](adr/0009-model-evals.md) | Embedding/OCR/hybrid-search evaluation for Polish | Proposed |
 | [ADR-0010](adr/0010-health-checks.md) | Container health checks | Proposed |
 | [ADR-0011](adr/0011-sla-budget.md) | Efficiency budget (4–6 GB + SLM) and basic SLAs | Proposed |
+| [ADR-0012](adr/0012-license-contribution-model.md) | MIT license + contribution model (DCO, invite-only) | Proposed |
 
 ---
 
