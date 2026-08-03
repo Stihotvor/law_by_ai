@@ -17,3 +17,4 @@ site/
 .coverage
 htmlcov/
 .ruff_cache/
+*.log

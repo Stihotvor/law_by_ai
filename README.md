@@ -77,5 +77,23 @@ Two CI workflows run on PRs:
 
 On `main`, the `docs` workflow also deploys the site to GitHub Pages.
 
+## Docker
+
+The full stack runs under Docker Compose:
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+| Service | Description |
+|---|---|
+| `app` | Streamlit UI — http://localhost:8501 |
+| `celery-worker` | Celery worker (Redis broker, concurrency 2) |
+| `postgres` | PostgreSQL (DatabasePlugin) |
+| `redis` | Celery broker / result backend |
+
+Stop it with `docker compose -f docker/docker-compose.yml down`. Postgres data
+persists in the `pgdata` volume.
+
 👉 See the [**project board**](https://github.com/Stihotvor/law_by_ai/issues)
 for all active issues.

@@ -1,0 +1,93 @@
+name: law-by-ai
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lawbyai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lawbyai}
+      POSTGRES_DB: ${POSTGRES_DB:-lawbyai}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lawbyai} -d ${POSTGRES_DB:-lawbyai}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks: [internal]
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command:
+      - streamlit
+      - run
+      - src/ui/app.py
+      - --server.port=8501
+      - --server.address=0.0.0.0
+      - --server.headless=true
+    ports:
+      - "${APP_PORT:-8501}:8501"
+    environment: &app-env
+      DATABASE_URL: postgresql://${POSTGRES_USER:-lawbyai}:${POSTGRES_PASSWORD:-lawbyai}@postgres:5432/${POSTGRES_DB:-lawbyai}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [internal]
+
+  celery-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command:
+      - celery
+      - -A
+      - tasks.celery_app
+      - worker
+      - --loglevel=info
+      - --concurrency=2
+    environment: *app-env
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A tasks.celery_app inspect ping | grep -q pong"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [internal]
+
+volumes:
+  pgdata:
+
+networks:
+  internal:
+    driver: bridge
