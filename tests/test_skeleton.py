@@ -38,12 +38,32 @@ def test_dockerfile_uses_python311_slim_and_nonroot():
     assert "USER appuser" in text
 
 
-def test_compose_has_all_services_with_healthchecks():
+def test_dockerfile_has_runtime_and_test_targets():
+    text = (ROOT / "docker" / "Dockerfile").read_text()
+    assert "AS runtime" in text
+    assert "AS test" in text
+    # dev extras are only installed in the test target, never in runtime
+    assert "--extra dev" in text
+    runtime_section = text.split("AS runtime")[1].split("AS test")[0]
+    assert "--extra dev" not in runtime_section
+
+
+def test_compose_prod_targets_are_lean():
     text = (ROOT / "docker" / "docker-compose.yml").read_text()
     for service in ("app:", "celery-worker:", "postgres:", "redis:"):
         assert service in text
+    assert "target: runtime" in text
     assert text.count("healthcheck:") >= 4
     assert "service_healthy" in text
+    # production compose must not reference the test target
+    assert "target: test" not in text
+
+
+def test_compose_test_override_present():
+    text = (ROOT / "docker" / "docker-compose.test.yml").read_text()
+    assert "test:" in text
+    assert "target: test" in text
+    assert "--extra dev" not in text  # deps come from the build target, not compose
 
 
 def test_dockerignore_present():

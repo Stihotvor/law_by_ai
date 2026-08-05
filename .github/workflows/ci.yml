@@ -30,14 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - run: pip install -e ".[dev]"
-      - run: pytest -m "not integration" --cov=core --cov=plugins --cov-report=term-missing
-
-  docker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
       - run: docker compose -f docker/docker-compose.yml config --quiet
+      - run: docker compose -f docker/docker-compose.yml up -d --build --wait
+      - run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml run --rm test
+      - if: always()
+        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml down
