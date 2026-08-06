@@ -18,20 +18,31 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: pip install ruff
-      - run: ruff check .
-      - run: ruff format --check .
+      - name: Install ruff
+        run: pip install ruff
+      - name: Ruff lint
+        run: ruff check .
+      - name: Ruff format check
+        run: ruff format --check .
 
   test:
     runs-on: ubuntu-latest
+    needs: lint
     steps:
-      - uses: actions/checkout@v7
-      - run: docker compose -f docker/docker-compose.yml config --quiet
-      - run: docker compose -f docker/docker-compose.yml up -d --build --wait
-      - run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml run --rm test
-      - if: always()
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Validate compose config
+        run: docker compose -f docker/docker-compose.yml config --quiet
+      - name: Build and start the stack
+        run: docker compose -f docker/docker-compose.yml up -d --build --wait
+      - name: Run tests in-container against the live stack
+        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml run --rm test
+      - name: Tear down the stack
+        if: always()
         run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml down
