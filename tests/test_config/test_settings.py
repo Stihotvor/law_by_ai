@@ -146,5 +146,5 @@ def test_load_env_reads_file(tmp_path, monkeypatch):
 
 
 def test_root_dir_points_at_repo_root():
+    # Container WORKDIR is /app; local checkout is <repo>/law_by_ai.
     assert (ROOT_DIR / "pyproject.toml").exists()
-    assert ROOT_DIR.name == "law_by_ai"
