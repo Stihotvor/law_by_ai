@@ -103,7 +103,7 @@ services:
       redis:
         condition: service_healthy
     networks: [internal]
-    command: ["pytest", "-m", "integration", "-q", "-p", "no:cacheprovider"]
+    command: ["pytest", "-q", "-p", "no:cacheprovider"]
 
 volumes:
   pgdata:
