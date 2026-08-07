@@ -19,7 +19,7 @@ docker compose -f docker/docker-compose.yml up --build
 ```
 
 Run the test suite against live postgres and redis (builds the `test` target,
-boots only postgres+redis, runs integration-marked tests; app and worker are
+boots only postgres+redis, runs the full test suite; app and worker are
 not started):
 
 ```bash

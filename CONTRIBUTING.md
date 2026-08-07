@@ -15,7 +15,7 @@ the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.13+
 - [uv](https://docs.astral.sh/uv/) installed **globally** (standalone), e.g.:
   ```bash
   curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -57,8 +57,9 @@ formatting and lint issues.
 - Use a `feature/`, `fix/`, or `docs/` branch named after the issue
   (e.g., `docs/revised-architecture-plan`).
 - Reference the issue in the PR body: `Closes #N` or `Refs #N`.
-- CI runs two workflows on every PR: `ci` (lint + tests, outside `docs/`) and
-  `docs` (docs build, on `docs/` changes). The PR must be green before merging.
+- CI runs two workflows on every PR: `ci` (lint, typecheck, security, unit +
+  integration tests, outside `docs/`) and `docs` (docs build, on `docs/`
+  changes). The PR must be green before merging.
 
 ## Architecture decisions
 
