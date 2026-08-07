@@ -91,6 +91,7 @@ services:
   # `docker compose up` never builds the test image; the `test` build target
   # is the sole source of dev extras (pytest, etc.).
   test:
+    image: law-by-ai:test
     build:
       context: ..
       dockerfile: docker/Dockerfile

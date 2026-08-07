@@ -54,11 +54,23 @@ jobs:
         uses: actions/checkout@v7
       - name: Validate compose config
         run: docker compose -f docker/docker-compose.yml config --quiet
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build test image (with GHA layer cache)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: test
+          tags: law-by-ai:test
+          load: true
+          cache-from: type=gha,scope=test
+          cache-to: type=gha,scope=test,mode=max
       # No `up --wait` here: prod stack boot is verified manually. `run --rm
-      # test` builds the lean `test` target, boots only postgres+redis, and runs
-      # the full test suite against the live stack — never app/worker (keeps CI lean).
-      - name: Run integration tests against live postgres/redis
-        run: docker compose --profile test -f docker/docker-compose.yml run --rm test
+      # test` starts only postgres+redis and runs the full test suite against
+      # the live stack — never app/worker (keeps CI lean).
+      - name: Run tests against live postgres/redis
+        run: docker compose --profile test -f docker/docker-compose.yml run --rm --no-build test
       - name: Tear down the stack
         if: always()
         run: docker compose --profile test -f docker/docker-compose.yml down -v
