@@ -1,0 +1,18 @@
+# Build artifacts and caches only — excluded from the build context.
+# tests/, docs/, .github/ are intentionally included so the `test` build
+# target can run the full suite in-container; the `runtime` target only
+# copies .venv and src/ from the builder, so it stays lean regardless.
+.git
+.venv
+.idea
+.opencode
+dist
+site
+*.egg-info
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+*.log

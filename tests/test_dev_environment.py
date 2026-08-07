@@ -29,13 +29,13 @@ def test_pytest_config_present():
     assert any("security" in m for m in pytest_opts["markers"])
 
 
-def test_ci_workflow_has_lint_test_jobs():
+def test_ci_workflow_has_lint_unit_and_integration_jobs():
     ci = ROOT / ".github" / "workflows" / "ci.yml"
     assert ci.exists()
     text = ci.read_text()
     assert "paths-ignore" in text
     assert "'docs/**'" in text
-    for job in ("lint", "test"):
+    for job in ("lint", "unit-test", "typecheck", "security", "integration-test"):
         assert f"  {job}:" in text
 
 

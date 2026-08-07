@@ -71,11 +71,36 @@ uv run mkdocs build --strict -f docs/mkdocs.yml # docs build
 ```
 
 Two CI workflows run on PRs:
-- **`ci`** — lint + tests, runs on any change outside `docs/`.
+- **`ci`** — lint, typecheck, security scan, unit tests, and Docker integration
+  tests. Runs on any change outside `docs/`.
 - **`docs`** — builds the docs, runs only on changes under `docs/` (with the
   config at `docs/mkdocs.yml`).
 
 On `main`, the `docs` workflow also deploys the site to GitHub Pages.
+
+## Docker
+
+The full stack runs under Docker Compose:
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+| Service | Description |
+|---|---|
+| `app` | Streamlit UI — http://localhost:8501 |
+| `celery-worker` | Celery worker (Redis broker, concurrency 2) |
+| `postgres` | PostgreSQL (DatabasePlugin) |
+| `redis` | Celery broker / result backend |
+
+Stop it with `docker compose -f docker/docker-compose.yml down`. Postgres data
+persists in the `pgdata` volume.
+
+Run the test suite against live postgres and redis (no app/worker started):
+
+```bash
+docker compose --profile test -f docker/docker-compose.yml run --rm test
+```
 
 👉 See the [**project board**](https://github.com/Stihotvor/law_by_ai/issues)
 for all active issues.
