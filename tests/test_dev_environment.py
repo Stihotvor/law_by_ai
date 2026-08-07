@@ -35,7 +35,7 @@ def test_ci_workflow_has_lint_unit_and_integration_jobs():
     text = ci.read_text()
     assert "paths-ignore" in text
     assert "'docs/**'" in text
-    for job in ("lint", "unit-test", "integration-test"):
+    for job in ("lint", "unit-test", "typecheck", "integration-test"):
         assert f"  {job}:" in text
 
 
