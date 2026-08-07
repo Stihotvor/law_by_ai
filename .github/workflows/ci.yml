@@ -70,7 +70,7 @@ jobs:
       # test` starts only postgres+redis and runs the full test suite against
       # the live stack — never app/worker (keeps CI lean).
       - name: Run tests against live postgres/redis
-        run: docker compose --profile test -f docker/docker-compose.yml run --rm --no-build test
+        run: docker compose --profile test -f docker/docker-compose.yml run --rm test
       - name: Tear down the stack
         if: always()
         run: docker compose --profile test -f docker/docker-compose.yml down -v
