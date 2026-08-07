@@ -1,4 +1,4 @@
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uv/bin/uv
 
@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
 # ---------- shared base ----------
-FROM python:3.11-slim AS base
+FROM python:3.13-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH"

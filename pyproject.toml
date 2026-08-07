@@ -7,7 +7,7 @@ name = "law-by-ai"
 version = "0.1.0"
 description = "AI-powered legal document ingestion, processing, retrieval, and analysis platform."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Yevhen D." }]
@@ -34,7 +34,7 @@ include = ["core*", "plugins*", "agents*", "tasks*", "ui*", "data*", "config*", 
 exclude = ["docs*", "site*", "tests*", "scripts*", "evals*"]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py313"
 line-length = 100
 src = ["src"]
 

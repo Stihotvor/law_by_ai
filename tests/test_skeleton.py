@@ -31,9 +31,9 @@ def test_pyproject_uses_src_layout():
     assert 'where = ["src"]' in text
 
 
-def test_dockerfile_uses_python311_slim_and_nonroot():
+def test_dockerfile_uses_python313_slim_and_nonroot():
     text = (ROOT / "docker" / "Dockerfile").read_text()
-    assert "python:3.11-slim" in text
+    assert "python:3.13-slim" in text
     assert "appuser" in text
     assert "USER appuser" in text
 
