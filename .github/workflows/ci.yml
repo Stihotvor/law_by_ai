@@ -31,18 +31,34 @@ jobs:
       - name: Ruff format check
         run: ruff format --check .
 
-  test:
+  unit-test:
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: uv sync --frozen --extra dev
+      - name: Run unit tests (no external services)
+        run: uv run pytest -m "not integration" -q --cov=core --cov=plugins
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: [lint, unit-test]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
       - name: Validate compose config
         run: docker compose -f docker/docker-compose.yml config --quiet
-      - name: Build and start the stack
-        run: docker compose -f docker/docker-compose.yml up -d --build --wait
-      - name: Run tests in-container against the live stack
-        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml run --rm test
+      # No `up --wait` here: prod stack boot is verified manually. `run --rm
+      # test` builds the lean `test` target, boots only postgres+redis, and runs
+      # the integration-marked tests — never app/worker (keeps CI lean).
+      - name: Run integration tests against live postgres/redis
+        run: docker compose --profile test -f docker/docker-compose.yml run --rm test
       - name: Tear down the stack
         if: always()
-        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml down
+        run: docker compose --profile test -f docker/docker-compose.yml down -v

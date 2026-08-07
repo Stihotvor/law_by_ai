@@ -48,22 +48,25 @@ def test_dockerfile_has_runtime_and_test_targets():
     assert "--extra dev" not in runtime_section
 
 
-def test_compose_prod_targets_are_lean():
+def test_compose_prod_services_use_lean_runtime_target():
     text = (ROOT / "docker" / "docker-compose.yml").read_text()
     for service in ("app:", "celery-worker:", "postgres:", "redis:"):
         assert service in text
-    assert "target: runtime" in text
-    assert text.count("healthcheck:") >= 4
+    assert "healthcheck:" in text
     assert "service_healthy" in text
-    # production compose must not reference the test target
-    assert "target: test" not in text
+    # app and celery-worker build the lean `runtime` target (no dev extras)
+    assert text.count("target: runtime") == 2
+    assert text.count("target: test") == 1
 
 
-def test_compose_test_override_present():
-    text = (ROOT / "docker" / "docker-compose.test.yml").read_text()
+def test_compose_test_service_is_profiled_and_lean():
+    text = (ROOT / "docker" / "docker-compose.yml").read_text()
     assert "test:" in text
+    assert 'profiles: ["test"]' in text
     assert "target: test" in text
-    assert "--extra dev" not in text  # deps come from the build target, not compose
+    # dev extras come from the build target, never from compose
+    assert "--extra dev" not in text
+    assert text.count("healthcheck:") >= 4
 
 
 def test_dockerignore_present():
