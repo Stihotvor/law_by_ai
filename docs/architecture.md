@@ -540,6 +540,7 @@ law_by_ai/
 │   └── components/
 ├── config/
 │   ├── settings.py          # Environment-based configuration
+│   ├── plugins.py           # Plugin registration facade (PluginManager)
 │   ├── plugins.yaml         # Protocol → implementation registration
 │   └── .env.example
 ├── data/                    # Data models

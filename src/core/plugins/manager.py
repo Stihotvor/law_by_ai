@@ -34,7 +34,9 @@ from core.plugins.protocols import (
 # Repository root: <repo>/src/core/plugins/manager.py -> <repo>/
 ROOT_DIR = Path(__file__).resolve().parents[3]
 
-DEFAULT_CONFIG_PATH = ROOT_DIR / "config" / "plugins.yaml"
+# The registry ships inside the packaged ``config`` module (src/config/), so it
+# survives in the Docker image and stays consistent with docs/architecture.md.
+DEFAULT_CONFIG_PATH = ROOT_DIR / "src" / "config" / "plugins.yaml"
 
 # Plugin type (as used in config/plugins.yaml) -> runtime-checkable protocol.
 TYPE_TO_PROTOCOL: dict[str, type[Any]] = {
