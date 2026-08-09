@@ -17,9 +17,9 @@ matured, we need a plugin mechanism that:
 
 ## Decision
 
-- Define each of the five plugin types as a **`typing.Protocol`** in
-  `core/plugins/protocols.py` (Database, Vector DB, Graph DB, ETL Source,
-  Embedding).
+- Define each of the **seven** plugin types as a **`typing.Protocol`** in
+  `core/plugins/protocols/` (RelationalDB, VectorDB, GraphDB, KnowledgeSource,
+  Embedding, LLM, Reranking).
 - Register concrete implementations in **`config/plugins.yaml`**.
 - `PluginManager` reads the YAML, imports the class via `importlib`, and
   routes requests by plugin type.
@@ -27,7 +27,7 @@ matured, we need a plugin mechanism that:
 
 ## Consequences
 
-- Plugins are duck-typed and easily replaced (Chroma↔Qdrant, Memgraph↔Neo4j).
+- Plugins are duck-typed and easily replaced (Chroma↔Qdrant, Memgraph↔Neo4j, OpenAI↔Ollama).
 - Plugin inventory is explicit in one YAML file (good for ops/review).
 - No inheritance hierarchy — simpler tests via lightweight fakes.
 - Requires runtime validation that a registered class satisfies the Protocol.
