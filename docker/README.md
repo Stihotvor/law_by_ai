@@ -11,10 +11,19 @@ efficiency budget).
   volume.
   - The `test` service is gated behind `profiles: ["test"]`: a plain
     `docker compose up` never builds or starts it, keeping prod lean.
+- `.env.example` — environment-template for the stack: per-component database
+  variables (`POSTGRES_USER`/`PASSWORD`/`DB`/`HOST`/`PORT`, and `REDIS_*`).
+  Copy it to `.env`; the compose file and the app containers load it via
+  `env_file`, and `src/config/settings.py` assembles the connection URLs.
+- `.env` — your local, gitignored copy of `.env.example`.
+
+In container, the PostgreSQL and Redis hosts are the compose service names
+`postgres` and `redis` (set in `.env.example`), not `localhost`.
 
 Run the production/dev stack:
 
 ```bash
+cp docker/.env.example docker/.env   # once, then adjust values as needed
 docker compose -f docker/docker-compose.yml up --build
 ```
 

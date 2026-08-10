@@ -84,6 +84,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Materialize .env from template
+        run: cp docker/.env.example docker/.env
       - name: Validate compose config
         run: docker compose -f docker/docker-compose.yml config --quiet
       - name: Set up Docker Buildx

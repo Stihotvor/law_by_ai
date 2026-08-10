@@ -44,15 +44,15 @@ All services run under Docker-Compose and communicate over the internal network.
 
 ## Plugin Architecture
 
-The system defines **five plugin types**. Each is a **Protocol** (duck-typed
+The system defines **seven plugin types**. Each is a **Protocol** (duck-typed
 interface, no ABC inheritance). Concrete implementations are registered in
 `config/plugins.yaml` and loaded by `PluginManager`. (ADR-0001)
 
-### 1. DatabasePlugin (`core/plugins/protocols.py`)
+### 1. RelationalDBPlugin (`core/plugins/protocols/relational_db.py`)
 
 ```mermaid
 classDiagram
-    class DatabasePlugin {
+    class RelationalDBPlugin {
         <<protocol>>
         +save_document()
         +get_document()
@@ -67,7 +67,7 @@ classDiagram
 **MVP note**: shared document storage; per-tenant notes/states/chats isolated
 via RLS (`tenant_id`). (ADR-0003)
 
-### 2. VectorDBPlugin
+### 2. VectorDBPlugin (`core/plugins/protocols/vector_db.py`)
 
 ```mermaid
 classDiagram
@@ -84,7 +84,7 @@ classDiagram
 **Default implementation**: Chroma (in-memory) for the MVP, Qdrant for
 production (`plugins/chroma.py`, `plugins/qdrant.py`).
 
-### 3. GraphDBPlugin
+### 3. GraphDBPlugin (`core/plugins/protocols/graph_db.py`)
 
 ```mermaid
 classDiagram
@@ -104,11 +104,11 @@ classDiagram
 **Default implementation**: Memgraph plugin (`plugins/memgraph.py`) for the MVP.
 **Production target**: Neo4j (`plugins/neo4j.py`). (ADR-0002)
 
-### 4. ETLSourcePlugin
+### 4. KnowledgeSourcePlugin (`core/plugins/protocols/knowledge_source.py`)
 
 ```mermaid
 classDiagram
-    class ETLSourcePlugin {
+    class KnowledgeSourcePlugin {
         <<protocol>>
         +fetch()
         +validate_config()
@@ -116,9 +116,9 @@ classDiagram
     }
 ```
 
-**Implementations**: Web ETL (`plugins/web_etl.py`), Git ETL (`plugins/git_etl.py`).
+**Implementations**: Web source (`plugins/web_source.py`), Git source (`plugins/git_source.py`), Filesystem source (`plugins/filesystem_source.py`).
 
-### 5. EmbeddingPlugin
+### 5. EmbeddingPlugin (`core/plugins/protocols/embedding.py`)
 
 ```mermaid
 classDiagram
@@ -132,6 +132,33 @@ classDiagram
 
 **Default implementation**: Sentence Transformers (`plugins/sentence_transformers.py`),
 model selected by evaluation on Polish legal texts. (ADR-0009)
+
+### 6. LLMPlugin (`core/plugins/protocols/llm.py`)
+
+```mermaid
+classDiagram
+    class LLMPlugin {
+        <<protocol>>
+        +generate_response()
+        +step_back_prompt()
+        +generate_rag_query()
+        +traverse_graph()
+    }
+```
+
+**Implementations**: OpenAI (`plugins/openai_llm.py`), Ollama (`plugins/ollama_llm.py`), local SLM (`plugins/slm_llm.py`).
+
+### 7. RerankingPlugin (`core/plugins/protocols/reranking.py`)
+
+```mermaid
+classDiagram
+    class RerankingPlugin {
+        <<protocol>>
+        +rerank()
+    }
+```
+
+**Implementations**: Cohere (`plugins/cohere_rerank.py`), local (`plugins/local_rerank.py`).
 
 ### PluginManager (`core/plugins/manager.py`)
 
@@ -460,10 +487,17 @@ law_by_ai/
 │   ├── __init__.py
 │   ├── plugins/
 │   │   ├── __init__.py
-│   │   ├── protocols.py     # Plugin Protocols (all 5 types)
+│   │   ├── protocols/       # Plugin Protocols (one file per type)
+│   │   │   ├── relational_db.py    # RelationalDBPlugin
+│   │   │   ├── vector_db.py        # VectorDBPlugin
+│   │   │   ├── graph_db.py         # GraphDBPlugin
+│   │   │   ├── knowledge_source.py # KnowledgeSourcePlugin
+│   │   │   ├── embedding.py        # EmbeddingPlugin
+│   │   │   ├── llm.py              # LLMPlugin
+│   │   │   ├── reranking.py        # RerankingPlugin
+│   │   │   └── types.py            # Shared type aliases (JsonDict)
 │   │   ├── manager.py       # PluginManager (YAML-driven loading)
-│   │   ├── exceptions.py    # Plugin-specific errors
-│   │   └── utils.py         # Shared utilities
+│   │   └── exceptions.py    # Plugin-specific errors
 │   ├── security/
 │   │   ├── auth.py          # JWT issue/verify
 │   │   ├── rbac.py          # Role checks (admin/user)
@@ -506,6 +540,7 @@ law_by_ai/
 │   └── components/
 ├── config/
 │   ├── settings.py          # Environment-based configuration
+│   ├── plugins.py           # Plugin registration facade (PluginManager)
 │   ├── plugins.yaml         # Protocol → implementation registration
 │   └── .env.example
 ├── data/                    # Data models

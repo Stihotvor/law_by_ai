@@ -3,10 +3,7 @@ name: law-by-ai
 services:
   postgres:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-lawbyai}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lawbyai}
-      POSTGRES_DB: ${POSTGRES_DB:-lawbyai}
+    env_file: .env
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -36,20 +33,18 @@ services:
       - streamlit
       - run
       - src/ui/app.py
-      - --server.port=8501
+      - --server.port=${APP_PORT:-8501}
       - --server.address=0.0.0.0
       - --server.headless=true
     ports:
-      - "${APP_PORT:-8501}:8501"
-    environment: &app-env
-      DATABASE_URL: postgresql://${POSTGRES_USER:-lawbyai}:${POSTGRES_PASSWORD:-lawbyai}@postgres:5432/${POSTGRES_DB:-lawbyai}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      - "${APP_PORT:-8501}:${APP_PORT:-8501}"
+    env_file: .env
     healthcheck:
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:${APP_PORT:-8501}/_stcore/health', timeout=3)"
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,7 +68,7 @@ services:
       - worker
       - --loglevel=info
       - --concurrency=2
-    environment: *app-env
+    env_file: .env
     healthcheck:
       test: ["CMD-SHELL", "celery -A tasks.celery_app inspect ping | grep -q pong"]
       interval: 15s
@@ -97,7 +92,7 @@ services:
       dockerfile: docker/Dockerfile
       target: test
     profiles: ["test"]
-    environment: *app-env
+    env_file: .env
     depends_on:
       postgres:
         condition: service_healthy
