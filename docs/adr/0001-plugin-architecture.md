@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # ADR-0001: Protocol-based plugins with YAML registration
@@ -42,3 +42,10 @@ matured, we need a plugin mechanism that:
 
 - [Architecture](../architecture.md) — Plugin Architecture
 - [Intention](../intention.md) #24
+
+## Status
+
+Accepted. Implemented in PR #71 (`feat/config-settings-plugins`): the seven
+protocol contracts, `PluginManager`, the `config/plugins.yaml` registry, and
+the `config.plugins` facade shipped together with the config/settings layer.
+Subsequent hardening lives in issue #8.
