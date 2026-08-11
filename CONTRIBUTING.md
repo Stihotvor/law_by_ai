@@ -45,10 +45,11 @@ formatting and lint issues.
 
 ## Testing
 
-- Unit tests live in `tests/test_plugins/`, `tests/test_agents/`,
-  `tests/test_tasks/`.
-- Security tests (auth, RBAC, multi-tenant leak tests) live in
-  `tests/test_security/` and are marked `security`.
+- The suite is organised by scope: `tests/unit/` (no external services),
+  `tests/integration/` (live PostgreSQL/Redis), `tests/e2e/` (whole stack).
+- Shared fixtures live in `tests/fixtures/` (loaded via `pytest_plugins`);
+  fake classes and `make_*` builders live in `tests/factories/`.
+- Security tests (auth, RBAC, multi-tenant leak tests) are marked `security`.
 - Tests requiring external services (PostgreSQL, Qdrant, Memgraph, Redis) are
   marked `integration` and are excluded from default runs.
 

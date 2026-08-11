@@ -1,50 +1,12 @@
 """Tests for core/plugins/manager.py (ADR-0001)."""
 
-import sys
-import types
 from pathlib import Path
 
 import pytest
+from factories.plugins import FakeRelationalDB, FakeVectorDB
 
 from core.plugins.exceptions import PluginLoadError, PluginNotFoundError, PluginValidationError
 from core.plugins.manager import ROOT_DIR, PluginManager
-
-
-class FakeRelationalDB:
-    def save_document(self, document, tenant_id=None):
-        return "doc1"
-
-    def get_document(self, document_id, tenant_id=None):
-        return None
-
-    def search_documents(self, query, *, limit=10, tenant_id=None):
-        return []
-
-    def get_recent_changes(self, *, since=None, tenant_id=None):
-        return []
-
-    def delete_document(self, document_id, tenant_id=None):
-        pass
-
-    def update_document(self, document_id, document, tenant_id=None):
-        pass
-
-
-class FakeVectorPlugin:
-    def upsert_embeddings(self, collection, ids, embeddings, metadata=None):
-        pass
-
-    def search_embeddings(self, collection, query_vector, *, limit=10):
-        return []
-
-    def delete_embeddings(self, collection, ids):
-        pass
-
-    def create_collection(self, name):
-        pass
-
-    def delete_collection(self, name):
-        pass
 
 
 class LifecyclePlugin(FakeRelationalDB):
@@ -64,14 +26,10 @@ class BadRelationalDB:
 
 
 @pytest.fixture
-def fake_plugins_module(monkeypatch):
-    module = types.ModuleType("fake_plugins")
-    module.FakeRelationalDB = FakeRelationalDB
-    module.FakeVectorPlugin = FakeVectorPlugin
-    module.LifecyclePlugin = LifecyclePlugin
-    module.BadRelationalDB = BadRelationalDB
-    monkeypatch.setitem(sys.modules, "fake_plugins", module)
-    return module
+def manager_plugins(fake_plugins_module):
+    fake_plugins_module.LifecyclePlugin = LifecyclePlugin
+    fake_plugins_module.BadRelationalDB = BadRelationalDB
+    return fake_plugins_module
 
 
 def _write_registry(tmp_path: Path, content: str) -> PluginManager:
@@ -80,7 +38,7 @@ def _write_registry(tmp_path: Path, content: str) -> PluginManager:
     return PluginManager(config_path=config)
 
 
-def test_load_registers_and_routes(fake_plugins_module, tmp_path):
+def test_load_registers_and_routes(manager_plugins, tmp_path):
     mgr = _write_registry(
         tmp_path,
         """
@@ -93,17 +51,17 @@ plugins:
   vector_db:
     chroma:
       module: fake_plugins
-      class: FakeVectorPlugin
+      class: FakeVectorDB
       active: true
 """,
     )
     mgr.load()
 
     assert isinstance(mgr.get_plugin("relational_db"), FakeRelationalDB)
-    assert isinstance(mgr.get_plugin("vector_db"), FakeVectorPlugin)
+    assert isinstance(mgr.get_plugin("vector_db"), FakeVectorDB)
 
 
-def test_get_plugin_triggers_lazy_load(fake_plugins_module, tmp_path):
+def test_get_plugin_triggers_lazy_load(manager_plugins, tmp_path):
     mgr = _write_registry(
         tmp_path,
         """
@@ -118,7 +76,7 @@ plugins:
     assert isinstance(mgr.get_plugin("relational_db"), FakeRelationalDB)
 
 
-def test_inactive_plugin_is_not_active(fake_plugins_module, tmp_path):
+def test_inactive_plugin_is_not_active(manager_plugins, tmp_path):
     mgr = _write_registry(
         tmp_path,
         """
@@ -136,7 +94,7 @@ plugins:
         mgr.get_plugin("relational_db")
 
 
-def test_unknown_type_raises(fake_plugins_module, tmp_path):
+def test_unknown_type_raises(manager_plugins, tmp_path):
     mgr = _write_registry(
         tmp_path,
         """
@@ -151,7 +109,7 @@ plugins:
         mgr.load()
 
 
-def test_missing_module_raises(fake_plugins_module, tmp_path):
+def test_missing_module_raises(manager_plugins, tmp_path):
     mgr = _write_registry(
         tmp_path,
         """
@@ -167,7 +125,7 @@ plugins:
         mgr.load()
 
 
-def test_missing_class_raises(fake_plugins_module, tmp_path):
+def test_missing_class_raises(manager_plugins, tmp_path):
     mgr = _write_registry(
         tmp_path,
         """
@@ -183,7 +141,7 @@ plugins:
         mgr.load()
 
 
-def test_validation_rejects_non_conforming(fake_plugins_module, tmp_path):
+def test_validation_rejects_non_conforming(manager_plugins, tmp_path):
     mgr = _write_registry(
         tmp_path,
         """
@@ -205,7 +163,7 @@ def test_missing_registry_file_raises():
         mgr.load()
 
 
-def test_lifecycle_initialize_and_close(fake_plugins_module, tmp_path):
+def test_lifecycle_initialize_and_close(manager_plugins, tmp_path):
     LifecyclePlugin.initialize_calls = 0
     LifecyclePlugin.close_calls = 0
     mgr = _write_registry(

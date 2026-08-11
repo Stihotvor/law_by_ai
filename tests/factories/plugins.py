@@ -1,15 +1,14 @@
-"""Tests for core/plugins/protocols (ADR-0001)."""
+"""Fake plugin classes and factories for tests (ADR-0001).
 
-from core.plugins.protocols import (
-    EmbeddingPlugin,
-    GraphDBPlugin,
-    JsonDict,
-    KnowledgeSourcePlugin,
-    LLMPlugin,
-    RelationalDBPlugin,
-    RerankingPlugin,
-    VectorDBPlugin,
-)
+The fake classes satisfy the plugin protocols and are importable under the
+``fake_plugins`` module name so that ``PluginManager.load()`` can import them
+via ``importlib`` exactly like real plugins: the shared
+``fake_plugins_module`` fixture registers this module in ``sys.modules``
+(see ``tests/fixtures/plugins.py``).
+
+The ``make_*`` functions are factories that return fresh instances, used for
+protocol conformance checks (``tests/unit/plugins/test_protocols.py``).
+"""
 
 
 class FakeRelationalDB:
@@ -116,27 +115,60 @@ class FakeReranking:
         return documents[:top_k]
 
 
-class NotARelationalDB:
-    def save_document(self, document, tenant_id=None):
-        return "doc1"
+# Plugin type -> (fake class, factory) for every protocol (TYPE_TO_PROTOCOL).
+FAKE_PLUGINS: dict[str, type] = {
+    "relational_db": FakeRelationalDB,
+    "vector_db": FakeVectorDB,
+    "graph_db": FakeGraphDB,
+    "knowledge_source": FakeKnowledgeSource,
+    "embedding": FakeEmbedding,
+    "llm": FakeLLM,
+    "reranking": FakeReranking,
+}
 
 
-def test_conforming_classes_satisfy_protocols():
-    assert isinstance(FakeRelationalDB(), RelationalDBPlugin)
-    assert isinstance(FakeVectorDB(), VectorDBPlugin)
-    assert isinstance(FakeGraphDB(), GraphDBPlugin)
-    assert isinstance(FakeKnowledgeSource(), KnowledgeSourcePlugin)
-    assert isinstance(FakeEmbedding(), EmbeddingPlugin)
-    assert isinstance(FakeLLM(), LLMPlugin)
-    assert isinstance(FakeReranking(), RerankingPlugin)
+def make_fake_relational_db() -> FakeRelationalDB:
+    return FakeRelationalDB()
 
 
-def test_non_conforming_class_fails_runtime_check():
-    assert not isinstance(NotARelationalDB(), RelationalDBPlugin)
+def make_fake_vector_db() -> FakeVectorDB:
+    return FakeVectorDB()
 
 
-def test_json_dict_type_alias():
-    # JsonDict is a type alias for dict[str, Any]
-    d: JsonDict = {"key": "value"}
-    assert isinstance(d, dict)
-    assert d["key"] == "value"
+def make_fake_graph_db() -> FakeGraphDB:
+    return FakeGraphDB()
+
+
+def make_fake_knowledge_source() -> FakeKnowledgeSource:
+    return FakeKnowledgeSource()
+
+
+def make_fake_embedding() -> FakeEmbedding:
+    return FakeEmbedding()
+
+
+def make_fake_llm() -> FakeLLM:
+    return FakeLLM()
+
+
+def make_fake_reranking() -> FakeReranking:
+    return FakeReranking()
+
+
+__all__ = [
+    "FAKE_PLUGINS",
+    "FakeEmbedding",
+    "FakeGraphDB",
+    "FakeKnowledgeSource",
+    "FakeLLM",
+    "FakeRelationalDB",
+    "FakeReranking",
+    "FakeVectorDB",
+    "make_fake_embedding",
+    "make_fake_graph_db",
+    "make_fake_knowledge_source",
+    "make_fake_llm",
+    "make_fake_relational_db",
+    "make_fake_reranking",
+    "make_fake_vector_db",
+]

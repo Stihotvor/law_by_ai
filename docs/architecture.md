@@ -554,10 +554,14 @@ law_by_ai/
 │   ├── Dockerfile
 │   └── docker-compose.yml   # services + healthchecks
 ├── tests/
-│   ├── test_plugins/
-│   ├── test_agents/
-│   ├── test_tasks/
-│   └── test_security/       # auth, rbac, tenant leak tests
+│   ├── conftest.py          # global pytest config + pytest_plugins
+│   ├── fixtures/            # shared pytest fixtures (auto-loaded)
+│   ├── factories/           # fake classes + make_* builders
+│   ├── unit/                # unit tests, no external services
+│   │   ├── config/
+│   │   └── plugins/
+│   ├── integration/         # postgres/redis tests (marked `integration`)
+│   └── e2e/                 # whole-stack tests
 ├── scripts/
 ├── docs/                    # mkdocs documentation
 ├── pyproject.toml           # project metadata, deps, ruff + pytest config
