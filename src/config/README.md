@@ -1,8 +1,10 @@
 # Config
 
-Runtime configuration and plugin registration (ADR-0001).
+Runtime configuration.
 
 - `settings.py` — environment-based application configuration
-- `plugins.py` — plugin registration facade (loads/accesses via `PluginManager`)
-- `plugins.yaml` — protocol → implementation registration, loaded by `PluginManager`
+- `plugins.py` — **DEPRECATED** plugin registration facade (ADR-0014); no
+  `relational_db` entry is routed here anymore
+- `plugins.yaml` — **DEPRECATED** protocol → implementation registry; no active
+  entries (ADR-0014)
 - `.env.example` — documented environment variables (copy to `.env`)

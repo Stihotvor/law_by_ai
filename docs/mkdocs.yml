@@ -96,6 +96,7 @@ nav:
   - Home: index.md
   - Intention: intention.md
   - Architecture: architecture.md
+  - Migrations: migrations.md
   - ADRs:
       - ADR Index: adr/index.md
       - 0001 - Plugin Architecture: adr/0001-plugin-architecture.md
@@ -110,3 +111,5 @@ nav:
       - 0010 - Health Checks: adr/0010-health-checks.md
       - 0011 - SLA & Budget: adr/0011-sla-budget.md
       - 0012 - License & Contribution Model: adr/0012-license-contribution-model.md
+      - 0013 - Streamlit Authenticator: adr/0013-streamlit-authenticator.md
+      - 0014 - Hardcoded PostgreSQL: adr/0014-hardcoded-postgresql.md

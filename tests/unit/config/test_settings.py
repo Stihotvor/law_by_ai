@@ -39,7 +39,7 @@ def test_defaults_when_no_environment(monkeypatch):
     assert settings.postgres_db == "lawbyai"
     assert settings.postgres_host == "localhost"
     assert settings.postgres_port == "5432"
-    assert settings.postgres_url == "postgresql://lawbyai:lawbyai@localhost:5432/lawbyai"
+    assert settings.postgres_url == "postgresql+psycopg://lawbyai:lawbyai@localhost:5432/lawbyai"
     assert settings.redis_user == ""
     assert settings.redis_password == ""
     assert settings.redis_host == "localhost"
@@ -81,7 +81,9 @@ def test_database_url_assembled_from_postgres_parts(monkeypatch):
 
     settings = Settings()
 
-    assert settings.postgres_url == "postgresql://admin:p%40ss%3Aword@db.internal:5433/legal"
+    assert (
+        settings.postgres_url == "postgresql+psycopg://admin:p%40ss%3Aword@db.internal:5433/legal"
+    )
 
 
 def test_redis_url_assembled_from_parts(monkeypatch):

@@ -32,7 +32,7 @@ change tracking and knowledge graph exploration.
 
     ---
 
-    System design, plugin system, data flow, and implementation phases.
+    System design, direct integrations, data flow, and implementation phases.
 
     [:octicons-arrow-right-24: Explore the Architecture](architecture.md)
 
@@ -51,6 +51,6 @@ change tracking and knowledge graph exploration.
 ## 🚧 Status
 
 This project is in early implementation. The Intention doc captures our scope,
-the Architecture doc details the plugin-based design, and the
+the Architecture doc details the direct-integration design, and the
 [project board](https://github.com/Stihotvor/law_by_ai/issues) tracks all
 active work across 7 milestones.

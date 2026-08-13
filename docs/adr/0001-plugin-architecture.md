@@ -1,8 +1,12 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # ADR-0001: Protocol-based plugins with YAML registration
+
+> **Superseded by [ADR-0014](0014-hardcoded-postgresql.md).** PostgreSQL is now
+> a direct, hardcoded integration (`PostgreSQLStore`) and the plugin system is
+> deprecated for a one-person project. This ADR is kept for history.
 
 ## Context
 
@@ -44,6 +48,10 @@ matured, we need a plugin mechanism that:
 - [Intention](../intention.md) #24
 
 ## Status
+
+Superseded by [ADR-0014](0014-hardcoded-postgresql.md) — the relational store
+became a hardcoded direct integration and the plugin system is being deprecated.
+The implementation history below is preserved for reference.
 
 Accepted. Implemented in PR #71 (`feat/config-settings-plugins`): the seven
 protocol contracts, `PluginManager`, the `config/plugins.yaml` registry, and

@@ -1,11 +1,13 @@
 # Plugins (implementations)
 
-Concrete providers implementing the protocols in `core/plugins/` (ADR-0001).
-Selected and configured via `config/plugins.yaml`; swapping a backend is a
-config change, not a code change.
+> **DEPRECATED (ADR-0014).** The plugin system is being phased out for a
+> one-person project. PostgreSQL is now a **direct integration**:
+> `relational_db/postgres.py` provides `PostgreSQLStore`, used directly by
+> agents/UI/tasks (no `PluginManager` routing). The remaining plugin types are
+> retained as deprecated scaffolding until each backend becomes a direct
+> dependency.
 
-- `postgresql.py` — DatabasePlugin (metadata, chunks, full-text search)
-- `chroma.py` / `qdrant.py` — VectorDBPlugin (in-memory Chroma MVP → Qdrant)
-- `memgraph.py` / `neo4j.py` — GraphDBPlugin (Memgraph MVP → Neo4j)
-- `web_etl.py` / `git_etl.py` — ETLSourcePlugin
-- `sentence_transformers.py` — EmbeddingPlugin (eval-selected, ADR-0009)
+- `relational_db/postgres.py` — `PostgreSQLStore` (**direct integration**,
+  schema via Alembic migrations, ADR-0014)
+- `vector_db/…`, `graph_db/…`, `knowledge_source/…`, `embedding/…`, `llm/…`,
+  `reranking/…` — deprecated placeholders (ADR-0014)

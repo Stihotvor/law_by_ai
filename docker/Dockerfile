@@ -34,6 +34,10 @@ FROM base AS runtime
 
 COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
 COPY --from=builder --chown=appuser:appuser /app/src /app/src
+# Alembic config + migration scripts are needed at runtime: the app brings the
+# schema up to date (alembic upgrade head) on startup (issue #9).
+COPY --from=builder --chown=appuser:appuser /app/alembic.ini /app/alembic.ini
+COPY --from=builder --chown=appuser:appuser /app/migrations /app/migrations
 
 USER appuser
 EXPOSE 8501

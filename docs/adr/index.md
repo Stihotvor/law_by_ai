@@ -12,10 +12,10 @@ status: new
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| [ADR-0001](0001-plugin-architecture.md) | Protocol-based plugins with YAML registration | Proposed | 2026-07-31 |
+| [ADR-0001](0001-plugin-architecture.md) | Protocol-based plugins with YAML registration | Superseded by ADR-0014 | 2026-07-31 |
 | [ADR-0002](0002-graph-database.md) | Memgraph (MVP) → Neo4j (production) | Proposed | 2026-07-31 |
 | [ADR-0003](0003-multi-tenancy.md) | Shared document storage, per-tenant state | Proposed | 2026-07-31 |
-| [ADR-0004](0004-auth-rbac.md) | JWT auth + RBAC (admin/user) | Proposed | 2026-07-31 |
+| [ADR-0004](0004-auth-rbac.md) | JWT auth + RBAC (admin/user) | Superseded by ADR-0013 | 2026-07-31 |
 | [ADR-0005](0005-observability.md) | structlog + OTel → Grafana Alloy → Grafana Cloud | Proposed | 2026-07-31 |
 | [ADR-0006](0006-celery-reliability.md) | Celery retries + in-DB failed-task registry | Proposed | 2026-07-31 |
 | [ADR-0007](0007-document-diffs.md) | Git-backed document-level diffs | Proposed | 2026-07-31 |
@@ -24,6 +24,8 @@ status: new
 | [ADR-0010](0010-health-checks.md) | Container health checks | Proposed | 2026-07-31 |
 | [ADR-0011](0011-sla-budget.md) | Efficiency budget (4–6 GB + SLM) and basic SLAs | Proposed | 2026-07-31 |
 | [ADR-0012](0012-license-contribution-model.md) | MIT license + contribution model (DCO, invite-only) | Proposed | 2026-08-03 |
+| [ADR-0013](0013-streamlit-authenticator.md) | streamlit-authenticator for the core app (JWT replaced) | Accepted | 2026-08-12 |
+| [ADR-0014](0014-hardcoded-postgresql.md) | Hardcoded PostgreSQL; plugin system deprecated | Accepted | 2026-08-12 |
 
 ## How to add an ADR
 

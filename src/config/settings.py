@@ -25,6 +25,15 @@ Variable               Purpose                                Default
 ``CELERY_RESULT_BACKEND_URL``  Celery result backend URL      ``REDIS_URL``
 ``APP_PORT``           Streamlit port                         ``8501``
 ``APP_NAME``           Application name                       ``law-by-ai``
+``LLM_BASE_URL``          OpenAI-compatible LLM/SLM base URL      ``http://localhost:11434/v1``
+``LLM_API_KEY``           LLM API key (empty for local)           ``(empty)``
+``LLM_MODELS``            per-agent models ``agent=model,...``    ``(empty)``
+``EMBEDDING_BASE_URL``    embedding provider base URL             ``http://localhost:11434/v1``
+``EMBEDDING_API_KEY``     embedding API key (empty for local)     ``(empty)``
+``EMBEDDING_MODEL``       embedding model name                    ``nomic-embed-text``
+``RERANK_BASE_URL``       reranking provider base URL             ``https://api.cohere.com/v1``
+``RERANK_API_KEY``        reranking API key                       ``(empty)``
+``RERANK_MODEL``          reranking model name                    ``rerank-v3.5``
 =====================  =====================================  ================================
 
 Usage::
@@ -100,7 +109,7 @@ class Settings:
             return url
         user = quote(self.postgres_user, safe="")
         password = quote(self.postgres_password, safe="")
-        return f"postgresql://{user}:{password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        return f"postgresql+psycopg://{user}:{password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
     # --- Redis / Celery ------------------------------------------------------
     @property
@@ -156,6 +165,62 @@ class Settings:
     def app_port(self) -> int:
         """Streamlit port (used by the docker-compose ``app`` service)."""
         return int(os.getenv("APP_PORT", "8501"))
+
+    # --- LLM / embeddings / reranking (ADR-0014) ---------------------------
+    @property
+    def llm_base_url(self) -> str:
+        """Base URL of the OpenAI-compatible LLM/SLM endpoint."""
+        return os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
+
+    @property
+    def llm_api_key(self) -> str:
+        """API key for the LLM endpoint (empty for local SLMs)."""
+        return os.getenv("LLM_API_KEY", "")
+
+    @property
+    def llm_models(self) -> dict[str, str]:
+        """Per-agent model names: ``{"<agent>": "<model>"}``.
+
+        Parsed from ``LLM_MODELS`` as comma-separated ``agent=model`` pairs,
+        e.g. ``LLM_MODELS="research=gpt-4o-mini,fetcher=qwen2.5:7b"``.
+        """
+        raw = os.getenv("LLM_MODELS", "")
+        models: dict[str, str] = {}
+        for pair in raw.split(","):
+            if "=" in pair:
+                agent, _, model = pair.partition("=")
+                models[agent.strip()] = model.strip()
+        return models
+
+    @property
+    def embedding_base_url(self) -> str:
+        """Base URL of the embedding provider (may differ from the LLM)."""
+        return os.getenv("EMBEDDING_BASE_URL", "http://localhost:11434/v1")
+
+    @property
+    def embedding_api_key(self) -> str:
+        """API key for the embedding provider (empty for local endpoints)."""
+        return os.getenv("EMBEDDING_API_KEY", "")
+
+    @property
+    def embedding_model(self) -> str:
+        """Embedding model name (eval-selected, ADR-0009)."""
+        return os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
+
+    @property
+    def rerank_base_url(self) -> str:
+        """Base URL of the reranking provider (Cohere by default)."""
+        return os.getenv("RERANK_BASE_URL", "https://api.cohere.com/v1")
+
+    @property
+    def rerank_api_key(self) -> str:
+        """API key for the reranking provider."""
+        return os.getenv("RERANK_API_KEY", "")
+
+    @property
+    def rerank_model(self) -> str:
+        """Reranking model name (Cohere by default)."""
+        return os.getenv("RERANK_MODEL", "rerank-v3.5")
 
 
 @lru_cache(maxsize=1)
