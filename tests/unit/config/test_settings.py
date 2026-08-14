@@ -21,7 +21,14 @@ _ENV_KEYS = (
     "REDIS_PASSWORD",
     "REDIS_PORT",
     "REDIS_URL",
-    "REDIS_USER",
+    "LLM_MODEL",
+    "LLM_MODEL_DOCUMENT_FETCHER",
+    "LLM_MODEL_DOCUMENT_PROCESSOR",
+    "LLM_MODEL_LEGAL_RESEARCH",
+    "LLM_MODEL_CHANGE_TRACKER",
+    "LLM_MODEL_KNOWLEDGE_GRAPH",
+    "LLM_MODEL_ANALYSIS",
+    "LLM_MODEL_BUREAUCRACY_ASSISTANT",
 )
 
 
@@ -130,6 +137,46 @@ def test_celery_urls_fall_back_to_redis(monkeypatch):
 
     assert settings.celery_broker_url == "redis://redis:6379/0"
     assert settings.celery_result_backend_url == "redis://redis:6379/0"
+
+
+def test_llm_model_defaults_to_empty_and_agents_fall_back(monkeypatch):
+    _clear_env(monkeypatch)
+    settings = Settings()
+
+    assert settings.llm_model == ""
+    for name in (
+        "document_fetcher",
+        "document_processor",
+        "legal_research",
+        "change_tracker",
+        "knowledge_graph",
+        "analysis",
+        "bureaucracy_assistant",
+    ):
+        assert getattr(settings, f"llm_model_{name}") == ""
+
+
+def test_llm_model_default_applies_to_all_agents(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("LLM_MODEL", "qwen2.5:7b")
+
+    settings = Settings()
+
+    assert settings.llm_model == "qwen2.5:7b"
+    assert settings.llm_model_legal_research == "qwen2.5:7b"
+    assert settings.llm_model_document_fetcher == "qwen2.5:7b"
+
+
+def test_llm_model_per_agent_override(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("LLM_MODEL", "qwen2.5:7b")
+    monkeypatch.setenv("LLM_MODEL_LEGAL_RESEARCH", "gpt-4o-mini")
+
+    settings = Settings()
+
+    assert settings.llm_model == "qwen2.5:7b"
+    assert settings.llm_model_legal_research == "gpt-4o-mini"
+    assert settings.llm_model_document_fetcher == "qwen2.5:7b"
 
 
 def test_get_settings_is_a_singleton():

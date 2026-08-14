@@ -27,7 +27,8 @@ Variable               Purpose                                Default
 ``APP_NAME``           Application name                       ``law-by-ai``
 ``LLM_BASE_URL``          OpenAI-compatible LLM/SLM base URL      ``http://localhost:11434/v1``
 ``LLM_API_KEY``           LLM API key (empty for local)           ``(empty)``
-``LLM_MODELS``            per-agent models ``agent=model,...``    ``(empty)``
+``LLM_MODEL``             default model (all agents unless overridden)  ``(empty)``
+``LLM_MODEL_<AGENT>``     per-agent model override (``LLM_MODEL_LEGAL_RESEARCH``)  ``(LLM_MODEL)``
 ``EMBEDDING_BASE_URL``    embedding provider base URL             ``http://localhost:11434/v1``
 ``EMBEDDING_API_KEY``     embedding API key (empty for local)     ``(empty)``
 ``EMBEDDING_MODEL``       embedding model name                    ``nomic-embed-text``
@@ -178,19 +179,45 @@ class Settings:
         return os.getenv("LLM_API_KEY", "")
 
     @property
-    def llm_models(self) -> dict[str, str]:
-        """Per-agent model names: ``{"<agent>": "<model>"}``.
+    def llm_model(self) -> str:
+        """Default LLM/SLM model name; per-agent ``LLM_MODEL_<AGENT>``
+        variables override this for individual agents."""
+        return os.getenv("LLM_MODEL", "")
 
-        Parsed from ``LLM_MODELS`` as comma-separated ``agent=model`` pairs,
-        e.g. ``LLM_MODELS="research=gpt-4o-mini,fetcher=qwen2.5:7b"``.
-        """
-        raw = os.getenv("LLM_MODELS", "")
-        models: dict[str, str] = {}
-        for pair in raw.split(","):
-            if "=" in pair:
-                agent, _, model = pair.partition("=")
-                models[agent.strip()] = model.strip()
-        return models
+    @property
+    def llm_model_document_fetcher(self) -> str:
+        """Model for the DocumentFetcher agent (falls back to ``LLM_MODEL``)."""
+        return os.getenv("LLM_MODEL_DOCUMENT_FETCHER", self.llm_model)
+
+    @property
+    def llm_model_document_processor(self) -> str:
+        """Model for the DocumentProcessor agent (falls back to ``LLM_MODEL``)."""
+        return os.getenv("LLM_MODEL_DOCUMENT_PROCESSOR", self.llm_model)
+
+    @property
+    def llm_model_legal_research(self) -> str:
+        """Model for the LegalResearch agent (falls back to ``LLM_MODEL``)."""
+        return os.getenv("LLM_MODEL_LEGAL_RESEARCH", self.llm_model)
+
+    @property
+    def llm_model_change_tracker(self) -> str:
+        """Model for the ChangeTracker agent (falls back to ``LLM_MODEL``)."""
+        return os.getenv("LLM_MODEL_CHANGE_TRACKER", self.llm_model)
+
+    @property
+    def llm_model_knowledge_graph(self) -> str:
+        """Model for the KnowledgeGraph agent (falls back to ``LLM_MODEL``)."""
+        return os.getenv("LLM_MODEL_KNOWLEDGE_GRAPH", self.llm_model)
+
+    @property
+    def llm_model_analysis(self) -> str:
+        """Model for the Analysis agent (falls back to ``LLM_MODEL``)."""
+        return os.getenv("LLM_MODEL_ANALYSIS", self.llm_model)
+
+    @property
+    def llm_model_bureaucracy_assistant(self) -> str:
+        """Model for the BureaucracyAssistant agent (falls back to ``LLM_MODEL``)."""
+        return os.getenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", self.llm_model)
 
     @property
     def embedding_base_url(self) -> str:
