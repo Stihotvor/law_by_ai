@@ -13,26 +13,26 @@ status: draft
 ## Overview
 
 Law by AI is a self-hosted, multi-tenant platform for legal document ingestion,
-processing, retrieval, and analysis. The system is built around a
-**protocol-based plugin architecture** where five core plugin types (Database,
-Vector DB, Graph DB, ETL Source, Embedding) are registered in a YAML config and
-routed dynamically by a `PluginManager`.
+processing, retrieval, and analysis. PostgreSQL is a **direct, hardcoded
+integration** (ADR-0014); the protocol-based plugin system is **deprecated** and
+each backend will become a direct dependency.
 
 All services run under Docker-Compose and communicate over the internal network.
 
 > **Efficiency budget:** the whole stack must run **fast on ~4–6 GB RAM with a
-> small local model (SLM)**. This constrains model choices, plugin
-> implementations, and task design.
+> small local model (SLM)**. This constrains model choices, integrations,
+> and task design.
 
 ---
 
 ## Architecture Principles
 
-1. **Protocols over ABCs** — plugins are defined as `typing.Protocol`s and
-   registered via YAML; no inheritance hierarchy. (ADR-0001)
-2. **Swappable backends** — every backend (DB, vector, graph, ETL, embedding)
-   is replaceable without touching agent code.
-3. **Efficiency first** — 4–6 GB RAM + SLM budget governs every decision.
+1. **Direct integrations** — PostgreSQL (and later each store/model) is a
+   hardcoded dependency, not a swappable plugin. (ADR-0014)
+2. **Single provider per concern** — one relational store, one graph store, one
+   vector store; avoid multi-backend abstractions a one-person project cannot
+   maintain.
+3. **Efficiency first** — the RAM/SLM budget governs every decision.
 4. **Observable by default** — `structlog` JSON + OTel metrics/traces, shipped
    via Grafana Alloy → Grafana Cloud, anonymized. (ADR-0005)
 5. **Tenant-safe by construction** — multi-tenant isolation with automated
@@ -42,32 +42,42 @@ All services run under Docker-Compose and communicate over the internal network.
 
 ---
 
-## Plugin Architecture
+## PostgreSQL Integration (hardcoded, ADR-0014)
 
-The system defines **seven plugin types**. Each is a **Protocol** (duck-typed
-interface, no ABC inheritance). Concrete implementations are registered in
-`config/plugins.yaml` and loaded by `PluginManager`. (ADR-0001)
+PostgreSQL is the single relational store, accessed directly via
+`PostgreSQLStore` (`plugins/relational_db/postgres.py`) — no protocol
+indirection. Schema is managed by **Alembic migrations** (issue #9); see
+[Migrations](migrations.md) for commands.
 
-### 1. RelationalDBPlugin (`core/plugins/protocols/relational_db.py`)
+### `PostgreSQLStore` (`plugins/relational_db/postgres.py`)
 
 ```mermaid
 classDiagram
-    class RelationalDBPlugin {
-        <<protocol>>
+    class PostgreSQLStore {
         +save_document()
         +get_document()
         +search_documents()
         +get_recent_changes()
         +delete_document()
         +update_document()
+        +create_tenant()
+        +create_user()
+        +get_user_by_email()
+        +list_users()
+        +list_tenants()
     }
 ```
 
-**Default implementation**: PostgreSQL plugin (`plugins/postgresql.py`).
 **MVP note**: shared document storage; per-tenant notes/states/chats isolated
 via RLS (`tenant_id`). (ADR-0003)
 
-### 2. VectorDBPlugin (`core/plugins/protocols/vector_db.py`)
+### Deprecated plugin scaffolding
+
+The remaining six plugin types (`VectorDB`, `GraphDB`, `KnowledgeSource`,
+`Embedding`, `LLM`, `Reranking`) are **deprecated** per ADR-0014. Their
+protocols, `PluginManager`, and `config/plugins.yaml` stay in the tree for
+now but are phased out as each backend becomes a direct integration.
+`config/plugins.yaml` has **no** active registrations.
 
 ```mermaid
 classDiagram
@@ -79,15 +89,6 @@ classDiagram
         +create_collection()
         +delete_collection()
     }
-```
-
-**Default implementation**: Chroma (in-memory) for the MVP, Qdrant for
-production (`plugins/chroma.py`, `plugins/qdrant.py`).
-
-### 3. GraphDBPlugin (`core/plugins/protocols/graph_db.py`)
-
-```mermaid
-classDiagram
     class GraphDBPlugin {
         <<protocol>>
         +add_node()
@@ -99,44 +100,18 @@ classDiagram
         +get_all_nodes()
         +get_all_edges()
     }
-```
-
-**Default implementation**: Memgraph plugin (`plugins/memgraph.py`) for the MVP.
-**Production target**: Neo4j (`plugins/neo4j.py`). (ADR-0002)
-
-### 4. KnowledgeSourcePlugin (`core/plugins/protocols/knowledge_source.py`)
-
-```mermaid
-classDiagram
     class KnowledgeSourcePlugin {
         <<protocol>>
         +fetch()
         +validate_config()
         +list_sources()
     }
-```
-
-**Implementations**: Web source (`plugins/web_source.py`), Git source (`plugins/git_source.py`), Filesystem source (`plugins/filesystem_source.py`).
-
-### 5. EmbeddingPlugin (`core/plugins/protocols/embedding.py`)
-
-```mermaid
-classDiagram
     class EmbeddingPlugin {
         <<protocol>>
         +generate_embeddings()
         +get_model_info()
         +get_embedding_dimension()
     }
-```
-
-**Default implementation**: Sentence Transformers (`plugins/sentence_transformers.py`),
-model selected by evaluation on Polish legal texts. (ADR-0009)
-
-### 6. LLMPlugin (`core/plugins/protocols/llm.py`)
-
-```mermaid
-classDiagram
     class LLMPlugin {
         <<protocol>>
         +generate_response()
@@ -144,28 +119,26 @@ classDiagram
         +generate_rag_query()
         +traverse_graph()
     }
-```
-
-**Implementations**: OpenAI (`plugins/openai_llm.py`), Ollama (`plugins/ollama_llm.py`), local SLM (`plugins/slm_llm.py`).
-
-### 7. RerankingPlugin (`core/plugins/protocols/reranking.py`)
-
-```mermaid
-classDiagram
     class RerankingPlugin {
         <<protocol>>
         +rerank()
     }
 ```
 
-**Implementations**: Cohere (`plugins/cohere_rerank.py`), local (`plugins/local_rerank.py`).
+Future direction (ADR-0014): each of these becomes a **direct integration**:
 
-### PluginManager (`core/plugins/manager.py`)
+- **Graph**: Neo4j **AuraDB Free** (cloud-managed). (ADR-0002)
+- **Vector**: Qdrant.
+- **Knowledge sources**: web/git/filesystem ETL modules.
+- **Embedding**: a dedicated embedding provider (may differ from the LLM provider).
+- **LLM/SLM**: OpenAI-compatible endpoints; **each agent may use its own model**.
+- **Reranking**: Cohere.
+
+### PluginManager (`core/plugins/manager.py`) — deprecated
 
 - **YAML registration** — plugin classes listed in `config/plugins.yaml` and
-  loaded via `importlib`. (ADR-0001)
+  loaded via `importlib`. (ADR-0001, superseded)
 - **Type routing** — `get_plugin(type)` returns the correct initialized plugin.
-- **Configuration-based** — plugin selection driven by `config/settings.py`.
 - **Lifecycle** — `initialize()` → use → `close()` for clean shutdown.
 - **Singleton** — global `plugin_manager` instance.
 
@@ -180,15 +153,15 @@ graph TB
     end
     subgraph LawAI[Law by AI]
         UI[Streamlit UI]
-        Auth[JWT Auth + RBAC]
+        Auth[streamlit-authenticator + RBAC]
         Agents[Agents Layer]
-        PM[PluginManager]
+        Store[PostgreSQLStore]
         Celery[Celery + Redis]
     end
     subgraph Stores
         PG[(PostgreSQL)]
-        VDB[(Chroma/Qdrant)]
-        GDB[(Memgraph/Neo4j)]
+        VDB[(Qdrant)]
+        GDB[(Neo4j AuraDB)]
         EMB[Embedding Models]
         OCR[OCR Models]
     end
@@ -203,12 +176,12 @@ graph TB
     UI --> Auth
     UI --> Celery
     UI --> Agents
-    Agents --> PM
-    PM --> PG
-    PM --> VDB
-    PM --> GDB
-    PM --> EMB
-    PM --> OCR
+    Agents --> Store
+    Agents --> VDB
+    Agents --> GDB
+    Agents --> EMB
+    Agents --> OCR
+    Store --> PG
     Celery -->|queues| Agents
     UI -->|spans/metrics| OTel
     Agents -->|spans/metrics| OTel
@@ -228,16 +201,17 @@ graph TB
   - **Knowledge Graph** (P2) — visual exploration
   - **Changes Tracking** (P2) — **Git-backed diff-based** version comparison
   - **Bureaucracy Assistant** (P1) — step-by-step administrative procedures
-- **Auth**: all pages behind **JWT**; **RBAC** limits data management to
-  `admin` (users read-only). (ADR-0004)
+- **Auth**: all pages behind **streamlit-authenticator** (login widget,
+  bcrypt, signed session cookie); **RBAC** limits data management to
+  `admin` (users read-only). (ADR-0013, ADR-0004)
 - **Frameworks**: Streamlit + custom components.
 - **No public API** — API clients fetch data from the UI/backend directly.
 
 ### 2. Agents Layer
 
-Each agent is a Python class that consumes one or more plugins via the
-`PluginManager`. Agents are invoked by Celery tasks (async) or directly
-from the UI (synchronous).
+Each agent is a Python class that consumes the direct integrations
+(`PostgreSQLStore` today; later Qdrant, Neo4j, LLM/embedding clients). Agents
+are invoked by Celery tasks (async) or directly from the UI (synchronous).
 
 ```mermaid
 classDiagram
@@ -275,24 +249,24 @@ classDiagram
         +track_progress()
     }
 
-    DocumentFetcherAgent --> ETLSourcePlugin
-    DocumentFetcherAgent --> DatabasePlugin
-    DocumentProcessorAgent --> DatabasePlugin
-    DocumentProcessorAgent --> VectorDBPlugin
-    DocumentProcessorAgent --> GraphDBPlugin
-    DocumentProcessorAgent --> EmbeddingPlugin
-    LegalResearchAgent --> VectorDBPlugin
-    LegalResearchAgent --> GraphDBPlugin
-    LegalResearchAgent --> EmbeddingPlugin
-    ChangeTrackerAgent --> DatabasePlugin
-    ChangeTrackerAgent --> GraphDBPlugin
-    KnowledgeGraphAgent --> GraphDBPlugin
-    KnowledgeGraphAgent --> DatabasePlugin
-    AnalysisAgent --> VectorDBPlugin
-    AnalysisAgent --> GraphDBPlugin
-    AnalysisAgent --> EmbeddingPlugin
-    BureaucracyAssistantAgent --> DatabasePlugin
-    BureaucracyAssistantAgent --> VectorDBPlugin
+    DocumentFetcherAgent --> KnowledgeSource
+    DocumentFetcherAgent --> PostgreSQLStore
+    DocumentProcessorAgent --> PostgreSQLStore
+    DocumentProcessorAgent --> Qdrant
+    DocumentProcessorAgent --> Neo4j
+    DocumentProcessorAgent --> Embeddings
+    LegalResearchAgent --> Qdrant
+    LegalResearchAgent --> Neo4j
+    LegalResearchAgent --> Embeddings
+    ChangeTrackerAgent --> PostgreSQLStore
+    ChangeTrackerAgent --> Neo4j
+    KnowledgeGraphAgent --> Neo4j
+    KnowledgeGraphAgent --> PostgreSQLStore
+    AnalysisAgent --> Qdrant
+    AnalysisAgent --> Neo4j
+    AnalysisAgent --> Embeddings
+    BureaucracyAssistantAgent --> PostgreSQLStore
+    BureaucracyAssistantAgent --> Qdrant
 ```
 
 - **Execution model**: Human-in-the-loop — user triggers or approves each step.
@@ -315,41 +289,41 @@ classDiagram
   - Failed tasks persisted to a **PostgreSQL `failed_tasks` table**.
   - UI exposes "re-run failed task" for any unprocessed/stuck in-DB task.
 
-### 4. PostgreSQL
+### 4. PostgreSQL (direct, ADR-0014)
 
 - **Role**: Primary relational store.
 - **Stores**: Users, tenants, document metadata, text chunks, annotations,
   processing state, **failed-task registry**, full-text search index,
   per-tenant notes/chats.
 - **Multi-tenancy**: row-level security (RLS) with `tenant_id`. (ADR-0003)
-- **Accessed via**: `DatabasePlugin`.
+- **Schema**: managed by **Alembic migrations** (issue #9) — see
+  [Migrations](migrations.md).
+- **Accessed via**: `PostgreSQLStore` directly.
 
-### 5. Chroma (MVP) → Qdrant (Production)
+### 5. Qdrant
 
 - **Role**: Vector store for semantic search.
 - **Data**: Document chunk embeddings.
 - **Multi-tenant**: collection/partition per tenant.
-- **MVP choice**: in-memory Chroma keeps RAM footprint low on 4–6 GB budget.
-- **Accessed via**: `VectorDBPlugin`.
+- **Integration**: direct client (ADR-0014; VectorDBPlugin deprecated).
 
-### 6. Memgraph (MVP) → Neo4j (Production)
+### 6. Neo4j AuraDB (cloud-managed)
 
 - **Role**: Graph store for cross-reference tracking.
 - **Data**: Law articles and their relationships (amends, refers-to, depends-on,
   cited-by).
-- **MVP choice**: Memgraph — Cypher-compatible, low operational overhead.
-- **Migration**: same `GraphDBPlugin` Protocol; export graph, swap config.
-  (ADR-0002)
-- **Accessed via**: `GraphDBPlugin`.
+- **Hosting**: Neo4j **AuraDB Free** tier. (ADR-0002)
+- **Integration**: direct client (ADR-0014; GraphDBPlugin deprecated).
 
-### 7. Embedding & OCR Models
+### 7. Embedding, Reranking & LLM
 
-- **EmbeddingPlugin** — local Sentence Transformers model, chosen by
-  **evaluation on Polish legal texts**. (ADR-0009)
+- **Embedding** — dedicated embedding provider (may differ from the LLM
+  provider); chosen by **evaluation on Polish legal texts**. (ADR-0009)
+- **Reranking** — Cohere.
+- **LLM/SLM** — **OpenAI-compatible endpoints**; each agent may use its own
+  model (ADR-0014).
 - **OCR** — model chosen by **evaluation on Polish documents**; runs inside
   `DocumentFetcherAgent` under the RAM budget.
-- **LLM** — liteLLM proxy to **open-source lite models** (Gemma 4, Mistral
-  Nano, Ministral, etc.). (ADR-0009)
 
 ---
 
@@ -360,7 +334,7 @@ classDiagram
 - **Metrics**: counters/histograms (task duration, queue depth, search latency,
   error rates) exported via OTel.
 - **Traces**: OpenTelemetry distributed tracing across UI → Celery → agents →
-  plugins.
+  integrations.
 - **Export path**: OTel → **Grafana Alloy** → **Grafana Cloud**.
 - **Privacy**: no tenant/user identifiers, document content, or query text in
   telemetry; tenant ID is hashed.
@@ -376,12 +350,17 @@ graph LR
 
 ---
 
-## Security (ADR-0004)
+## Security (ADR-0004 / ADR-0013)
 
-- **Authentication**: JWT issued at login; validated on every request.
+- **Authentication**: `streamlit-authenticator` login/logout widgets with
+  signed session cookies; credentials come from the PostgreSQL user store
+  (bcrypt-hashed passwords), with a bundled dev admin fallback. (ADR-0013)
 - **Authorization (RBAC)**:
-  - `admin` — manage data (ingest, edit, delete documents, manage users).
-  - `user` — read-only (search, browse, query, diffs).
+  - `admin` — manages data: ingest documents, edit/delete, manage users.
+  - `user` — read-only: search, browse, query, view diffs.
+- Enforced in a shared auth/RBAC layer (`core/security/`) used by the UI and
+  agents; tenant context (`tenant_id`) is threaded from the authenticated
+  session into the contextvar and query paths.
 - **Multi-tenant isolation**: `tenant_id` enforced in every query path
   (PostgreSQL RLS, vector collection partitioning, graph subgraphs).
 - **Automated leak tests** assert cross-tenant access is impossible.
@@ -398,8 +377,8 @@ Source (PDF / DOCX / HTML / Web / Git)
          │
          ▼
   ┌──────────────┐
-  │ ETLSource    │  ← Web ETL Plugin / Git ETL Plugin
-  │ Plugin       │
+  │ ETL Source   │  ← Web ETL / Git ETL
+  │ Module       │
   └──────┬───────┘
          │ raw text
          ▼
@@ -409,9 +388,9 @@ Source (PDF / DOCX / HTML / Web / Git)
   └──────┬───────────┘
          │ LegalDocument
          ▼
-  ┌──────────────────┐
-  │ DatabasePlugin   │  → PostgreSQL (save document metadata)
-  └──────┬───────────┘
+   ┌──────────────────┐
+   │ PostgreSQLStore  │  → PostgreSQL (save document metadata)
+   └──────┬───────────┘
          │
          ▼
   ┌──────────────────┐
@@ -420,22 +399,19 @@ Source (PDF / DOCX / HTML / Web / Git)
   └──┬───────┬───────┘
      │       │
      ▼       ▼
-  Embedding    Graph
-  Plugin      Plugin
+  Embedding   Graph
+  (direct)   (Neo4j)
      │           │
      ▼           ▼
-  VectorDB    GraphDB     Database
-  Plugin      Plugin      Plugin
-  (Chroma/    (Memgraph/  (PG: chunks)
-   Qdrant)     Neo4j)
+   Qdrant     Neo4j      PostgreSQL
+  (vectors)  (graph)    (chunks)
 ```
 
-1. **ETL Source Plugin** fetches raw text from the source (web, Git, file, API).
+1. **ETL source module** fetches raw text from the source (web, Git, file, API).
 2. **DocumentFetcherAgent** runs OCR if needed, wraps the result in a
-   `LegalDocument` model, and persists it via `DatabasePlugin`.
-3. **DocumentProcessorAgent** chunks the text, generates embeddings via
-   `EmbeddingPlugin`, stores vectors via `VectorDBPlugin`, and builds graph
-   edges via `GraphDBPlugin`.
+   `LegalDocument` model, and persists it via `PostgreSQLStore`.
+3. **DocumentProcessorAgent** chunks the text, generates embeddings via the
+   embedding provider, stores vectors in Qdrant, and builds graph edges in Neo4j.
 
 ### Search & Q&A
 
@@ -450,26 +426,24 @@ User Query
 └──┬─────────┬──────────┘
    │         │
    ▼         ▼
-Database   VectorDB
-Plugin     Plugin
-(Postgres  (Chroma/
- FTS)       Qdrant)
+PostgreSQL  Qdrant
+(FTS)       (vectors)
    │         │
    └────┬────┘
         ▼
 ┌──────────────┐
-│ Re-ranker     │  (cross-encoder)
+│ Re-ranker     │  Cohere (cross-encoder)
 └──────┬───────┘
        │
        ▼
 ┌──────────────────┐
-│ Graph-Guided     │  GraphDBPlugin (Memgraph/Neo4j traversal)
+│ Graph-Guided     │  Neo4j AuraDB traversal
 │ Multi-Hop        │
 └──────┬───────────┘
        │
        ▼
 ┌──────────────────────────────────────┐
-│ Context + Prompt → liteLLM → SLM     │
+│ Context + Prompt → OpenAI-compatible │
 │ → Answer + Citations + Confidence    │
 └──────────────────────────────────────┘
 ```
@@ -487,16 +461,15 @@ law_by_ai/
 │   ├── __init__.py
 │   ├── plugins/
 │   │   ├── __init__.py
-│   │   ├── protocols/       # Plugin Protocols (one file per type)
-│   │   │   ├── relational_db.py    # RelationalDBPlugin
-│   │   │   ├── vector_db.py        # VectorDBPlugin
-│   │   │   ├── graph_db.py         # GraphDBPlugin
-│   │   │   ├── knowledge_source.py # KnowledgeSourcePlugin
-│   │   │   ├── embedding.py        # EmbeddingPlugin
-│   │   │   ├── llm.py              # LLMPlugin
-│   │   │   ├── reranking.py        # RerankingPlugin
+│   │   ├── protocols/       # DEPRECATED (ADR-0014): Plugin Protocols
+│   │   │   ├── vector_db.py        # VectorDBPlugin (deprecated)
+│   │   │   ├── graph_db.py         # GraphDBPlugin (deprecated)
+│   │   │   ├── knowledge_source.py # KnowledgeSourcePlugin (deprecated)
+│   │   │   ├── embedding.py        # EmbeddingPlugin (deprecated)
+│   │   │   ├── llm.py              # LLMPlugin (deprecated)
+│   │   │   ├── reranking.py        # RerankingPlugin (deprecated)
 │   │   │   └── types.py            # Shared type aliases (JsonDict)
-│   │   ├── manager.py       # PluginManager (YAML-driven loading)
+│   │   ├── manager.py       # PluginManager — deprecated (ADR-0014)
 │   │   └── exceptions.py    # Plugin-specific errors
 │   ├── security/
 │   │   ├── auth.py          # JWT issue/verify
@@ -506,15 +479,9 @@ law_by_ai/
 │       ├── logging.py       # structlog JSON config (anonymized)
 │       ├── metrics.py       # OTel metrics
 │       └── tracing.py       # OTel traces
-├── plugins/                 # Concrete plugin implementations
-│   ├── postgresql.py
-│   ├── chroma.py
-│   ├── qdrant.py
-│   ├── memgraph.py
-│   ├── neo4j.py
-│   ├── web_etl.py
-│   ├── git_etl.py
-│   └── sentence_transformers.py
+├── plugins/                 # Direct integrations + deprecated plugin impls
+│   └── relational_db/
+│       └── postgres.py      # PostgreSQLStore (direct, ADR-0014)
 ├── agents/
 │   ├── document_fetcher.py
 │   ├── document_processor.py
@@ -540,9 +507,12 @@ law_by_ai/
 │   └── components/
 ├── config/
 │   ├── settings.py          # Environment-based configuration
-│   ├── plugins.py           # Plugin registration facade (PluginManager)
-│   ├── plugins.yaml         # Protocol → implementation registration
+│   ├── plugins.py           # DEPRECATED plugin facade (ADR-0014)
+│   ├── plugins.yaml         # DEPRECATED registry — no active entries
 │   └── .env.example
+├── migrations/              # Alembic migrations (issue #9)
+│   ├── env.py
+│   └── versions/
 ├── data/                    # Data models
 │   └── models.py            # LegalDocument, DocumentChunk, GraphNode,
 │                            # AnalysisResult, FailedTask, Note/Chat
@@ -564,6 +534,7 @@ law_by_ai/
 │   └── e2e/                 # whole-stack tests
 ├── scripts/
 ├── docs/                    # mkdocs documentation
+├── alembic.ini              # Alembic configuration
 ├── pyproject.toml           # project metadata, deps, ruff + pytest config
 ├── uv.lock                  # locked dependency graph (uv)
 └── README.md
@@ -582,10 +553,10 @@ from the OS level. See the repo root `CONTRIBUTING.md` for setup.
 - **Per-tenant state** — notes, states, chats, and annotations are isolated
   per tenant.
 - **PostgreSQL**: row-level security (RLS) keyed on `tenant_id`.
-- **Chroma/Qdrant**: collection or partition per tenant.
-- **Memgraph/Neo4j**: subgraph per tenant (label-based).
-- Tenant context is threaded through agents and plugins via the `tenant_id`
-  field and enforced by middleware.
+- **Qdrant**: collection or partition per tenant.
+- **Neo4j**: subgraph per tenant (label-based).
+- Tenant context is threaded through agents and the data store via the
+  `tenant_id` field and enforced by middleware.
 - **Leak tests** (ADR-0003): automated tests assert no cross-tenant read/write.
 
 ---
@@ -599,9 +570,9 @@ Tenant
   │     ├── metadata (title, date, source, type, jurisdiction)
   │     ├── Chunk[] (DocumentChunk)
   │     │     ├── text
-  │     │     ├── embedding (→ VectorDBPlugin)
+  │     │     ├── embedding (→ Qdrant)
   │     │     └── position (page, offset)
-  │     └── GraphNode (→ GraphDBPlugin)
+  │     └── GraphNode (→ Neo4j)
   │            ├── article_id
   │            └── relationships: amends, refers-to, depends-on, cited-by
   ├── Citation (law, article, paragraph, confidence, source_url)
@@ -614,21 +585,21 @@ Tenant
 
 ## Technology Stack
 
-| Layer            | MVP                          | Production                |
-|------------------|------------------------------|---------------------------|
-| **UI**           | Streamlit                    | Streamlit                |
-| **Auth**         | JWT + RBAC                   | JWT + RBAC               |
-| **Task queue**   | Celery + Redis               | Celery + Redis           |
-| **Plugin system**| Protocol + YAML registration | Protocol + YAML          |
-| **Relational DB**| PostgreSQL (DatabasePlugin)  | PostgreSQL               |
-| **Vector store** | Chroma (in-memory)           | Qdrant                   |
-| **Graph store**  | Memgraph                     | Neo4j                    |
-| **Embeddings**   | Sentence Transformers (eval-selected) | Same           |
-| **OCR**          | Tesseract/EasyOCR (eval-selected)     | Same           |
-| **LLM gateway**  | liteLLM → open-source SLMs (Gemma 4, Mistral Nano, Ministral) | Same |
-| **Observability**| structlog JSON + OTel → Grafana Alloy → Grafana Cloud | Same |
-| **Health checks**| Docker healthchecks per service | Same + probes           |
-| **Deployment**   | Docker-Compose               | Docker-Compose           |
+| Layer            | Choice                                                          |
+|------------------|-----------------------------------------------------------------|
+| **UI**           | Streamlit                                                        |
+| **Auth**         | streamlit-authenticator + RBAC (ADR-0013)                        |
+| **Task queue**   | Celery + Redis                                                   |
+| **Relational DB**| PostgreSQL — direct integration + Alembic migrations (ADR-0014)  |
+| **Vector store** | Qdrant                                                           |
+| **Graph store**  | Neo4j **AuraDB Free** (cloud) (ADR-0002)                         |
+| **Embeddings**   | Dedicated embedding provider (eval-selected, ADR-0009)           |
+| **Reranking**    | Cohere                                                           |
+| **LLM/SLM**      | OpenAI-compatible endpoints; per-agent models (ADR-0014)         |
+| **OCR**          | Tesseract/EasyOCR (eval-selected, ADR-0009)                      |
+| **Observability**| structlog JSON + OTel → Grafana Alloy → Grafana Cloud (ADR-0005) |
+| **Health checks**| Docker healthchecks per service                                  |
+| **Deployment**   | Docker-Compose                                                   |
 
 ---
 
@@ -659,13 +630,12 @@ gantt
 
 ## Migration Paths
 
-1. **Plugin implementations** can be swapped without changing agent code — the
-   `PluginManager` + Protocol abstraction makes each backend replaceable.
-2. **Chroma → Qdrant**: implement `QdrantPlugin` against the same
-   `VectorDBPlugin` Protocol; re-embed/export and swap the YAML config.
-3. **Memgraph → Neo4j**: implement `Neo4jPlugin` against the same
-   `GraphDBPlugin` Protocol; export the graph and swap the config. (ADR-0002)
-4. **Manual → Automated legal updates**: Celery Beat schedule replaces manual
+1. **PostgreSQL schema** — managed by Alembic migrations (issue #9); see
+   [Migrations](migrations.md).
+2. **Plugin → direct integration** — each deprecated plugin type (VectorDB,
+   GraphDB, LLM, Embedding, Reranking, KnowledgeSource) is replaced by a direct
+   client as its integration lands. (ADR-0014)
+3. **Manual → Automated legal updates**: Celery Beat schedule replaces manual
    triggers.
 
 ---
@@ -677,10 +647,10 @@ Records. See the [ADR index](adr/index.md) for full records.
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [ADR-0001](adr/0001-plugin-architecture.md) | Protocol-based plugins with YAML registration | Proposed |
-| [ADR-0002](adr/0002-graph-database.md) | Memgraph (MVP) → Neo4j (production) | Proposed |
+| [ADR-0001](adr/0001-plugin-architecture.md) | Protocol-based plugins with YAML registration | Superseded by ADR-0014 |
+| [ADR-0002](adr/0002-graph-database.md) | Neo4j AuraDB (production graph DB) | Proposed |
 | [ADR-0003](adr/0003-multi-tenancy.md) | Shared document storage, per-tenant state | Proposed |
-| [ADR-0004](adr/0004-auth-rbac.md) | JWT auth + RBAC (admin/user) | Proposed |
+| [ADR-0004](adr/0004-auth-rbac.md) | JWT auth + RBAC (admin/user) — JWT superseded by ADR-0013, RBAC retained | Superseded | 2026-07-31 |
 | [ADR-0005](adr/0005-observability.md) | structlog + OTel → Grafana Alloy → Grafana Cloud | Proposed |
 | [ADR-0006](adr/0006-celery-reliability.md) | Celery retries + in-DB failed-task registry + re-run | Proposed |
 | [ADR-0007](adr/0007-document-diffs.md) | Git-backed document-level diffs | Proposed |
@@ -689,13 +659,15 @@ Records. See the [ADR index](adr/index.md) for full records.
 | [ADR-0010](adr/0010-health-checks.md) | Container health checks | Proposed |
 | [ADR-0011](adr/0011-sla-budget.md) | Efficiency budget (4–6 GB + SLM) and basic SLAs | Proposed |
 | [ADR-0012](adr/0012-license-contribution-model.md) | MIT license + contribution model (DCO, invite-only) | Proposed |
+| [ADR-0013](adr/0013-streamlit-authenticator.md) | streamlit-authenticator for the core app (JWT replaced) | Accepted |
+| [ADR-0014](adr/0014-hardcoded-postgresql.md) | Hardcoded PostgreSQL; plugin system deprecated | Accepted |
 
 ---
 
 ## Future Considerations
 
 - **Public API server** (FastAPI) for third-party integrations.
-- **Additional plugin types** (e.g., notification plugin).
+- **Additional integrations** as features demand (e.g., notifications).
 - **Annotations and comments** on documents.
 - **Collaboration features** (shared tenants).
 - **Multi-language UI** (Ukrainian, Polish).

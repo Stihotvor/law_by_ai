@@ -74,6 +74,12 @@ class PluginManager:
         except yaml.YAMLError as exc:
             raise PluginLoadError(f"invalid plugin registry YAML: {exc}") from exc
 
+        if not isinstance(data, dict):
+            raise PluginLoadError(
+                f"plugin registry root must be a mapping in {self._config_path}, "
+                f"got {type(data).__name__}"
+            )
+
         registry = data.get("plugins", {})
         if not isinstance(registry, dict):
             raise PluginLoadError(

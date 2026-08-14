@@ -1,6 +1,11 @@
 # Plugin registry (ADR-0001) — protocol → implementation mapping, loaded by
 # PluginManager (core/plugins/manager.py) via config.plugins.
 #
+# DEPRECATED (ADR-0014): the plugin system is being phased out for a one-person
+# project. PostgreSQL is now a HARDCODED direct integration
+# (plugins.relational_db.postgres.PostgreSQLStore) and no longer routed through
+# this registry. No `relational_db` entry may be added here again.
+#
 # Format:
 #   plugins:
 #     <type>:            # one of the seven protocol types below
@@ -19,39 +24,37 @@
 # Exactly one entry per type may be active.
 
 plugins: {}
+# Example registrations for the remaining six plugin types — uncommenting an
+# entry whose module does not exist yet fails PluginManager.load() validation
+# deliberately.
 # plugins:
-#   relational_db:
-#     postgresql:
-#       module: plugins.postgresql
-#       class: PostgreSQLPlugin
-#       active: true
 #   vector_db:
-#     chroma:
-#       module: plugins.chroma
-#       class: ChromaPlugin
+#     qdrant:
+#       module: plugins.vector_db.qdrant
+#       class: QdrantPlugin
 #       active: true
 #   graph_db:
-#     memgraph:
-#       module: plugins.memgraph
-#       class: MemgraphPlugin
+#     neo4j:
+#       module: plugins.graph_db.neo4j
+#       class: Neo4jPlugin
 #       active: true
 #   knowledge_source:
 #     web_etl:
-#       module: plugins.web_etl
+#       module: plugins.knowledge_source.web_etl
 #       class: WebETLSource
 #       active: true
 #   embedding:
 #     sentence_transformers:
-#       module: plugins.sentence_transformers
+#       module: plugins.embedding.sentence_transformers
 #       class: SentenceTransformersPlugin
 #       active: true
 #   llm:
 #     openai:
-#       module: plugins.openai_llm
+#       module: plugins.llm.openai_llm
 #       class: OpenAILLM
 #       active: true
 #   reranking:
 #     cohere:
-#       module: plugins.cohere_rerank
+#       module: plugins.reranking.cohere_rerank
 #       class: CohereReranker
 #       active: true

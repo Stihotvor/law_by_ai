@@ -1,6 +1,7 @@
 {
-  "include": ["src"],
+  "include": ["src", "migrations"],
   "exclude": ["tests", "docs", "site", "scripts", "evals"],
   "typeCheckingMode": "basic",
-  "pythonVersion": "3.13"
+  "pythonVersion": "3.13",
+  "extraPaths": [".", "./src", "./.venv/lib/python3.13/site-packages"]
 }

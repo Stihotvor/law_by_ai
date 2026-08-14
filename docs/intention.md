@@ -6,7 +6,8 @@ status: completed
 
 > **Status:** Completed — all clarification questions answered.
 > This document now serves as the project charter.
-> Rev. 2 — incorporates the revised architecture plan (ADRs 1–11).
+> Rev. 3 — incorporates the plugin deprecation and hardcoded PostgreSQL
+> direction (ADR-0014); Rev. 2 covered ADRs 1–11.
 
 ---
 
@@ -52,13 +53,16 @@ status: completed
 
 **16.** *Deployment model* – **Docker-Compose** (self-hosted).
 
-**17.** *Vector database* – **In-memory Chroma** for the MVP, later **Qdrant**.
+**17.** *Vector database* – **Qdrant**. (ADR-0014)
 
-**18.** *Graph database* – **Memgraph** for the MVP, **Neo4j** for production. (ADR-0002)
+**18.** *Graph database* – **Neo4j AuraDB Free** (cloud-managed). (ADR-0002, ADR-0014)
 
-**19.** *LLM provider* – **Multi-provider** via your liteLLM proxy, targeting **open-source lite models** (e.g., Gemma 4, Mistral Nano, Ministral) to satisfy the RAM/SLM budget.
+**19.** *LLM provider* – **OpenAI-compatible endpoints**; each agent may use its
+own model (SLM or hosted). (ADR-0014)
 
-**20.** *Embedding model* – **Mistral embed** or **Gemini-mini embed 2** (local) candidates; **final model selected by evaluation on Polish legal texts**. (ADR-0009)
+**20.** *Embedding model* – **Dedicated embedding provider** (may differ from the
+LLM provider); final model selected by **evaluation on Polish legal texts**.
+(ADR-0009)
 
 **21.** *Multi-tenant isolation* – **Yes**, from day 1. Documents are **shared storage**; per-tenant data (notes, states, chats, annotations) is isolated. (ADR-0003)
 
@@ -66,13 +70,15 @@ status: completed
 
 **23.** *Processing model* – **Celery + Redis** (asynchronous batch processing) with **efficient tasks**, retry policies, and in-DB task monitoring so users can re-run failed tasks. (ADR-0006)
 
-**24.** *Plugin approach* – **Protocol-based** (not ABC), registered via a **YAML config** and loaded by `PluginManager`. (ADR-0001)
+**24.** *Data access* – PostgreSQL is a **direct, hardcoded integration**
+(`PostgreSQLStore`) with schema managed by **Alembic migrations** (issue #9).
+The plugin system is **deprecated**. (ADR-0014)
 
 **25.** *Observability* – **MUST in the MVP**: `structlog` (JSON logs) + metrics + traces via **OpenTelemetry**, shipped through **Grafana Alloy → Grafana Cloud**. **All telemetry must be anonymized** (no PII). (ADR-0005)
 
 **26.** *Health checks* – Every container exposes a **health check** endpoint for monitoring and orchestration. (ADR-0010)
 
-**27.** *Security* – **JWT auth (MUST)** + **RBAC**: an **admin** manages data, a **user** can only read it. Multi-tenant isolation is enforced and tested with **leak tests**. (ADR-0004)
+**27.** *Security* – **streamlit-authenticator auth (MUST)** + **RBAC**: an **admin** manages data, a **user** can only read it. Multi-tenant isolation is enforced and tested with **leak tests**. (ADR-0004 / ADR-0013)
 
 **28.** *SLAs* – Basic **SLA standards** are defined and tracked (search latency, processing time, availability). (ADR-0011)
 
@@ -130,14 +136,14 @@ status: completed
 
 ## 🔐 Security
 
-**48.** *Authentication* – **JWT-based auth (MUST)** for all users.
+**48.** *Authentication* – **streamlit-authenticator (MUST)** for all users: login widget, bcrypt-hashed passwords, signed session cookie. (ADR-0013)
 
 **49.** *Authorization* – **RBAC (MUST)**: `admin` role can manage data (ingest, edit, delete); `user` role is **read-only**.
 
 **50.** *Multi-tenant isolation* – Enforced at every layer:
 - PostgreSQL — row-level isolation with `tenant_id` (shared document store, per-tenant notes/states/chats).
-- Chroma/Qdrant — collection or partition per tenant.
-- Memgraph/Neo4j — subgraph per tenant.
+- Qdrant — collection or partition per tenant.
+- Neo4j — subgraph per tenant.
 
 **51.** *Tenant leak tests* – Automated tests assert that no tenant can access another tenant's data. (ADR-0003)
 
@@ -157,7 +163,7 @@ Detailed targets live in ADR-0011.
 
 ## 🚀 Delivery & Timeline
 
-**55.** *Minimum Viable Product* – Data collection, processing, annotation, push to PostgreSQL, vector store, graph store, **citations with confidence**, **filters**, **document diffs**, **bureaucracy assistant**, and answering complex questions / internal data research — all on the **4–6 GB RAM + SLM** budget.
+**55.** *Minimum Viable Product* – Data collection, processing, annotation, push to PostgreSQL (schema via Alembic migrations), vector store (Qdrant), graph store (Neo4j AuraDB), **citations with confidence**, **filters**, **document diffs**, **bureaucracy assistant**, and answering complex questions / internal data research — all on the **4–6 GB RAM + SLM** budget.
 
 **56.** *Target timeline* – **MVP**: end of **next month**. **v1**: end of **this year**.
 
