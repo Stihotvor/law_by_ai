@@ -1,0 +1,103 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": true,
+  "model": "opencode/x-preview-f-free",
+  "small_model": "litellm/mistral/ministral-8b-latest",
+  "subagent_depth": 1,
+  "provider": {
+    "opencode": {
+      "models": {
+        "x-preview-f-free": {
+          "variants": {
+            "low": { "reasoningEffort": "low" },
+            "high": { "reasoningEffort": "high" },
+            "max": { "reasoningEffort": "max" }
+          }
+        }
+      }
+    },
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio (local)",
+      "options": { "baseURL": "http://127.0.0.1:1234/v1" },
+      "models": {
+		"qwen2.5-coder-7b-instruct": {
+		  "name": "Qwen2.5 Coder 7B Instruct",
+		  "limit": {
+			"context": 28000,
+			"output": 8192
+		  }
+		},
+		"qwen/qwen3.5-9b": {
+		  "name": "Qwen3.5 9B",
+		  "limit": {
+			"context": 28000,
+			"output": 8192
+		  }
+		},
+		"mistralai/mistral-7b-instruct-v0.3": {
+		  "name": "Mistral 7B Instruct v0.3",
+		  "limit": {
+			"context": 28000,
+			"output": 8192
+		  }
+		},
+		"google/gemma-4-e2b": {
+		  "name": "Gemma 4 E2B",
+		  "limit": {
+			"context": 28000,
+			"output": 8192
+		  }
+		},
+		"mistralai/ministral-3-3b": {
+		  "name": "Ministral3 3B",
+		  "limit": {
+			"context": 28000,
+			"output": 8192
+		  }
+		},
+		"qwen/qwen3-4b-thinking-2507": {
+		  "name": "Qwen3 4B Thinking 2507",
+		  "limit": {
+			"context": 28000,
+			"output": 8192
+		  }
+		}
+	  }
+	}
+  },
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": true
+    },
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+      "enabled": true
+    }
+  },
+  "plugin": [
+    "@franlol/opencode-md-table-formatter@latest",
+    "envsitter-guard@latest"
+  ],
+  "compaction": { "auto": true, "tail_turns": 10 },
+  "tool_output": { "max_lines": 100, "max_bytes": 4096 },
+  "agent": {
+    "doc-writer": {
+      "model": "litellm/thinkingmachines/inkling",
+      "temperature": 0.1,
+      "permission": {
+        "edit": {
+          "docs/**": "allow",
+          "*": "ask"
+        },
+        "write": {
+          "docs/**": "allow",
+          "*": "ask"
+        }
+      }
+    }
+  }
+}
