@@ -19,7 +19,7 @@ Date: 2026-11-01. Source: decisions of the product owner. Scope: MVP DAG (`dag.m
 - Polish full-text search uses a Polish hunspell dictionary in the Postgres image (MVP-85).
   - OPEN: the dictionary adds image and build work. Fallback if it overruns: `simple` + `unaccent`. Needs owner approval before the switch.
 - Query languages: Polish, English, Ukrainian. The embedding eval (MVP-58) tests all three.
-- Scanned documents are in the MVP. OCR engine is chosen by MVP-59 and built before the MVP date. MVP-59 moves from the parallel track into Wave 1.
+- Scanned documents are in the MVP. OCR engine is chosen by MVP-59 and built before the MVP date. MVP-59 moves from the parallel track into the MVP scope.
 - Rerank runs locally (MVP-35a). Cohere is dropped, so no query or chunk leaves the host. Primary model: BAAI/bge-reranker-v2-m3 (int8 ONNX, Apache-2.0). Fallback: Horizon-Labs/multilingual-reranker-small (int8 ONNX, 268 MB, Apache-2.0).
   - The final choice comes from an eval inside MVP-58: both models and no rerank, recall@5 per language (Polish, English, Ukrainian), and latency for 20-50 pairs under 500 ms on CPU. No model enters the code before that eval.
   - Cloudflare Clef / Clef-flash was checked. It is a decision model, not a reranker, and too large for the 4-6 GB budget. Possible later use: an answerability check for MVP-63a. Out of the MVP.
