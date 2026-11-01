@@ -2,7 +2,7 @@
 status: proposed
 ---
 
-# ADR-0009: Embedding/OCR/hybrid-search evaluation for Polish
+# ADR-0009: Embedding/OCR/rerank/hybrid-search evaluation for Polish
 
 ## Context
 
@@ -19,6 +19,11 @@ target, and every model must fit the 4–6 GB RAM + SLM budget.
 - **OCR evals**: compare OCR models (Tesseract, EasyOCR, PaddleOCR) on Polish
   scanned documents (diacritics, legal formatting). Choose by accuracy + speed
   + footprint.
+- **Rerank evals**: reranking runs locally (ADR-0014). Compare
+  `BAAI/bge-reranker-v2-m3`, `Horizon-Labs/multilingual-reranker-small`, and no
+  reranking. Measure recall@5 per query language (Polish, English, Ukrainian)
+  and latency for 20-50 pairs on CPU (target under 500 ms). Print the CPU
+  model with the results. No reranking model enters the code before this eval.
 - **Hybrid search evals**: build a labeled Polish legal query set; measure
   precision/recall of the hybrid retriever (FTS + semantic + re-rank + graph).
   Set and track targets (e.g., recall@10) with a baseline commit.
@@ -39,5 +44,6 @@ target, and every model must fit the 4–6 GB RAM + SLM budget.
 
 ## Related
 
+- [ADR-0014](0014-hardcoded-postgresql.md) — local reranking
 - [Architecture](../architecture.md) — Embedding & OCR Models, `evals/`
 - [Intention](../intention.md) #14, #20, #35
