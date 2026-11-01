@@ -607,23 +607,18 @@ Tenant
 
 The work is tracked in [7 milestones](https://github.com/Stihotvor/law_by_ai/milestones):
 
+The MVP planning date is 2027-02-28. If work overruns, the date moves and the
+scope stays.
+
 ```mermaid
-gantt
-    title Project Phases
-    section Phase 1
-    Minimal Example :a1, 2026-01-01, 30d
-    section Phase 2
-    Foundation :a2, after a1, 30d
-    section Phase 3
-    Core Plugins :a3, after a2, 30d
-    section Phase 4
-    ETL & Embedding :a4, after a3, 30d
-    section Phase 5
-    Agents :a5, after a4, 30d
-    section Phase 6
-    Tasks & UI :a6, after a5, 30d
-    section Phase 7
-    Test & Polish :a7, after a6, 30d
+flowchart LR
+    P1[Phase 1<br/>Minimal Example] --> P2[Phase 2<br/>Foundation]
+    P2 --> P3[Phase 3<br/>Core Plugins]
+    P3 --> P4[Phase 4<br/>ETL & Embedding]
+    P4 --> P5[Phase 5<br/>Agents]
+    P5 --> P6[Phase 6<br/>Tasks & UI]
+    P6 --> P7[Phase 7<br/>Test & Polish]
+    P7 --> MVP([MVP, planning date 2027-02-28])
 ```
 
 ---
