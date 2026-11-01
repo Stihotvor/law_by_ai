@@ -8,7 +8,7 @@ status: accepted
 
 ADR-0004 prescribed JWT-based authentication: short-lived RS256 access
 tokens, Redis-backed refresh-token rotation, and a framework-agnostic
-`core/security/` token layer. Early implementation (issue #52 branch) showed
+`core/security/` token layer. Early implementation (the auth branch) showed
 this was overkill for the current shape of the product:
 
 - The UI is a single Streamlit process; there is **no public API** and no

@@ -9,9 +9,8 @@ status: proposed
 The project charter already states **MIT** and **invite-only** contributions
 ([Intention](../intention.md) #58–59), a MIT `LICENSE` file and `pyproject.toml`
 metadata exist, but the decision was never formally recorded and the
-contribution model was never fully specified. Issue
-[#5](https://github.com/Stihotvor/law_by_ai/issues/5) asks to decide between
-MIT, Apache 2.0, and AGPL and to define how people contribute.
+contribution model was never fully specified. The open question was to decide
+between MIT, Apache 2.0, and AGPL and to define how people contribute.
 
 The platform is a **self-hosted, open-source community tool** for protecting
 citizens' rights (EU/Poland) plus a personal research project. Its success
@@ -76,4 +75,3 @@ depends on **wide adoption and trust**, and it must stay runnable on the
 - [CODE_OF_CONDUCT.md](https://github.com/Stihotvor/law_by_ai/blob/main/CODE_OF_CONDUCT.md)
 - [DCO](https://github.com/Stihotvor/law_by_ai/blob/main/DCO)
 - [LICENSE](https://github.com/Stihotvor/law_by_ai/blob/main/LICENSE)
-- Issue [#5](https://github.com/Stihotvor/law_by_ai/issues/5)

@@ -71,7 +71,7 @@ LLM provider); final model selected by **evaluation on Polish legal texts**.
 **23.** *Processing model* – **Celery + Redis** (asynchronous batch processing) with **efficient tasks**, retry policies, and in-DB task monitoring so users can re-run failed tasks. (ADR-0006)
 
 **24.** *Data access* – PostgreSQL is a **direct, hardcoded integration**
-(`PostgreSQLStore`) with schema managed by **Alembic migrations** (issue #9).
+(`PostgreSQLStore`) with schema managed by **Alembic migrations**.
 The plugin system is **deprecated**. (ADR-0014)
 
 **25.** *Observability* – **MUST in the MVP**: `structlog` (JSON logs) + metrics + traces via **OpenTelemetry**, shipped through **Grafana Alloy → Grafana Cloud**. **All telemetry must be anonymized** (no PII). (ADR-0005)

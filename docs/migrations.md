@@ -1,6 +1,6 @@
 # Database Migrations
 
-PostgreSQL schema is managed with **Alembic** (issue #9). Models live in
+PostgreSQL schema is managed with **Alembic**. Models live in
 `plugins/relational_db/postgres.py` (`Base.metadata`); migration scripts live
 in `migrations/versions/`. The migration environment reads the database URL
 from `config.settings` (`POSTGRES_URL` or `POSTGRES_*`), so it matches how the

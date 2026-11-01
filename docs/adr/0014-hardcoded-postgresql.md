@@ -34,7 +34,7 @@ does not justify a plugin interface.
    a direct dependency. No `relational_db` entry may be registered in
    `config/plugins.yaml` again.
 3. **Fixed production stack** (single provider per concern):
-   - PostgreSQL — relational store, schema via Alembic migrations (issue #9)
+   - PostgreSQL — relational store, schema via Alembic migrations
    - Redis — Celery broker / result backend
    - Neo4j **AuraDB Free** — graph database (ADR-0002, cloud-managed)
    - Qdrant — vector store
@@ -69,7 +69,7 @@ and removes one paid external service.
   change — accepted trade-off for a one-person project.
 - The other six plugin types are retained only as deprecated scaffolding until
   their direct integrations land.
-- Migration work (issue #9) is now the single source of truth for the
+- Migration work is now the single source of truth for the
   PostgreSQL schema.
 
 ## Alternatives Considered
@@ -84,5 +84,4 @@ and removes one paid external service.
 - [ADR-0001](0001-plugin-architecture.md) — plugin system (now superseded)
 - [ADR-0002](0002-graph-database.md) — Neo4j AuraDB
 - [ADR-0003](0003-multi-tenancy.md) — RLS isolation
-- [Issue #9](https://github.com/Stihotvor/law_by_ai/issues/9) — DB migrations
 - [Migrations guide](../migrations.md)
