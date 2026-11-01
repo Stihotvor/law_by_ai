@@ -57,6 +57,7 @@ formatting and lint issues.
 
 - Use a `feature/`, `fix/`, or `docs/` branch named after the issue
   (e.g., `docs/revised-architecture-plan`).
+- A new ADR goes in its own PR on an `adr/` branch (e.g., `adr/local-reranker`).
 - Reference the issue in the PR body: `Closes #N` or `Refs #N`.
 - CI runs two workflows on every PR: `ci` (lint, typecheck, security, unit +
   integration tests, outside `docs/`) and `docs` (docs build, on `docs/`

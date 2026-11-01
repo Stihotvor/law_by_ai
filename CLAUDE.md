@@ -11,7 +11,7 @@ Repo: `Stihotvor/law_by_ai` (public, default branch `main`). GitHub Project 5 "L
 - Quality tools in `.venv`: ruff, pyright, bandit, pip-audit, pre-commit. CI runs lint, typecheck, security scan, unit tests, Docker integration tests.
 - Services: `docker/docker-compose.yml` (postgres, redis, app, celery-worker, test). Stop with `docker compose -f <abs path>/docker/docker-compose.yml down`.
 - Migrations: Alembic (`alembic.ini`, `migrations/`, `docs/migrations.md`).
-- Branches: `feature/`, `fix/`, `docs/` named after the issue. PR body has `Closes #N` or `Refs #N`. See `CONTRIBUTING.md`.
+- Branches: `feature/`, `fix/`, `docs/` named after the issue. A new ADR goes in its own PR on an `adr/` branch. PR body has `Closes #N` or `Refs #N`. See `CONTRIBUTING.md`.
 
 ## Layout
 `src/` (agents, config, core, data, evals, plugins, storage, tasks, ui), `tests/` (unit, integration), `docs/` (mkdocs + ADRs), `docker/`, `scripts/seed_db.py`.
@@ -36,14 +36,13 @@ Built: PostgreSQL store (CRUD, ILIKE search), RBAC helpers and tenant helpers in
 Verified gaps (2026-11-01): no login UI (`src/ui/components/auth.py` is missing), no RLS or cross-tenant tests (RLS policies exist only on `tenants` and `users`, not on `legal_document`), no `status` column on `legal_document`, no full-text search, no Postgres image file.
 Not built: all agents (`src/agents/` is empty), Qdrant, Neo4j, ETL sources, embeddings, OCR, search, observability, health checks, most UI pages.
 
-## MVP plan (2026-11-01)
-Requirements, a 43-task DAG and 43 tickets are in `docs/design/mvp/` (`requirements.md`, `dag.md`, `tickets/`). The planning date for the MVP is 2027-02-28. Rerank is local (Cohere dropped), and the model is chosen by the MVP-58r eval. 
-
-## Tracking
-Issues, PRs, milestones and the board live on GitHub only. Do not write issue or PR numbers in docs, code comments or this file. Docs refer to tickets by stable keys such as `MVP-26b` (see `docs/design/mvp/dag.md`). A PR body links its issue with `Closes #N` or `Refs #N`. The board (Project 5) shows status, phase, priority and size.
+## Work hierarchy
+ADR > milestone > issue > branch > PR. An ADR records a decision. A milestone groups the issues that deliver it. An issue is one task. A branch is named after its issue. A PR closes the issue (`Closes #N`). Status, phase, priority and size live on the board (Project 5).
+Do not write issue or PR numbers in docs, code comments or this file. Do not add other planning layers (plans, DAGs, ticket files, custom ids) to the repo.
+The MVP planning date is 2027-02-28. Rerank is local (Cohere dropped), and an eval picks the model.
 
 ## Known drift (verify before work)
-- Older plugin-era tickets (protocols, PluginManager, Memgraph) describe a design that ADR-0014 and the charter replaced. Check each one with the owner before work.
+- Older plugin-era issues (protocols, PluginManager, Memgraph) describe a design that ADR-0014 and the charter replaced. Check each one with the owner before work.
 - Issues use "Todo" only on the board. No issue is marked In Progress.
 
 ## Working rules for this repo
