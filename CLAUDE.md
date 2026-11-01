@@ -32,10 +32,14 @@ Self-hosted, multi-tenant AI lawyer for EU (Poland) citizens and expats. Areas: 
 - ADRs 0002-0012 are still `proposed`. ADR-0001 is superseded.
 
 ## Current state (as of 2026-10-31)
-Built: PostgreSQL store, auth/RBAC/tenant security, RLS tests, Celery app shell, Streamlit app shell, settings, Alembic, Docker stack, CI.
+Built: PostgreSQL store (CRUD, ILIKE search), RBAC helpers and tenant helpers in `src/core/security/`, Celery app shell, Streamlit app shell, settings (plain class, still has Cohere rerank keys), Alembic initial migration, Docker stack, CI.
+Verified gaps (2026-11-01): no login UI (`src/ui/components/auth.py` is missing), no RLS or cross-tenant tests (RLS policies exist only on `tenants` and `users`, not on `legal_document`), no `status` column on `legal_document`, no full-text search, no Postgres image file.
 Not built: all agents (`src/agents/` is empty), Qdrant, Neo4j, ETL sources, embeddings, OCR, search, observability, health checks, most UI pages.
 
-## Delivery backlog (GitHub, 49 open issues, 7 milestones, none have due dates)
+## Wave 1 MVP plan (2026-11-01)
+Requirements, a 43-task DAG and 43 tickets are in `docs/design/wave1-mvp/` (`requirements.md`, `dag.md`, `tickets/`). The planning date for the MVP is 2027-02-28. Rerank is local (Cohere dropped), and the model is chosen by the #58r eval. The backlog below is the state before this plan. #14 and #15 are closed, 14 issues were added to the board, and #85 (PostgreSQL FTS) was created.
+
+## Delivery backlog (GitHub, 48 open issues as of 2026-11-01, 7 milestones, none have due dates)
 P0 = must for MVP. Issues marked * are not on the project board.
 - **Phase 1 Minimal Example** (4 open): #10 DocumentFetcherAgent (simple), #11 Celery fetch_document task, #12 minimal Streamlit fetch page, #13 requirements + Dockerfile. 18 items closed.
 - **Phase 2 Foundation**: #14 protocols, #15 PluginManager, #16 data models, #17 core utils, #18 full settings, #52 JWT auth + RBAC (P0).
@@ -50,7 +54,7 @@ P0 = must for MVP. Issues marked * are not on the project board.
 ## Known drift (verify before work)
 These are my reading of docs against issues. Check each one with the user before acting.
 - Phase 2 issues #14, #15 and Phase 3 #19, #21 describe the old plugin and Memgraph design. ADR-0014 and the charter replaced them (direct integrations, Neo4j AuraDB). Several are probably obsolete or need rewrite.
-- #52 asks for JWT auth. The accepted design is streamlit-authenticator (ADR-0013), and the auth and RLS tests already exist.
+- #52 was rewritten on 2026-11-01 from JWT to the streamlit-authenticator login UI (ADR-0013). The auth and RLS tests do NOT exist yet (see #53b in the Wave 1 plan).
 - Issue #51 asks for ADRs 0001-0011. The repo already has ADRs 0001-0014.
 - README table says "Phase 3 Core Integrations" and the GitHub milestone says "Core Plugins".
 - Issues use "Todo" only on the board. No issue is marked In Progress.
