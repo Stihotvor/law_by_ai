@@ -1,19 +1,19 @@
-# Tickets: ops and budget (Wave 1)
+# Tickets: ops and budget (MVP)
 
 Common quality gate for every code ticket: `.venv/bin/ruff check .`, `.venv/bin/ruff format --check .`, `.venv/bin/pyright`, `.venv/bin/pytest -m "not integration"`.
 Path note: "(new)" means the file does not exist yet. Imports are bare, because setuptools uses `where=["src"]`. Write `from config.settings import ...` and `from core.health import ...`. Never write the `src.` prefix.
 Real tree now: `src/core/observability/` is an empty package. `src/storage/` and `src/data/` have no code. `src/tasks/` has `celery_app.py` only. `tests/` has `unit/{config,plugins}` and `integration/plugins` only. `scripts/` has `seed_db.py`. `.github/workflows/` has `ci.yml` and `docs.yml`. `docker/` has `Dockerfile`, `docker-compose.yml`, `.env.example` (no `alloy/` directory, no Postgres Dockerfile). Settings is a plain class that reads `os.getenv` in `src/config/settings.py`.
 After headings: every ticket has an empty "After" heading.
-**OPEN (owner, applies to W1-64, W1-57a, W1-57b):** the reference CPU for every latency or RAM claim is not named. Each report states the CPU used.
+**OPEN (owner, applies to MVP-64, MVP-57a, MVP-57b):** the reference CPU for every latency or RAM claim is not named. Each report states the CPU used.
 
 ---
 
-## W1-54a Health checks: app-level DB and Redis check
+## MVP-54a Health checks: app-level DB and Redis check
 
 **Context.** ADR-0010 (health checks, proposed) needs services to report health. Compose already has healthchecks for postgres, redis, app (`/_stcore/health`) and worker. They stay as they are. The gap: the app does not check the database and Redis, and there is no test.
-**Scope.** Only a `health()` function that checks PostgreSQL and Redis and returns a status map, wired into the app, plus a unit test. Link ADR-0010 in the ADR (link only, no status change). **Non-goals.** Compose changes. Qdrant check (W1-54b). Metrics (W1-55b). Ports for outside users.
+**Scope.** Only a `health()` function that checks PostgreSQL and Redis and returns a status map, wired into the app, plus a unit test. Link ADR-0010 in the ADR (link only, no status change). **Non-goals.** Compose changes. Qdrant check (MVP-54b). Metrics (MVP-55b). Ports for outside users.
 **Files.** `src/core/health.py` (new), the Streamlit app entry in `src/ui/` (wire the check, confirm file name), `tests/unit/test_health.py` (new), ADR-0010 file in `docs/adr/` (add link only). Import: `from core.health import health`.
-**Depends on:** W1-18. **Blocks:** W1-54b.
+**Depends on:** MVP-18. **Blocks:** MVP-54b.
 
 ```gherkin
 Scenario: all services up
@@ -47,13 +47,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-54b Add Qdrant to health
+## MVP-54b Add Qdrant to health
 
-**Context.** After W1-20 Qdrant is a core service. A dead Qdrant breaks search, so health must show it.
-**Scope.** Qdrant check in `health()`. Compose healthcheck for the qdrant service if W1-20 did not add one.
+**Context.** After MVP-20 Qdrant is a core service. A dead Qdrant breaks search, so health must show it.
+**Scope.** Qdrant check in `health()`. Compose healthcheck for the qdrant service if MVP-20 did not add one.
 **Non-goals.** Neo4j check. Alerting.
 **Files.** `src/core/health.py`, `docker/docker-compose.yml`, `tests/unit/test_health_qdrant.py` (new).
-**Depends on:** W1-54a, W1-20. **Blocks:** none.
+**Depends on:** MVP-54a, MVP-20. **Blocks:** none.
 
 ```gherkin
 Scenario: Qdrant stopped
@@ -80,13 +80,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-55a structlog JSON logging with ids and PII scrub
+## MVP-55a structlog JSON logging with ids and PII scrub
 
 **Context.** ADR-0005: JSON logs, PII removed at the source. No logging setup exists yet. `src/core/observability/` is an empty package and is the home of this code.
 **Scope.** `configure_logging()`: JSON renderer, request id (UI) and task id (Celery) bound in context, processor that masks emails and hashes tenant id. Call it in the app and the Celery app.
-**Non-goals.** OTel (W1-55b). Log shipping. Masking of free text beyond emails and tenant ids.
+**Non-goals.** OTel (MVP-55b). Log shipping. Masking of free text beyond emails and tenant ids.
 **Files.** `src/core/observability/logging_setup.py` (new), the Streamlit app entry in `src/ui/`, `src/tasks/celery_app.py` (exists), `tests/unit/test_logging.py` (new). Import: `from core.observability.logging_setup import configure_logging`.
-**Depends on:** W1-18. **Blocks:** W1-55b.
+**Depends on:** MVP-18. **Blocks:** MVP-55b.
 
 ```gherkin
 Scenario: JSON line
@@ -118,13 +118,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-55b OTel traces and metrics to Grafana Alloy
+## MVP-55b OTel traces and metrics to Grafana Alloy
 
-**Context.** ADR-0005 (proposed) sets OTel to local Alloy. Settings keys come from W1-18. ADR-0005 becomes `accepted` here.
+**Context.** ADR-0005 (proposed) sets OTel to local Alloy. Settings keys come from MVP-18. ADR-0005 becomes `accepted` here.
 **Scope.** OTel SDK init (UI and worker), `alloy` compose service with a config file and a debug exporter, span around search and task run, set ADR status to `accepted` and update `docs/adr/index.md`. The `docker/alloy/` directory does not exist: create it.
 **Non-goals.** Grafana Cloud account setup. Dashboards. Any query text, user id or document text in attributes.
 **Files.** `src/core/observability/telemetry.py` (new), `docker/alloy/config.alloy` (new), `docker/docker-compose.yml`, `docs/adr/0005-observability.md`, `docs/adr/index.md`, `tests/unit/test_telemetry.py` (new).
-**Depends on:** W1-55a. **Blocks:** none. Alloy RAM is counted in W1-57a.
+**Depends on:** MVP-55a. **Blocks:** none. Alloy RAM is counted in MVP-57a.
 
 ```gherkin
 Scenario: Alloy starts
@@ -154,13 +154,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-56a Failed-task registry (table, migration, handler)
+## MVP-56a Failed-task registry (table, migration, handler)
 
 **Context.** ADR-0006: a failed task must not vanish. Admin re-runs it later. ADR-0006 becomes `accepted` here. Rule from DAG: the RLS policy is made in the migration that adds the table. `src/storage/` has no code now.
-**Scope.** Table `failed_tasks` (task id, name, args, kwargs, traceback, state, tenant_id, timestamps). Alembic migration with RLS policy. Celery `task_failure` handler writes a row after retries end. Retry policy: exponential backoff, bounded `max_retries` (default 3). Add a `failed_tasks` case to the leak test from W1-53b.
-**Non-goals.** UI (W1-56b). Stuck-task sweep (record as follow-up). Auto re-run.
+**Scope.** Table `failed_tasks` (task id, name, args, kwargs, traceback, state, tenant_id, timestamps). Alembic migration with RLS policy. Celery `task_failure` handler writes a row after retries end. Retry policy: exponential backoff, bounded `max_retries` (default 3). Add a `failed_tasks` case to the leak test from MVP-53b.
+**Non-goals.** UI (MVP-56b). Stuck-task sweep (record as follow-up). Auto re-run.
 **Files.** `src/storage/failed_tasks.py` (new, or method on `PostgreSQLStore` in `src/plugins/relational_db/postgres.py`), `src/tasks/celery_app.py` (exists), `migrations/versions/<rev>_failed_tasks.py` (new), `docs/adr/0006-celery-reliability.md`, `docs/adr/index.md`, `tests/integration/test_failed_tasks.py` (new), `tests/unit/test_task_retry.py` (new).
-**Depends on:** none. **Blocks:** W1-56b.
+**Depends on:** none. **Blocks:** MVP-56b.
 **OPEN:** args may hold personal data. Default: store args, restrict by RLS and admin role. Owner confirms.
 
 ```gherkin
@@ -193,13 +193,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-56b Failed-task page with re-run (admin only)
+## MVP-56b Failed-task page with re-run (admin only)
 
 **Context.** Requirements: admin re-runs a failed ingest from the UI. User role sees no write action.
-**Scope.** Streamlit page: table of failed tasks, re-run button for `admin`, status change to `requeued`. Uses RBAC from W1-52b.
+**Scope.** Streamlit page: table of failed tasks, re-run button for `admin`, status change to `requeued`. Uses RBAC from MVP-52b.
 **Non-goals.** Bulk re-run. Editing args. Delete.
-**Files.** `src/ui/pages/failed_tasks.py` (new, no page modules exist yet), `src/storage/failed_tasks.py` (from W1-56a), `tests/unit/test_failed_tasks_page.py` (new).
-**Depends on:** W1-56a, W1-52b. **Blocks:** none.
+**Files.** `src/ui/pages/failed_tasks.py` (new, no page modules exist yet), `src/storage/failed_tasks.py` (from MVP-56a), `tests/unit/test_failed_tasks_page.py` (new).
+**Depends on:** MVP-56a, MVP-52b. **Blocks:** none.
 
 ```gherkin
 Scenario: admin re-runs
@@ -236,13 +236,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-64 Target lite LLMs benchmark
+## MVP-64 Target lite LLMs benchmark
 
 **Context.** Budget is 4-6 GB total with a small local model. The model choice sets how much RAM is left for the rest. This is a decision and doc task.
-**Scope.** Benchmark 2-3 small models (OpenAI-compatible server, quantised) on a 4-6 GB limit. Measure RAM, tokens/s, and answer quality in Polish, English, Ukrainian on 10 questions from the W1-58a query set. Choose one. Script `scripts/bench_llm.py`.
-**Non-goals.** Model integration (W1-N1). Fine-tuning. Hosted LLMs.
-**Files.** `docs/evals/lite-llm.md` (new), `scripts/bench_llm.py` (new), `data/eval/queries.jsonl` (read only, from W1-58a).
-**Depends on:** W1-58a. **Blocks:** W1-57a.
+**Scope.** Benchmark 2-3 small models (OpenAI-compatible server, quantised) on a 4-6 GB limit. Measure RAM, tokens/s, and answer quality in Polish, English, Ukrainian on 10 questions from the MVP-58a query set. Choose one. Script `scripts/bench_llm.py`.
+**Non-goals.** Model integration (MVP-N1). Fine-tuning. Hosted LLMs.
+**Files.** `docs/evals/lite-llm.md` (new), `scripts/bench_llm.py` (new), `data/eval/queries.jsonl` (read only, from MVP-58a).
+**Depends on:** MVP-58a. **Blocks:** MVP-57a.
 **OPEN:** reference CPU is not named (owner item, DAG flag 10). Report the CPU used.
 
 ```gherkin
@@ -258,7 +258,7 @@ Scenario: reproducible
   When I run `python scripts/bench_llm.py --help`
   Then it exits 0 and lists the model and limit options
 ```
-Note: the 3 GB share is a proposal. Owner confirms. W1-57a sets the final split.
+Note: the 3 GB share is a proposal. Owner confirms. MVP-57a sets the final split.
 **Test plan.** No unit test of results. Unit test for report parser in `tests/unit/test_bench_llm.py` (new) if the script has parsing logic.
 **Quality gate.** Common gate (for the script).
 
@@ -273,14 +273,14 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-57a Efficiency budget, SLA doc and measure script (rerank parts CONDITIONAL on W1-58r)
+## MVP-57a Efficiency budget, SLA doc and measure script (rerank parts CONDITIONAL on MVP-58r)
 
-**Context.** ADR-0011 (proposed) sets 4-6 GB and p95 < 3 s. This task measures the real stack. ADR-0011 becomes `accepted` here. The rerank parts are CONDITIONAL on W1-58r. If W1-58r drops rerank, the stack has no rerank model: the rerank RAM line and the rerank latency line are skipped, and the other lines stay.
+**Context.** ADR-0011 (proposed) sets 4-6 GB and p95 < 3 s. This task measures the real stack. ADR-0011 becomes `accepted` here. The rerank parts are CONDITIONAL on MVP-58r. If MVP-58r drops rerank, the stack has no rerank model: the rerank RAM line and the rerank latency line are skipped, and the other lines stay.
 **Scope.** `scripts/measure_budget.py`: start the stack under `mem_limit: 6g` (postgres, redis, qdrant, app, worker, alloy, OCR, search, and the loaded rerank model (CONDITIONAL)), print RAM per service and the rerank model on its own line (CONDITIONAL), run search load, print p95 and the CPU used. If rerank is dropped, the script prints no rerank RAM line and no rerank latency line, and it does not fail because of their absence. Fill the budget table in `docs/`. Set ADR to `accepted`.
 **Rule.** Peak RAM <= 6 GB under `mem_limit` 6g, including the rerank model (CONDITIONAL). p95 hybrid search < 3 s. The run uses rerank on (CONDITIONAL). If rerank is dropped, the same limits apply to the stack without it.
-**Non-goals.** CI enforcement (W1-57b). Tuning code for speed (open new tickets).
+**Non-goals.** CI enforcement (MVP-57b). Tuning code for speed (open new tickets).
 **Files.** `scripts/measure_budget.py` (new), `docs/budget.md` (new), `docs/adr/0011-sla-budget.md`, `docs/adr/index.md`, `docker/docker-compose.yml` (mem_limit only for the measure run), `tests/unit/test_measure_budget.py` (new, parser).
-**Depends on:** W1-64, W1-59b, W1-24, W1-35a, W1-58r. **Blocks:** W1-57b.
+**Depends on:** MVP-64, MVP-59b, MVP-24, MVP-35a, MVP-58r. **Blocks:** MVP-57b.
 **OPEN:** if the sum is above 6 GB, report it. Do not change the design. Escalate to the owner (descope or smaller model).
 **OPEN:** reference CPU for the p95 and RAM claims is not named. Owner names it. The budget doc states the CPU used.
 
@@ -290,22 +290,22 @@ Scenario: RAM within budget
   When I run `python scripts/measure_budget.py`
   Then it prints RAM per service
   And the peak total is <= 6 GB
-Scenario: rerank RAM line (CONDITIONAL on W1-58r)
-  Given W1-58r keeps rerank and the rerank model is loaded
+Scenario: rerank RAM line (CONDITIONAL on MVP-58r)
+  Given MVP-58r keeps rerank and the rerank model is loaded
   When I run `python scripts/measure_budget.py`
   Then it prints a separate "rerank model" line
   And the rerank model RAM is counted in the peak total
-Scenario: rerank dropped (CONDITIONAL on W1-58r)
-  Given W1-58r drops rerank
+Scenario: rerank dropped (CONDITIONAL on MVP-58r)
+  Given MVP-58r drops rerank
   When I run `python scripts/measure_budget.py`
   Then the output has no "rerank model" line and no rerank latency line
   And the script exits 0 if the other limits hold
 Scenario: latency
-  When the script runs the search load (rerank on if W1-58r keeps rerank)
+  When the script runs the search load (rerank on if MVP-58r keeps rerank)
   Then p95 hybrid search latency < 3 s
   And the output names the CPU used
-Scenario: rerank latency line (CONDITIONAL on W1-58r)
-  Given W1-58r keeps rerank
+Scenario: rerank latency line (CONDITIONAL on MVP-58r)
+  Given MVP-58r keeps rerank
   Then the output has a rerank latency line
 Scenario: no OOM
   Then no container is OOM-killed during the run
@@ -328,13 +328,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-57b Enforce the budget in compose and CI
+## MVP-57b Enforce the budget in compose and CI
 
 **Context.** A measured budget decays unless a check fails when it is broken.
-**Scope.** `mem_limit: 6g` on the test profile or a group limit as chosen in W1-57a. Smoke check that fails if peak RAM > 6 GB. Add the step to `.github/workflows/ci.yml` (exists).
-**Non-goals.** New measurement logic (use W1-57a). Latency gate in CI unless W1-57a shows stable numbers.
+**Scope.** `mem_limit: 6g` on the test profile or a group limit as chosen in MVP-57a. Smoke check that fails if peak RAM > 6 GB. Add the step to `.github/workflows/ci.yml` (exists).
+**Non-goals.** New measurement logic (use MVP-57a). Latency gate in CI unless MVP-57a shows stable numbers.
 **Files.** `docker/docker-compose.yml`, `.github/workflows/ci.yml`, `scripts/measure_budget.py` (`--check` flag), `tests/unit/test_budget_check.py` (new).
-**Depends on:** W1-57a. **Blocks:** none.
+**Depends on:** MVP-57a. **Blocks:** none.
 **OPEN:** reference CPU is not named (owner item). A CI runner differs from the reference CPU, so the RAM limit is the gate and latency is not.
 
 ```gherkin
@@ -356,7 +356,7 @@ Scenario: CI
 ### Before
 ```mermaid
 flowchart LR
-  B[W1-57a numbers in docs] -. gap .-> E[no automatic check]
+  B[MVP-57a numbers in docs] -. gap .-> E[no automatic check]
   E --> CI[compose test profile + CI fail if peak > 6 GB]
 ```
 ### After

@@ -6,12 +6,12 @@ Real tree now: `src/core/security/` has `passwords.py`, `rbac.py`, `tenant.py`. 
 
 ---
 
-## W1-52a Login UI with streamlit-authenticator (ADR-0013)
+## MVP-52a Login UI with streamlit-authenticator (ADR-0013)
 
-**Context.** Ticket W1-52 still says JWT. ADR-0013 (accepted) replaced it. The user needs a login page with bcrypt and a signed cookie, and `tenant_id` must reach the tenant contextvar.
-**Scope.** `login_form()`, `logout_button()`, `require_auth()`, `get_current_user()`, `is_admin()`, `require_admin()`. Users from PostgreSQL `users`/`tenants`; dev admin when no DB. **Non-goals:** JWT, public API, RBAC on pages (W1-52b), password reset.
+**Context.** Ticket MVP-52 still says JWT. ADR-0013 (accepted) replaced it. The user needs a login page with bcrypt and a signed cookie, and `tenant_id` must reach the tenant contextvar.
+**Scope.** `login_form()`, `logout_button()`, `require_auth()`, `get_current_user()`, `is_admin()`, `require_admin()`. Users from PostgreSQL `users`/`tenants`; dev admin when no DB. **Non-goals:** JWT, public API, RBAC on pages (MVP-52b), password reset.
 **Files.** `src/ui/components/auth.py` (new, does not exist), `src/core/security/passwords.py` (exists, reuse), `src/core/security/tenant.py` (exists, reuse), `tests/unit/test_ui_auth.py` (new). Imports: `from core.security.passwords import ...`, `from core.security.tenant import ...`.
-**Depends on:** none. **Blocks:** W1-52b.
+**Depends on:** none. **Blocks:** MVP-52b.
 
 Acceptance (Gherkin)
 ```gherkin
@@ -44,13 +44,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-52b RBAC wiring on all pages
+## MVP-52b RBAC wiring on all pages
 
 **Context.** `admin` manages data, `user` is read-only (ADR-0013). Pages must hide write actions from `user`.
 **Scope.** Gate every write widget (fetch, approve, re-run) with `is_admin()`. Add a helper `admin_only(...)`. **Non-goals:** new roles, row-level rules.
-**Files.** `src/ui/components/auth.py` (created in W1-52a), `src/ui/pages/*.py` (no page modules exist yet: gate each page when it is added), `src/core/security/rbac.py` (exists), `tests/unit/test_ui_rbac.py` (new).
-**Depends on:** W1-52a. **Blocks:** W1-26c, W1-35b, W1-56b, W1-61c.
-**OPEN:** W1-12 (minimal Streamlit fetch page) writes data and may need W1-52b. Owner decides whether W1-12 depends on W1-52b.
+**Files.** `src/ui/components/auth.py` (created in MVP-52a), `src/ui/pages/*.py` (no page modules exist yet: gate each page when it is added), `src/core/security/rbac.py` (exists), `tests/unit/test_ui_rbac.py` (new).
+**Depends on:** MVP-52a. **Blocks:** MVP-26c, MVP-35b, MVP-56b, MVP-61c.
+**OPEN:** MVP-12 (minimal Streamlit fetch page) writes data and may need MVP-52b. Owner decides whether MVP-12 depends on MVP-52b.
 
 ```gherkin
 Scenario: User role is read-only
@@ -84,12 +84,12 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-53b Tenant leak tests and ADR-0003 acceptance
+## MVP-53b Tenant leak tests and ADR-0003 acceptance
 
 **Context.** Migration 4439761c5e40 enables RLS on two tables only: `tenants` (policy `tenants_isolation`) and `users` (policy `users_isolation`). `legal_document` has NO RLS, because documents are shared (ADR-0003). The MVP needs a clear proof: 0 cross-tenant rows on tenant-owned tables. ADR-0003 is `proposed` and names Chroma and Memgraph.
 **Scope.** Integration tests that read and write as tenant A against tenant B on: `tenants`, `users`, and every new tenant-owned table when its task adds it (notes, state, failed tasks `failed_tasks`, `procedure_progress`). Each later task adds its own case to the same file. A test must not claim `legal_document` has RLS. A separate test asserts `legal_document` is readable by every tenant (shared by design). Set ADR-0003 to `accepted`. Replace Chroma/Memgraph text (Qdrant, Neo4j). Update `docs/adr/index.md` row. **Non-goals:** new tables (their tasks add policies), Qdrant leak tests.
-**Files.** `tests/integration/test_tenant_leak.py` (new), `docs/adr/0003-multi-tenancy.md`, `docs/adr/index.md`, `src/data/models.py` (new, from W1-16).
-**Depends on:** W1-16. **Blocks:** none. Owner confirms the ADR-0003 acceptance (OPEN in requirements).
+**Files.** `tests/integration/test_tenant_leak.py` (new), `docs/adr/0003-multi-tenancy.md`, `docs/adr/index.md`, `src/data/models.py` (new, from MVP-16).
+**Depends on:** MVP-16. **Blocks:** none. Owner confirms the ADR-0003 acceptance (OPEN in requirements).
 
 ```gherkin
 Scenario: Read isolation
@@ -126,12 +126,12 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-N1 OpenAI-compatible LLM client
+## MVP-N1 OpenAI-compatible LLM client
 
 **Context.** Each agent needs its own model, with a timeout, against a local OpenAI-compatible server. No client exists.
-**Scope.** `LLMClient.chat(agent_name, messages)` using httpx. Config per agent name: base URL, model, timeout, API key. W1-N1 adds the LLM client settings to `src/config/settings.py`. Settings is a plain class that reads `os.getenv` (not pydantic). Follow that pattern. **Non-goals:** streaming, tool calls, model choice (W1-64), retries beyond one timeout error.
+**Scope.** `LLMClient.chat(agent_name, messages)` using httpx. Config per agent name: base URL, model, timeout, API key. MVP-N1 adds the LLM client settings to `src/config/settings.py`. Settings is a plain class that reads `os.getenv` (not pydantic). Follow that pattern. **Non-goals:** streaming, tool calls, model choice (MVP-64), retries beyond one timeout error.
 **Files.** `src/core/llm/client.py` (new), `src/config/settings.py` (exists, add settings), `tests/unit/test_llm_client.py` (new), `tests/unit/config/test_settings.py` (exists dir, add cases). Imports: `from config.settings import Settings`.
-**Depends on:** W1-18. **Blocks:** W1-61b.
+**Depends on:** MVP-18. **Blocks:** MVP-61b.
 
 ```gherkin
 Scenario: Model per agent
@@ -164,12 +164,12 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-61a Bureaucracy knowledge base: schema and 3 seed procedures
+## MVP-61a Bureaucracy knowledge base: schema and 3 seed procedures
 
-**Context.** The assistant (W1-61b) needs checked data. Wrong steps cause harm. Procedures: PESEL, residence card, tax ID.
+**Context.** The assistant (MVP-61b) needs checked data. Wrong steps cause harm. Procedures: PESEL, residence card, tax ID.
 **Scope.** Procedure/step schema. Each step: text, `source_url`, `last_checked` date, line "verify with the office". Seed in `scripts/seed_db.py` (exists). **Owner review gate:** the owner reviews every source and step. The review is an approving PR review. A lawyer review comes before v1. **Non-goals:** more procedures, auto-update, UI.
 **Files.** `src/data/procedures.py` (new), `data/procedures/*.yaml` (new), `scripts/seed_db.py`, `tests/unit/test_procedures_schema.py` (new).
-**Depends on:** W1-16. **Blocks:** W1-61b.
+**Depends on:** MVP-16. **Blocks:** MVP-61b.
 
 ```gherkin
 Scenario: Seed
@@ -196,13 +196,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-61b Bureaucracy assistant agent
+## MVP-61b Bureaucracy assistant agent
 
 **Context.** The user asks "how do I get a PESEL". The agent returns an ordered checklist from reviewed procedures, with citations. Information only.
-**Legal boundary.** Information only. No personal legal conclusions. Output carries the fixed notice `NOT_LEGAL_ADVICE_NOTICE`. W1-63a defines it once (for example in `core/notices.py`). W1-61b imports it: `from core.notices import NOT_LEGAL_ADVICE_NOTICE`. Low confidence gives "no reliable answer" (W1-63a).
-**Scope.** Retrieve procedure, build checklist, cite each step, set each `needs_confirmation` (HITL: the user confirms each step). **Non-goals:** UI (W1-61c), saving progress, auto-filling forms.
-**Files.** `src/agents/bureaucracy.py` (new), `tests/unit/test_bureaucracy_agent.py` (new). Uses `core.llm.client` (W1-N1), citations and `core.notices` (W1-63a).
-**Depends on:** W1-61a, W1-63a, W1-N1. **Blocks:** W1-61c, W1-61d.
+**Legal boundary.** Information only. No personal legal conclusions. Output carries the fixed notice `NOT_LEGAL_ADVICE_NOTICE`. MVP-63a defines it once (for example in `core/notices.py`). MVP-61b imports it: `from core.notices import NOT_LEGAL_ADVICE_NOTICE`. Low confidence gives "no reliable answer" (MVP-63a).
+**Scope.** Retrieve procedure, build checklist, cite each step, set each `needs_confirmation` (HITL: the user confirms each step). **Non-goals:** UI (MVP-61c), saving progress, auto-filling forms.
+**Files.** `src/agents/bureaucracy.py` (new), `tests/unit/test_bureaucracy_agent.py` (new). Uses `core.llm.client` (MVP-N1), citations and `core.notices` (MVP-63a).
+**Depends on:** MVP-61a, MVP-63a, MVP-N1. **Blocks:** MVP-61c, MVP-61d.
 
 ```gherkin
 Scenario: Checklist
@@ -225,9 +225,9 @@ Scenario: Advice request
 ```mermaid
 sequenceDiagram
   User->>Agent: question
-  Agent->>KB: find procedure (W1-61a)
-  Agent->>LLM: build checklist (W1-N1)
-  Agent->>Citations: score (W1-63a)
+  Agent->>KB: find procedure (MVP-61a)
+  Agent->>LLM: build checklist (MVP-N1)
+  Agent->>Citations: score (MVP-63a)
   Agent-->>User: steps needs_confirmation + notice
   Note over Agent: Gap: no agent exists, src/agents is empty
 ```
@@ -236,13 +236,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-61c Bureaucracy assistant Streamlit page
+## MVP-61c Bureaucracy assistant Streamlit page
 
 **Context.** Users follow a checklist and tick steps. Progress is saved per tenant user.
-**Legal boundary.** Page shows the fixed notice `NOT_LEGAL_ADVICE_NOTICE`, imported from `core.notices` (defined in W1-63a). Each step shows link, last-checked date and the "verify with the office" line.
-**Scope.** Page, progress table `procedure_progress` (tenant_id, user_id, step_id, confirmed_at), migration with its own RLS policy. Add a `procedure_progress` case to the leak test (W1-53b). **Non-goals:** admin editing of procedures, reminders. Role `user` can tick own steps (not a write action on shared data).
+**Legal boundary.** Page shows the fixed notice `NOT_LEGAL_ADVICE_NOTICE`, imported from `core.notices` (defined in MVP-63a). Each step shows link, last-checked date and the "verify with the office" line.
+**Scope.** Page, progress table `procedure_progress` (tenant_id, user_id, step_id, confirmed_at), migration with its own RLS policy. Add a `procedure_progress` case to the leak test (MVP-53b). **Non-goals:** admin editing of procedures, reminders. Role `user` can tick own steps (not a write action on shared data).
 **Files.** `src/ui/pages/bureaucracy.py` (new), `src/data/models.py`, `migrations/versions/<new>_procedure_progress.py` (new), `tests/unit/test_bureaucracy_page.py` (new), `tests/integration/test_tenant_leak.py`.
-**Depends on:** W1-61b, W1-63a, W1-52b. **Blocks:** none.
+**Depends on:** MVP-61b, MVP-63a, MVP-52b. **Blocks:** none.
 
 ```gherkin
 Scenario: Tick a step
@@ -264,7 +264,7 @@ Scenario: Not logged in
 
 ```mermaid
 flowchart LR
-  Ag[W1-61b agent] --> Pg[Checklist page] --> Tk[user ticks step] --> PT[(procedure_progress + RLS)]
+  Ag[MVP-61b agent] --> Pg[Checklist page] --> Tk[user ticks step] --> PT[(procedure_progress + RLS)]
   Pg -.gap: no page, no progress table.-> PT
 ```
 ### After
@@ -272,13 +272,13 @@ Fill after merge: diagram of what was built.
 
 ---
 
-## W1-61d Bureaucracy assistant eval
+## MVP-61d Bureaucracy assistant eval
 
 **Context.** Success metric: 100% of answers have an openable link, at least 90% judged correct by the owner.
 **Owner review gate.** The owner fills the judgement column. The agent does not judge itself.
 **Scope.** At least 10 questions (PESEL, residence card, tax ID, plus edge cases, in Polish, English, Ukrainian). Report with steps, citations, link status, owner judgement. Suggest a tuned `min_confidence`. **Non-goals:** changing the agent, new procedures.
 **Files.** `scripts/eval_bureaucracy.py` (new), `data/eval/bureaucracy_questions.jsonl` (new), `docs/evals/bureaucracy.md` (new), `tests/unit/test_eval_bureaucracy.py` (new, mock HTTP).
-**Depends on:** W1-61b. **Blocks:** none.
+**Depends on:** MVP-61b. **Blocks:** none.
 
 ```gherkin
 Scenario: Report size
@@ -298,7 +298,7 @@ Scenario: Threshold
 
 ```mermaid
 flowchart LR
-  Q[10+ questions] --> Ag[W1-61b agent] --> R[report: steps, links, HTTP check]
+  Q[10+ questions] --> Ag[MVP-61b agent] --> R[report: steps, links, HTTP check]
   R --> O[Owner judges] --> M[tune min_confidence]
   R -.gap: no eval, correctness unknown.-> O
 ```

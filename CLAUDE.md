@@ -36,11 +36,11 @@ Built: PostgreSQL store (CRUD, ILIKE search), RBAC helpers and tenant helpers in
 Verified gaps (2026-11-01): no login UI (`src/ui/components/auth.py` is missing), no RLS or cross-tenant tests (RLS policies exist only on `tenants` and `users`, not on `legal_document`), no `status` column on `legal_document`, no full-text search, no Postgres image file.
 Not built: all agents (`src/agents/` is empty), Qdrant, Neo4j, ETL sources, embeddings, OCR, search, observability, health checks, most UI pages.
 
-## Wave 1 MVP plan (2026-11-01)
-Requirements, a 43-task DAG and 43 tickets are in `docs/design/wave1-mvp/` (`requirements.md`, `dag.md`, `tickets/`). The planning date for the MVP is 2027-02-28. Rerank is local (Cohere dropped), and the model is chosen by the W1-58r eval. 
+## MVP plan (2026-11-01)
+Requirements, a 43-task DAG and 43 tickets are in `docs/design/mvp/` (`requirements.md`, `dag.md`, `tickets/`). The planning date for the MVP is 2027-02-28. Rerank is local (Cohere dropped), and the model is chosen by the MVP-58r eval. 
 
 ## Tracking
-Issues, PRs, milestones and the board live on GitHub only. Do not write issue or PR numbers in docs, code comments or this file. Docs refer to tickets by stable keys such as `W1-26b` (see `docs/design/wave1-mvp/dag.md`). A PR body links its issue with `Closes #N` or `Refs #N`. The board (Project 5) shows status, phase, priority and size.
+Issues, PRs, milestones and the board live on GitHub only. Do not write issue or PR numbers in docs, code comments or this file. Docs refer to tickets by stable keys such as `MVP-26b` (see `docs/design/mvp/dag.md`). A PR body links its issue with `Closes #N` or `Refs #N`. The board (Project 5) shows status, phase, priority and size.
 
 ## Known drift (verify before work)
 - Older plugin-era tickets (protocols, PluginManager, Memgraph) describe a design that ADR-0014 and the charter replaced. Check each one with the owner before work.
