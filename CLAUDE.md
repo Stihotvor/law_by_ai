@@ -11,7 +11,7 @@ Repo: `Stihotvor/law_by_ai` (public, default branch `main`). GitHub Project 5 "L
 - Quality tools in `.venv`: ruff, pyright, bandit, pip-audit, pre-commit. CI runs lint, typecheck, security scan, unit tests, Docker integration tests.
 - Services: `docker/docker-compose.yml` (postgres, redis, app, celery-worker, test). Stop with `docker compose -f <abs path>/docker/docker-compose.yml down`.
 - Migrations: Alembic (`alembic.ini`, `migrations/`, `docs/migrations.md`).
-- Branches: `feature/`, `fix/`, `docs/` named after the issue. A new ADR goes in its own PR on an `adr/` branch. PR body has `Closes #N` or `Refs #N`. See `CONTRIBUTING.md`.
+- Branches: `feature/`, `fix/`, `docs/` named after the issue. A new ADR goes in its own PR on an `adr/` branch, and the PR title starts with `ADR: `. PR body has `Closes #N` or `Refs #N`. See `CONTRIBUTING.md`.
 
 ## Layout
 `src/` (agents, config, core, data, evals, plugins, storage, tasks, ui), `tests/` (unit, integration), `docs/` (mkdocs + ADRs), `docker/`, `scripts/seed_db.py`.
