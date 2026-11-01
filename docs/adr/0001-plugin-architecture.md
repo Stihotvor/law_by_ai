@@ -53,7 +53,7 @@ Superseded by [ADR-0014](0014-hardcoded-postgresql.md) — the relational store
 became a hardcoded direct integration and the plugin system is being deprecated.
 The implementation history below is preserved for reference.
 
-Accepted. Implemented in PR #71 (`feat/config-settings-plugins`): the seven
+Accepted. Implemented in the `feat/config-settings-plugins` branch: the seven
 protocol contracts, `PluginManager`, the `config/plugins.yaml` registry, and
 the `config.plugins` facade shipped together with the config/settings layer.
-Subsequent hardening lives in issue #8.
+Subsequent hardening followed in a separate change.

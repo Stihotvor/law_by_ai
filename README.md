@@ -19,8 +19,7 @@ The full project documentation is published on **GitHub Pages**:
 ## Architecture Overview
 
 Law by AI uses **direct integrations** — PostgreSQL is the hardcoded relational
-store, accessed via `PostgreSQLStore` and managed with **Alembic migrations**
-(issue #9). The protocol-based plugin system is **deprecated** (ADR-0014).
+store, accessed via `PostgreSQLStore` and managed with **Alembic migrations**. The protocol-based plugin system is **deprecated** (ADR-0014).
 
 | Store / Model | Role | Implementation |
 |---|---|---|

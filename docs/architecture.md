@@ -46,7 +46,7 @@ All services run under Docker-Compose and communicate over the internal network.
 
 PostgreSQL is the single relational store, accessed directly via
 `PostgreSQLStore` (`plugins/relational_db/postgres.py`) — no protocol
-indirection. Schema is managed by **Alembic migrations** (issue #9); see
+indirection. Schema is managed by **Alembic migrations**; see
 [Migrations](migrations.md) for commands.
 
 ### `PostgreSQLStore` (`plugins/relational_db/postgres.py`)
@@ -296,7 +296,7 @@ classDiagram
   processing state, **failed-task registry**, full-text search index,
   per-tenant notes/chats.
 - **Multi-tenancy**: row-level security (RLS) with `tenant_id`. (ADR-0003)
-- **Schema**: managed by **Alembic migrations** (issue #9) — see
+- **Schema**: managed by **Alembic migrations** — see
   [Migrations](migrations.md).
 - **Accessed via**: `PostgreSQLStore` directly.
 
@@ -510,7 +510,7 @@ law_by_ai/
 │   ├── plugins.py           # DEPRECATED plugin facade (ADR-0014)
 │   ├── plugins.yaml         # DEPRECATED registry — no active entries
 │   └── .env.example
-├── migrations/              # Alembic migrations (issue #9)
+├── migrations/              # Alembic migrations
 │   ├── env.py
 │   └── versions/
 ├── data/                    # Data models
@@ -630,7 +630,7 @@ gantt
 
 ## Migration Paths
 
-1. **PostgreSQL schema** — managed by Alembic migrations (issue #9); see
+1. **PostgreSQL schema** — managed by Alembic migrations; see
    [Migrations](migrations.md).
 2. **Plugin → direct integration** — each deprecated plugin type (VectorDB,
    GraphDB, LLM, Embedding, Reranking, KnowledgeSource) is replaced by a direct
