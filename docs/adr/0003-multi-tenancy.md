@@ -23,9 +23,9 @@ private. Fully duplicating documents per tenant wastes the 4–6 GB RAM budget.
 - **Enforcement**:
   - PostgreSQL — row-level security (RLS) on tenant-owned tables; documents
     are read-only shared rows.
-  - Chroma/Qdrant — partitions/collections scoped by tenant for embeddings of
+  - Qdrant — partitions/collections scoped by tenant for embeddings of
     tenant-private content; shared docs use a shared partition.
-  - Memgraph/Neo4j — subgraph per tenant.
+  - Neo4j — subgraph per tenant.
 - **Automated leak tests** assert no tenant can read or write another tenant's
   state.
 

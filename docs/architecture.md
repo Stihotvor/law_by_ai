@@ -472,7 +472,7 @@ law_by_ai/
 │   │   ├── manager.py       # PluginManager — deprecated (ADR-0014)
 │   │   └── exceptions.py    # Plugin-specific errors
 │   ├── security/
-│   │   ├── auth.py          # JWT issue/verify
+│   │   ├── passwords.py     # bcrypt hashing (ADR-0013)
 │   │   ├── rbac.py          # Role checks (admin/user)
 │   │   └── tenant.py        # tenant_id context helpers
 │   └── observability/
@@ -643,7 +643,7 @@ Records. See the [ADR index](adr/index.md) for full records.
 | ADR | Title | Status |
 |-----|-------|--------|
 | [ADR-0001](adr/0001-plugin-architecture.md) | Protocol-based plugins with YAML registration | Superseded by ADR-0014 |
-| [ADR-0002](adr/0002-graph-database.md) | Neo4j AuraDB (production graph DB) | Proposed |
+| [ADR-0002](adr/0002-graph-database.md) | Neo4j AuraDB Free as the graph database | Proposed |
 | [ADR-0003](adr/0003-multi-tenancy.md) | Shared document storage, per-tenant state | Proposed |
 | [ADR-0004](adr/0004-auth-rbac.md) | JWT auth + RBAC (admin/user) — JWT superseded by ADR-0013, RBAC retained | Superseded | 2026-07-31 |
 | [ADR-0005](adr/0005-observability.md) | structlog + OTel → Grafana Alloy → Grafana Cloud | Proposed |
