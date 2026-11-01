@@ -17,11 +17,11 @@ Repo: `Stihotvor/law_by_ai` (public, default branch `main`). GitHub Project 5 "L
 `src/` (agents, config, core, data, evals, plugins, storage, tasks, ui), `tests/` (unit, integration), `docs/` (mkdocs + ADRs), `docker/`, `scripts/seed_db.py`.
 
 ## Product (docs/intention.md is the charter)
-Self-hosted, multi-tenant AI lawyer for EU (Poland) citizens and expats. Areas: family, child care, taxes, anti-xenophobic law. It must not bypass the law.
+Self-hosted, multi-tenant AI legal assistant (information, not advice) for EU (Poland) citizens and expats. Areas: family, child care, taxes, anti-xenophobic law. It must not bypass the law.
 - Hard budget: runs fast on 4-6 GB RAM with a small local model.
 - MVP must have: citations with confidence scores and source links, faceted filters, document diffs (Git-backed), bureaucracy assistant, observability, health checks, auth + RBAC, tenant leak tests.
 - Human-in-the-loop agents, pre-configured pipelines, English docs first, MIT license, invite-only contributions.
-- Targets (stated in the charter, may be outdated): MVP end of next month, v1 end of this year.
+- Targets: MVP planning date 2027-02-28 (the date moves before the scope does). The v1 date is set after the MVP.
 
 ## Architecture (docs/architecture.md, ADRs in docs/adr/)
 - ADR-0014 (accepted): PostgreSQL is a hardcoded integration (`PostgreSQLStore`, `src/plugins/relational_db/postgres.py`). The plugin system (ADR-0001) is deprecated and each backend becomes a direct integration.
