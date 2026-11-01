@@ -41,8 +41,24 @@ does not justify a plugin interface.
    - Grafana Cloud (free tier) + **Grafana Alloy** locally — observability
      (ADR-0005)
    - OpenAI-compatible endpoints for LLM/SLM — each agent may use its own model
-   - Cohere — reranking model
+   - Local reranking model — runs on the host (see Amendment)
    - Embedding provider may differ from the LLM provider
+
+## Amendment: local reranking
+
+Reranking runs locally. Cohere is dropped from the fixed stack, so no query or
+document chunk leaves the host for this step. This keeps the 4-6 GB RAM budget
+and removes one paid external service.
+
+- The model is chosen by an evaluation (ADR-0009). Candidates are
+  `BAAI/bge-reranker-v2-m3` (int8 ONNX, Apache-2.0) and
+  `Horizon-Labs/multilingual-reranker-small` (int8 ONNX, Apache-2.0). The
+  evaluation also includes a run without reranking.
+- The evaluation measures recall@5 per query language (Polish, English,
+  Ukrainian) and latency for 20-50 pairs on CPU.
+- No reranking model enters the code before the evaluation.
+- If the model is missing or fails to load, search returns an explicit error.
+  There is no silent fallback.
 
 ## Consequences
 
