@@ -26,6 +26,7 @@ status: new
 | [ADR-0012](0012-license-contribution-model.md) | MIT license + contribution model (DCO, invite-only) | Proposed | 2026-08-03 |
 | [ADR-0013](0013-streamlit-authenticator.md) | streamlit-authenticator for the core app (JWT replaced) | Accepted | 2026-08-12 |
 | [ADR-0014](0014-hardcoded-postgresql.md) | Hardcoded PostgreSQL; plugin system deprecated | Accepted | 2026-08-12 |
+| [ADR-0015](0015-information-only-answers.md) | Answers are legal information, not legal advice | Proposed | 2026-11-01 |
 
 ## How to add an ADR
 
