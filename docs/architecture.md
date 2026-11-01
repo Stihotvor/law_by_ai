@@ -132,7 +132,7 @@ Future direction (ADR-0014): each of these becomes a **direct integration**:
 - **Knowledge sources**: web/git/filesystem ETL modules.
 - **Embedding**: a dedicated embedding provider (may differ from the LLM provider).
 - **LLM/SLM**: OpenAI-compatible endpoints; **each agent may use its own model**.
-- **Reranking**: Cohere.
+- **Reranking**: local model (ADR-0014).
 
 ### PluginManager (`core/plugins/manager.py`) — deprecated
 
@@ -319,7 +319,7 @@ classDiagram
 
 - **Embedding** — dedicated embedding provider (may differ from the LLM
   provider); chosen by **evaluation on Polish legal texts**. (ADR-0009)
-- **Reranking** — Cohere.
+- **Reranking** — local model (ADR-0014).
 - **LLM/SLM** — **OpenAI-compatible endpoints**; each agent may use its own
   model (ADR-0014).
 - **OCR** — model chosen by **evaluation on Polish documents**; runs inside
@@ -432,7 +432,7 @@ PostgreSQL  Qdrant
    └────┬────┘
         ▼
 ┌──────────────┐
-│ Re-ranker     │  Cohere (cross-encoder)
+│ Re-ranker     │  Local (cross-encoder)
 └──────┬───────┘
        │
        ▼
@@ -594,7 +594,7 @@ Tenant
 | **Vector store** | Qdrant                                                           |
 | **Graph store**  | Neo4j **AuraDB Free** (cloud) (ADR-0002)                         |
 | **Embeddings**   | Dedicated embedding provider (eval-selected, ADR-0009)           |
-| **Reranking**    | Cohere                                                           |
+| **Reranking**    | Local model (ADR-0014)                                           |
 | **LLM/SLM**      | OpenAI-compatible endpoints; per-agent models (ADR-0014)         |
 | **OCR**          | Tesseract/EasyOCR (eval-selected, ADR-0009)                      |
 | **Observability**| structlog JSON + OTel → Grafana Alloy → Grafana Cloud (ADR-0005) |
