@@ -41,7 +41,7 @@ def _extract_text(raw: bytes) -> str:
         if not isinstance(page, dict):
             raise OcrProviderError("unexpected response shape")
         index, markdown = page.get("index"), page.get("markdown")
-        if not isinstance(index, int) or not isinstance(markdown, str):
+        if isinstance(index, bool) or not isinstance(index, int) or not isinstance(markdown, str):
             raise OcrProviderError("unexpected response shape")
         items.append((index, markdown.strip()))
     texts = [text for _, text in sorted(items, key=lambda item: item[0]) if text]

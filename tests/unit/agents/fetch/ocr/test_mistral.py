@@ -90,6 +90,13 @@ def test_pages_sorted_and_joined() -> None:
     assert _provider(rec).ocr_pdf(b"x") == "first\n\nsecond"
 
 
+@pytest.mark.parametrize("index", [True, False])
+def test_bool_page_index_rejected(index: bool) -> None:
+    rec = Recorder(_ok(_page(index, "a")))  # type: ignore[arg-type]
+    with pytest.raises(OcrProviderError):
+        _provider(rec).ocr_pdf(b"x")
+
+
 def test_equal_indexes_keep_response_order() -> None:
     rec = Recorder(_ok(_page(0, "b"), _page(0, "a")))
     assert _provider(rec).ocr_pdf(b"x") == "b\n\na"
