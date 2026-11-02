@@ -74,6 +74,8 @@ def test_find_parser_unsupported(name: str, mime: str | None) -> None:
         ("text/html", None),
         (None, None),
         ("text/html; charset=", None),
+        ("text/html;charset=utf-8", "utf-8"),
+        ("text/html; charset=a; x=1", "a"),
         ("charset=utf-8", None),
     ],
 )
@@ -99,6 +101,10 @@ def _no_suffixes() -> type:
     return type("Bad", (), {"parse": _Good.parse, "mime_types": ("a/b",)})
 
 
+def _no_mime() -> type:
+    return type("Bad", (), {"parse": _Good.parse, "suffixes": (".ok",)})
+
+
 def _no_parse() -> type:
     return type("Bad", (), {"suffixes": (".ok",), "mime_types": ("a/b",)})
 
@@ -107,6 +113,8 @@ def _no_parse() -> type:
     "cls",
     [
         _no_suffixes(),
+        _no_mime(),
+        _derive(mime_types=("a/b;c",)),
         _derive(suffixes=("txt",)),
         _derive(suffixes=(".TXT",)),
         _derive(suffixes=(".",)),
@@ -126,7 +134,7 @@ def _no_parse() -> type:
     ],
 )
 def test_validate_rejects(cls: object) -> None:
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match=r"^format 'x': "):
         _validate_parser("x", cls)  # type: ignore[arg-type]
 
 
@@ -142,3 +150,13 @@ def test_parse_bytes() -> None:
     assert parse_bytes(b"hi", "a.txt", "text/plain; charset=utf-8") == "hi"
     with pytest.raises(UnsupportedFormatError):
         parse_bytes(b"x", "a.pdf")
+
+
+def test_validate_accepts_short_suffix() -> None:
+    _validate_parser("x", _derive(suffixes=(".a",)))  # type: ignore[arg-type]
+
+
+def test_parse_bytes_passes_charset_and_mime() -> None:
+    data = "\u0105".encode("iso-8859-2")
+    assert parse_bytes(data, "a.txt", "text/plain; charset=iso-8859-2") == "\u0105"
+    assert parse_bytes(b"<p>x</p>", "blob", "text/html") == "x"

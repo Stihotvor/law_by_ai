@@ -145,3 +145,11 @@ def test_html_attributes_ignored() -> None:
 
 def test_html_polish_roundtrip() -> None:
     assert html(f"<p>{PL}</p>") == PL
+
+
+def test_txt_declared_charset_used() -> None:
+    assert txt("\u0105".encode("iso-8859-2"), "iso-8859-2") == "\u0105"
+
+
+def test_html_bare_cr_is_line_break() -> None:
+    assert html("a\rb") == "a\nb"
