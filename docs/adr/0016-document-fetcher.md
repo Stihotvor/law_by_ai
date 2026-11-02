@@ -24,7 +24,7 @@ self-hosted deployment.
 
 1. **Strategy pattern for transport.** A `FetchStrategy` Protocol defines the
    transport: list references, read metadata, read bytes. Three strategies
-   implement it: REST API, Tavily crawl, and MinIO bucket. A Protocol fits
+   implement it: REST API, Tavily, and MinIO bucket. A Protocol fits
    because the strategies share no state.
 2. **One hardcoded class per legal source.** Each source class declares its
    `name`, its `base_url` (HTTPS only), and its `strategy_name` in code. The
@@ -46,12 +46,23 @@ self-hosted deployment.
    They follow in a later change. They turn raw bytes into text.
 7. **OCR through `OcrManager`.** All OCR goes through one `OcrManager`. It has
    one provider: Mistral Document AI. OCR is **off by default**. When OCR is
-   off, an image or a scanned input returns an "OCR disabled" result. The system
-   parses nothing locally, and nothing leaves the host. A later ADR may add
+   off, an image or a scanned input raises a typed `OcrDisabledError`. It is an
+   error, not a result. The system parses nothing locally, and nothing leaves
+   the host. The `ocr/` package is a leaf package: it imports nothing from the
+   other fetcher packages. A later ADR may add
    another provider (a local model or a gateway) without a change in the
    callers.
 8. **No local folder strategy.** The fetcher does not read paths from the local
    file system.
+9. **REST mapping.** A source registers a small mapper in a `REST_MAPPERS`
+   registry, keyed by source name. The REST strategy stays generic. The mapper
+   turns the payload into the fetch contracts. It can declare id safety, an id
+   pattern, and alternative content paths.
+10. **Tavily policy.** Tavily uses `map` to list and `extract` to read. It does
+    not use `crawl`. Each call has a cap on pages. An empty key is an error.
+11. **MinIO and `base_url`.** MinIO ignores the `https://` rule on `base_url`.
+    The endpoint, the bucket, and the credentials come from `Settings`. Only the
+    path of `base_url` is the key prefix.
 
 ## Privacy consequence
 
@@ -90,11 +101,11 @@ plugin system that ADR-0014 deprecated.
   release. This is an accepted trade-off for a single maintainer.
 - OCR is limited to one provider at first. Users who turn it off cannot read
   scanned documents.
-- Tavily crawl has a cost and a rate limit. The policy is not set here.
-- Open point: the mapping of a REST payload to the fetch contracts is source
-  specific. It is designed in the pull request that adds the REST strategy.
-- Open point: the Tavily cost and rate-limit policy.
+- Tavily has a cost and a rate limit. The page cap limits the cost per call.
+- Open point: the Tavily daily credit budget.
 - Open point: the retention rule for rejected documents.
+- Open point: the review of the Mistral data-retention terms.
+- Open point: the OCR model pin.
 
 ## Alternatives Considered
 
@@ -109,11 +120,3 @@ plugin system that ADR-0014 deprecated.
   are simple, and tests can use a private `Registry`.
 - **Inheritance for strategies** - rejected. The strategies share no state, so
   a Protocol is enough.
-
-## Related
-
-- [ADR-0014](0014-hardcoded-postgresql.md) - plugin system deprecated
-- [ADR-0001](0001-plugin-architecture.md) - superseded plugin system
-- [ADR-0009](0009-model-evals.md) - OCR evaluation for Polish
-- [ADR-0003](0003-multi-tenancy.md) - tenant isolation
-- [Architecture](../architecture.md) - Agents Layer
