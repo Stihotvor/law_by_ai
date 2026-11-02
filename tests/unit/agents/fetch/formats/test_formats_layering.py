@@ -14,14 +14,24 @@ _FORBIDDEN = (
 )
 
 
-def _imports(path: Path) -> list[str]:
+def _collect(source: str) -> list[str]:
     names: list[str] = []
-    for node in ast.walk(ast.parse(path.read_text())):
+    for node in ast.walk(ast.parse(source)):
         if isinstance(node, ast.Import):
             names += [a.name for a in node.names]
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             names.append(node.module)
+            names += [node.module + "." + a.name for a in node.names]
     return names
+
+
+def _imports(path: Path) -> list[str]:
+    return _collect(path.read_text())
+
+
+def test_collector_catches_aliased_from_import() -> None:
+    names = _collect("from agents.fetch import sources\n")
+    assert "agents.fetch.sources" in names
 
 
 def test_formats_do_not_import_forbidden_modules() -> None:
