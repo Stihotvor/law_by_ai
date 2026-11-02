@@ -112,8 +112,8 @@ class DocxParser:
     )
 
     def parse(self, data: bytes, *, charset: str | None = None) -> str:
-        _check_zip(data)
         try:
+            _check_zip(data)
             lines = _collect(Document(BytesIO(data)))
         except FormatError:
             raise

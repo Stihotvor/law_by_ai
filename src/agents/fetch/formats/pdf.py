@@ -25,13 +25,12 @@ __all__ = [
 ]
 
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
-_TRAILING_RE = re.compile(r"[ ]+$", re.M)
 
 
 def _clean(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = _CONTROL_RE.sub("", text)
-    return _TRAILING_RE.sub("", text).strip()
+    return "\n".join(line.rstrip(" ") for line in text.split("\n")).strip()
 
 
 def _open(data: bytes) -> PdfReader:

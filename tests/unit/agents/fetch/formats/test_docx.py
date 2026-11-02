@@ -410,3 +410,14 @@ def test_ratio_boundaries(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(docx_module, "MAX_COMPRESSION_RATIO", ratio - 0.5)
     with pytest.raises(DocumentLimitError):
         _parse(data)
+
+
+def test_unsupported_zip_compression_is_corrupt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(self: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
+        raise NotImplementedError("compression type 99")
+
+    monkeypatch.setattr(zipfile.ZipFile, "infolist", boom)
+    with pytest.raises(CorruptDocumentError):
+        DocxParser().parse(_docx(lambda d: d.add_paragraph("x")))
