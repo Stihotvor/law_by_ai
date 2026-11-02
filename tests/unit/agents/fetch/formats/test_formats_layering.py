@@ -42,3 +42,17 @@ def test_formats_do_not_import_forbidden_modules() -> None:
         for name in _imports(path):
             for bad in _FORBIDDEN:
                 assert name != bad and not name.startswith(bad + "."), f"{path.name}: {name}"
+
+
+def test_format_errors_derive_from_fetch_error() -> None:
+    from agents.fetch.errors import FetchError
+    from agents.fetch.formats import base
+
+    assert issubclass(base.FormatError, FetchError)
+    for cls in (base.UnsupportedFormatError, base.TextLimitError):
+        assert issubclass(cls, base.FormatError)
+
+
+def test_formats_may_import_errors_module() -> None:
+    root = Path(__file__).resolve().parents[5] / "src" / "agents" / "fetch" / "formats"
+    assert "agents.fetch.errors" in _imports(root / "base.py")

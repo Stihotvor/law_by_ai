@@ -5,7 +5,8 @@ import re
 from html.parser import HTMLParser
 from typing import ClassVar
 
-from agents.fetch.formats.base import FORMATS
+from agents.fetch.formats import base
+from agents.fetch.formats.base import FORMATS, TextLimitError
 
 _META_RE = re.compile(rb'charset\s*=\s*["\']?([A-Za-z0-9._:-]+)', re.I)
 _SNIFF_BYTES = 2048
@@ -42,6 +43,11 @@ def _meta_charset(data: bytes) -> str | None:
     return match.group(1).decode("ascii") if match else None
 
 
+def _check_size(size: int) -> None:
+    if size > base.MAX_TEXT_CHARS:
+        raise TextLimitError(f"text exceeds {base.MAX_TEXT_CHARS} characters")
+
+
 def _decode(data: bytes, charset: str | None, sniff_meta: bool) -> str:
     candidates = [_bom_charset(data), charset]
     if sniff_meta:
@@ -61,6 +67,7 @@ class PlainTextParser:
 
     def parse(self, data: bytes, *, charset: str | None = None) -> str:
         text = _decode(data, charset, sniff_meta=False)
+        _check_size(len(text))
         return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
@@ -69,6 +76,7 @@ class _TextExtractor(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.pieces: list[str] = []
         self._skip_depth = 0
+        self._size = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag in _SKIP_TAGS:
@@ -84,6 +92,8 @@ class _TextExtractor(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if self._skip_depth == 0:
+            self._size += len(data)
+            _check_size(self._size)
             self.pieces.append(data)
 
 

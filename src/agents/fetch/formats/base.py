@@ -5,17 +5,23 @@ from collections.abc import Callable
 from pathlib import PurePosixPath
 from typing import ClassVar, Protocol, runtime_checkable
 
+from agents.fetch.errors import FetchError
 from agents.fetch.registry import Registry
 
+MAX_TEXT_CHARS = 5_000_000
 _CHARSET_RE = re.compile(r'charset\s*=\s*"?([A-Za-z0-9._:-]+)"?', re.I)
 
 
-class FormatError(Exception):
+class FormatError(FetchError):
     """Base class for format errors."""
 
 
 class UnsupportedFormatError(FormatError):
     """No parser matches the file name or MIME type."""
+
+
+class TextLimitError(FormatError):
+    """Extracted text exceeds MAX_TEXT_CHARS."""
 
 
 @runtime_checkable
