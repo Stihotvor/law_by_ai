@@ -93,7 +93,8 @@ def _collect(document: DocumentType) -> list[str]:
     lines: list[str] = []
     total = 0
     for line in _lines(document.iter_inner_content(), 0):
-        line = _CONTROL_RE.sub("", line.replace("\xa0", " ")).strip()
+        line = line.replace("\r\n", "\n").replace("\r", "\n").replace("\xa0", " ")
+        line = _CONTROL_RE.sub("", line).strip()
         if not line:
             continue
         total += len(line)

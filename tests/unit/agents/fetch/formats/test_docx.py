@@ -92,6 +92,9 @@ def test_table_order_merge_empty_row_nested() -> None:
         doc.add_paragraph("after")
 
     out = _parse(_docx(build))
+    # Spec: a row joins ALL cell texts with " | ", empty ones included. The outer
+    # row holds the nested table in cell 0 plus two empty cells, so the trailing
+    # " |  |" is the specified result, not a bug.
     assert out.split("\n") == ["before", "a | b | c", "m | z", "n1 | n2 |  |", "after"]
 
 
@@ -297,30 +300,29 @@ def _with_doctype(data: bytes, doctype: str, text_xml: str) -> bytes:
     return _rewrite(data, replace={"word/document.xml": new})
 
 
-def _assert_safe(data: bytes, marker: str) -> str | None:
-    try:
-        out = _parse(data)
-    except CorruptDocumentError:
-        return None
-    assert marker not in out
-    return out
+def test_carriage_returns_become_newlines() -> None:
+    data = _with_doctype(_simple("x"), "", "a&#13;&#10;b&#13;c")
+    assert _parse(data).split("\n") == ["a", "b", "c", "x"]
 
 
 def test_xxe_internal_entity() -> None:
-    # Observed outcome: the entity is not expanded and the document parses.
+    # Observed: the entity is dropped (not expanded) and the document parses.
     doctype = '<!DOCTYPE d [<!ENTITY a "EXPANDED-MARKER">]>'
-    _assert_safe(_with_doctype(_simple("x"), doctype, "&a;"), "EXPANDED-MARKER")
+    out = _parse(_with_doctype(_simple("x"), doctype, "&a;"))
+    assert out == "x"
 
 
 def test_xxe_external_file(tmp_path: Path) -> None:
-    # Observed outcome: the external entity is not resolved, SECRET-MARKER is absent.
+    # Observed: the external entity is dropped, not resolved; the file is never read.
     secret = tmp_path / "secret.txt"
     secret.write_text("SECRET-MARKER")
     doctype = f'<!DOCTYPE d [<!ENTITY x SYSTEM "file://{secret}">]>'
-    _assert_safe(_with_doctype(_simple("x"), doctype, "&x;"), "SECRET-MARKER")
+    out = _parse(_with_doctype(_simple("x"), doctype, "&x;"))
+    assert out == "x"
 
 
 def test_entity_expansion() -> None:
+    # Observed: the parser rejects the entity bomb with CorruptDocumentError.
     entities = ['<!ENTITY e0 "lol">']
     for level in range(1, 10):
         refs = f"&e{level - 1};" * 10
@@ -328,9 +330,9 @@ def test_entity_expansion() -> None:
     doctype = "<!DOCTYPE d [" + "".join(entities) + "]>"
     data = _with_doctype(_simple("x"), doctype, "&e9;")
     started = time.monotonic()
-    out = _assert_safe(data, "lollollol")
+    with pytest.raises(CorruptDocumentError):
+        _parse(data)
     assert time.monotonic() - started < 5
-    assert out is None or len(out) < 1000
 
 
 def test_external_relationship_no_socket(monkeypatch: pytest.MonkeyPatch) -> None:
