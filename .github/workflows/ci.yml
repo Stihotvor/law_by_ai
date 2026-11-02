@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
@@ -44,7 +46,37 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --extra dev
       - name: Run unit tests (no external services)
-        run: uv run pytest -m "not integration" -q --cov=core --cov=plugins
+        run: uv run pytest -m "not integration" -q --cov --cov-branch --cov-report=xml --cov-report=term-missing
+      - name: Coverage of changed lines (>= 90%)
+        if: github.event_name == 'pull_request'
+        run: uv run diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --fail-under=90
+
+  mutation:
+    runs-on: ubuntu-latest
+    needs: lint
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: uv sync --frozen --extra dev
+      - name: Run mutation tests (scope set in pyproject.toml)
+        run: uv run mutmut run
+        continue-on-error: true
+      - name: Summarise results
+        if: always()
+        run: uv run mutmut results > mutation-summary.txt || true
+      - name: Upload mutation summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-summary
+          path: mutation-summary.txt
+          if-no-files-found: warn
 
   typecheck:
     runs-on: ubuntu-latest
