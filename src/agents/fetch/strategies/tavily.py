@@ -25,6 +25,7 @@ from tavily.errors import (
     BadRequestError,
     ForbiddenError,
     InvalidAPIKeyError,
+    MissingAPIKeyError,
     UsageLimitExceededError,
 )
 from tavily.errors import TimeoutError as TavilyTimeoutError
@@ -64,6 +65,8 @@ def _translate(exc: Exception) -> FetchError:
     if isinstance(exc, FetchError):
         return exc
     name = type(exc).__name__
+    if isinstance(exc, MissingAPIKeyError):
+        return SourceConfigError("Tavily API key is not set")
     if isinstance(exc, InvalidAPIKeyError):
         return SourceConfigError("Tavily rejected the API key")
     for kind, status in _STATUS_ERRORS:
@@ -109,7 +112,10 @@ class TavilyCrawlStrategy:
     def _open(self) -> tuple[TavilyClient, bool]:
         if self._client is not None:
             return self._client, False
-        client = TavilyClient(api_key=get_settings().tavily_api_key)
+        try:
+            client = TavilyClient(api_key=get_settings().tavily_api_key)
+        except Exception as exc:
+            raise _translate(exc) from exc
         client.session.trust_env = False
         return client, True
 

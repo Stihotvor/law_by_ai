@@ -7,6 +7,7 @@ from tavily.errors import (
     BadRequestError,
     ForbiddenError,
     InvalidAPIKeyError,
+    MissingAPIKeyError,
     UsageLimitExceededError,
 )
 from tavily.errors import TimeoutError as TavilyTimeoutError
@@ -396,3 +397,18 @@ def test_tavily_sources_use_https() -> None:
         cls = SOURCES.get(name)
         if cls.strategy_name == "tavily":
             assert cls.base_url.startswith("https://")
+
+
+@pytest.mark.parametrize(
+    ("exc", "kind"),
+    [
+        (MissingAPIKeyError(), SourceConfigError),
+        (requests.exceptions.ConnectionError("x"), FetchTransportError),
+    ],
+)
+def test_client_construction_errors_are_typed(exc: Exception, kind: type[FetchError]) -> None:
+    with patch("agents.fetch.strategies.tavily.TavilyClient", side_effect=exc):
+        strategy = TavilyCrawlStrategy(BASE)
+        with pytest.raises(kind) as err:
+            strategy.list_refs("s", DocumentFilter())
+    assert KEY not in str(err.value)
