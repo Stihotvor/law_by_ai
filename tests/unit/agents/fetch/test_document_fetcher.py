@@ -56,6 +56,23 @@ class FakeSource(LegalSource):
         return DOC
 
 
+class RecordingSource(FakeSource):
+    name: ClassVar[str] = "rec"
+    calls: ClassVar[list[tuple[str, object]]] = []
+
+    def list_documents(self, flt: DocumentFilter) -> DocumentPage:
+        self.calls.append(("list", flt))
+        return PAGE
+
+    def get_document_meta(self, ref: DocumentRef) -> DocumentMeta:
+        self.calls.append(("meta", ref))
+        return META
+
+    def fetch_document(self, ref: DocumentRef) -> FetchedDocument:
+        self.calls.append(("fetch", ref))
+        return DOC
+
+
 class Rejecting:
     def is_rejected(self, source_url: str) -> bool:
         return True
@@ -119,3 +136,47 @@ def test_source_mismatch() -> None:
 def test_strategy_built_with_base_url() -> None:
     DocumentFetcherAgent().list_documents("fake", DocumentFilter())
     assert FakeStrategy.built_with == ["https://fake.example"]
+
+
+def test_arguments_forwarded(registries: Registry[type[LegalSource]]) -> None:
+    registries.register("rec")(RecordingSource)
+    RecordingSource.calls.clear()
+    ref = REF.model_copy(update={"source": "rec"})
+    flt = DocumentFilter(limit=7)
+    agent = DocumentFetcherAgent()
+    agent.list_documents("rec", flt)
+    agent.get_document_meta("rec", ref)
+    agent.fetch_document("rec", ref)
+    assert RecordingSource.calls == [("list", flt), ("meta", ref), ("fetch", ref)]
+
+
+def test_rejection_checker_receives_url() -> None:
+    seen: list[str] = []
+
+    class Spy:
+        def is_rejected(self, source_url: str) -> bool:
+            seen.append(source_url)
+            return False
+
+    DocumentFetcherAgent(Spy()).fetch_document("fake", REF)
+    assert seen == [REF.url]
+
+
+def test_error_messages() -> None:
+    with pytest.raises(DocumentRejectedError) as rej:
+        DocumentFetcherAgent(Rejecting()).fetch_document("fake", REF)
+    assert str(rej.value) == f"document rejected: {REF.url}"
+    with pytest.raises(ValueError) as mismatch:
+        DocumentFetcherAgent().get_document_meta("other", REF)
+    assert str(mismatch.value) == "ref.source 'fake' does not match source 'other'"
+
+
+def test_unknown_strategy_message(registries: Registry[type[LegalSource]]) -> None:
+    class Bad(FakeSource):
+        name: ClassVar[str] = "bad"
+        strategy_name: ClassVar[str] = "missing"
+
+    registries.register("bad")(Bad)
+    with pytest.raises(SourceConfigError) as info:
+        DocumentFetcherAgent().list_documents("bad", DocumentFilter())
+    assert str(info.value) == "source 'bad' uses unknown strategy 'missing'"

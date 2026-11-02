@@ -111,3 +111,13 @@ def test_registry_has_no_project_imports() -> None:
             names = [node.module or ""]
         for n in names:
             assert n.split(".")[0] not in {"agents", "core", "plugins"}
+
+
+def test_registry_error_messages() -> None:
+    reg: Registry[int] = Registry("kind")
+    with pytest.raises(InvalidNameError) as bad:
+        reg.register("Bad")
+    assert str(bad.value) == "kind: invalid name 'Bad'"
+    with pytest.raises(UnknownNameError) as unknown:
+        reg.get("nope")
+    assert str(unknown.value) == "kind: unknown name 'nope'"

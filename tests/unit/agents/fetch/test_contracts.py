@@ -48,3 +48,21 @@ def test_ref_rejects_empty(field: str) -> None:
 def test_fetched_document_bytes_roundtrip() -> None:
     doc = FetchedDocument(meta=META, content=b"\x00\xff", fetched_at=NOW)
     assert FetchedDocument.model_validate(doc.model_dump()).content == b"\x00\xff"
+
+
+def _msg(exc: pytest.ExceptionInfo[ValidationError]) -> str:
+    return str(exc.value.errors()[0]["msg"])
+
+
+def test_naive_datetime_message() -> None:
+    naive = datetime(2026, 1, 1)
+    expected = "Value error, datetime must be timezone-aware"
+    with pytest.raises(ValidationError) as f:
+        DocumentFilter(date_from=naive)
+    assert _msg(f) == expected
+    with pytest.raises(ValidationError) as m:
+        DocumentMeta(ref=REF, title="t", published_at=naive)
+    assert _msg(m) == expected
+    with pytest.raises(ValidationError) as d:
+        FetchedDocument(meta=META, content=b"", fetched_at=naive)
+    assert _msg(d) == expected
