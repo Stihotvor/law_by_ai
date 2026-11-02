@@ -65,5 +65,9 @@ class DocumentFetcherAgent:
         return result.model_copy(update={"tenant_id": tenant_id})
 
     def parse(self, doc_bytes: bytes, name: str, mime: str | None = None) -> str:
-        """Turn raw bytes into plain text. Raises UnsupportedFormatError."""
+        """Turn raw bytes into plain text. Raises FormatError subclasses.
+
+        UnsupportedFormatError: no parser matches the name or MIME type.
+        TextLimitError: extracted text is over the character cap.
+        """
         return parse_bytes(doc_bytes, name, mime)
