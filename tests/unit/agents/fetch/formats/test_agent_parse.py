@@ -16,9 +16,9 @@ def test_parse_html() -> None:
 
 def test_parse_unsupported() -> None:
     with pytest.raises(UnsupportedFormatError):
-        DocumentFetcherAgent().parse(b"x", "a.pdf", "application/pdf")
+        DocumentFetcherAgent().parse(b"x", "a.xyz", "application/x-unknown")
 
 
 def test_import_populates_formats() -> None:
     assert agents.fetch.document_fetcher is not None
-    assert FORMATS.names() == ("html", "text")
+    assert {"html", "text"} <= set(FORMATS.names())

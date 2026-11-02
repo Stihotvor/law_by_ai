@@ -58,7 +58,7 @@ def test_find_parser_dispatch(name: str, mime: str | None, expected: type) -> No
     assert type(find_parser(name, mime)) is expected
 
 
-@pytest.mark.parametrize(("name", "mime"), [("a.pdf", "application/pdf"), ("blob", None)])
+@pytest.mark.parametrize(("name", "mime"), [("a.xyz", "application/x-unknown"), ("blob", None)])
 def test_find_parser_unsupported(name: str, mime: str | None) -> None:
     with pytest.raises(UnsupportedFormatError) as exc:
         find_parser(name, mime)
@@ -149,7 +149,7 @@ def test_register_and_duplicate() -> None:
 def test_parse_bytes() -> None:
     assert parse_bytes(b"hi", "a.txt", "text/plain; charset=utf-8") == "hi"
     with pytest.raises(UnsupportedFormatError):
-        parse_bytes(b"x", "a.pdf")
+        parse_bytes(b"x", "a.xyz")
 
 
 def test_validate_accepts_short_suffix() -> None:
