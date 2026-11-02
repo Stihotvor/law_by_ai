@@ -2,7 +2,7 @@ name: law-by-ai
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     env_file: .env
     volumes:
       - pgdata:/var/lib/postgresql/data
