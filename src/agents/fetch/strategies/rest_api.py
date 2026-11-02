@@ -92,6 +92,10 @@ class RestApiStrategy:
             raise SourceConfigError("base_url must start with https://")
         self._base = base_url.rstrip("/")
         parts = urlsplit(self._base)
+        if parts.username is not None or parts.password is not None or "@" in parts.netloc:
+            raise SourceConfigError("base_url must not contain credentials")
+        if not parts.hostname:
+            raise SourceConfigError("base_url needs a host")
         self._host = parts.hostname
         self._port = parts.port or _HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers
@@ -104,15 +108,18 @@ class RestApiStrategy:
         listing = _call(mapper.parse_list, body)
         if len(listing.external_ids) > flt.limit:
             raise PayloadError("mapper returned more ids than limit")
-        refs = tuple(
-            DocumentRef(
-                source=source,
-                external_id=eid,
-                url=self._base + self._path(mapper.content_path, eid),
+        try:
+            refs = tuple(
+                DocumentRef(
+                    source=source,
+                    external_id=eid,
+                    url=self._base + self._path(mapper.content_path, eid),
+                )
+                for eid in listing.external_ids
             )
-            for eid in listing.external_ids
-        )
-        return DocumentPage(items=refs, next_cursor=listing.next_cursor)
+            return DocumentPage(items=refs, next_cursor=listing.next_cursor)
+        except (ValueError, TypeError) as exc:
+            raise PayloadError(f"mapper returned an invalid id: {type(exc).__name__}") from exc
 
     def get_meta(self, ref: DocumentRef) -> DocumentMeta:
         mapper = self._mapper(ref.source)

@@ -24,9 +24,10 @@ _TRANSPORT_ERRORS = (MinioException, urllib3.exceptions.HTTPError)
 
 def _prefix_from(base_url: str) -> str:
     path = urlsplit(base_url).path.lstrip("/")
-    if not path or ".." in path.split("/"):
+    path = path.rstrip("/")
+    if not path or "\\" in path or any(s in {"", ".."} for s in path.split("/")):
         raise SourceConfigError("base_url needs a path prefix without '..'")
-    return path.rstrip("/") + "/"
+    return path + "/"
 
 
 def _aware(value: datetime) -> datetime:
@@ -81,8 +82,10 @@ class MinioStrategy:
         )
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
-        if flt.cursor is not None and not flt.cursor.startswith(self._prefix):
-            raise InvalidReferenceError("cursor outside the source prefix")
+        if flt.cursor is not None:
+            if not flt.cursor.startswith(self._prefix):
+                raise InvalidReferenceError("cursor outside the source prefix")
+            _safe_id(flt.cursor[len(self._prefix) :])
         keys: list[str] = []
         more = False
         try:
@@ -152,8 +155,10 @@ class MinioStrategy:
             try:
                 data: bytes = response.read(max_bytes + 1)
             finally:
-                response.close()
-                response.release_conn()
+                try:
+                    response.close()
+                finally:
+                    response.release_conn()
         except S3Error as exc:
             raise self._s3_error("get", key, exc) from exc
         except _TRANSPORT_ERRORS as exc:
