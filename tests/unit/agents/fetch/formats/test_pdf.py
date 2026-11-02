@@ -1,5 +1,6 @@
 import builtins
 import socket
+import time
 import zlib
 from io import BytesIO
 from typing import Any
@@ -220,3 +221,14 @@ def test_not_decrypted_result_is_encrypted_error(monkeypatch: pytest.MonkeyPatch
 
 def test_damaged_but_recoverable_pdf_is_read_leniently() -> None:
     assert PdfParser().parse(b"junk\n" + _pdf(["hello"])) == "hello"
+
+
+def test_clean_long_space_run_is_linear() -> None:
+    start = time.monotonic()
+    assert pdf_module._clean(" " * 300_000 + "x") == "x"  # pyright: ignore[reportPrivateUsage]
+    assert time.monotonic() - start < 2
+
+
+def test_clean_strips_trailing_spaces_only() -> None:
+    cleaned = pdf_module._clean("a  \nb\t \nc \t\n d   ")  # pyright: ignore[reportPrivateUsage]
+    assert cleaned == "a\nb\t\nc \t\n d"

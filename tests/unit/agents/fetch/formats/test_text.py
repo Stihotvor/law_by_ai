@@ -1,5 +1,6 @@
 import pytest
 
+from agents.fetch.formats.base import TextLimitError
 from agents.fetch.formats.text import HtmlParser, PlainTextParser
 
 PL = "zażółć gęślą jaźń"
@@ -153,3 +154,17 @@ def test_txt_declared_charset_used() -> None:
 
 def test_html_bare_cr_is_line_break() -> None:
     assert html("a\rb") == "a\nb"
+
+
+def test_txt_over_limit_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 10)
+    assert txt(b"a" * 10) == "a" * 10
+    with pytest.raises(TextLimitError):
+        txt(b"a" * 11)
+
+
+def test_html_over_limit_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 10)
+    assert html("<p>aaaaa</p><p>bbbbb</p>") == "aaaaa\nbbbbb"
+    with pytest.raises(TextLimitError):
+        html("<p>aaaaaa</p><p>bbbbb</p>")

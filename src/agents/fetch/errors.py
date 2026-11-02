@@ -13,6 +13,10 @@ class SourceConfigError(FetchError):
     """Source declares an unknown strategy_name."""
 
 
+class UnknownSourceError(FetchError):
+    """No source is registered under the requested name."""
+
+
 class FetchTransportError(FetchError):
     """Network, HTTP or storage failure."""
 
