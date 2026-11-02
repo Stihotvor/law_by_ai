@@ -11,7 +11,7 @@ from agents.fetch.contracts import (
     FetchedDocument,
 )
 from agents.fetch.document_fetcher import DocumentFetcherAgent
-from agents.fetch.errors import DocumentRejectedError, SourceConfigError
+from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
 from agents.fetch.registry import Registry, UnknownNameError
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
@@ -104,8 +104,16 @@ def test_fetch_tenant() -> None:
 
 
 def test_unknown_source() -> None:
-    with pytest.raises(UnknownNameError):
+    with pytest.raises(UnknownSourceError) as info:
         DocumentFetcherAgent().list_documents("nope", DocumentFilter())
+    assert isinstance(info.value.__cause__, UnknownNameError)
+    assert str(info.value) == "unknown source 'nope'"
+
+
+def test_unknown_source_name_truncated() -> None:
+    with pytest.raises(UnknownSourceError) as info:
+        DocumentFetcherAgent().list_documents("x" * 200, DocumentFilter())
+    assert str(info.value) == f"unknown source {'x' * 64!r}"
 
 
 def test_unknown_strategy(registries: Registry[type[LegalSource]]) -> None:
@@ -165,7 +173,8 @@ def test_rejection_checker_receives_url() -> None:
 def test_error_messages() -> None:
     with pytest.raises(DocumentRejectedError) as rej:
         DocumentFetcherAgent(Rejecting()).fetch_document("fake", REF)
-    assert str(rej.value) == f"document rejected: {REF.url}"
+    assert str(rej.value) == "document rejected: fake/1"
+    assert REF.url not in str(rej.value)
     with pytest.raises(ValueError) as mismatch:
         DocumentFetcherAgent().get_document_meta("other", REF)
     assert str(mismatch.value) == "ref.source 'fake' does not match source 'other'"
