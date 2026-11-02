@@ -34,9 +34,28 @@ def test_pyproject_uses_src_layout():
 
 def test_dockerfile_uses_python313_slim_and_nonroot():
     text = (ROOT / "docker" / "Dockerfile").read_text()
-    assert "python:3.13-slim" in text
+    assert "python:3.13" in text
+    assert "-slim" in text
+    assert "@sha256:" in text
     assert "appuser" in text
     assert "USER appuser" in text
+
+
+def test_dockerfile_pins_images_uid_and_uv():
+    text = (ROOT / "docker" / "Dockerfile").read_text()
+    for line in text.splitlines():
+        if line.startswith("FROM python:") or "COPY --from=ghcr.io" in line:
+            assert "@sha256:" in line
+    assert ":latest" not in text
+    assert "--uid 10001" in text
+    assert "PYTHONDONTWRITEBYTECODE=1" in text
+
+
+def test_dockerignore_keeps_local_secret_files_out_of_context():
+    lines = (ROOT / ".dockerignore").read_text().splitlines()
+    for entry in (".env", "docker/.env", ".claude"):
+        assert entry in lines
+    assert not any(line.strip() in ("*.env*", ".env*", "*.example") for line in lines)
 
 
 def test_dockerfile_has_runtime_and_test_targets():

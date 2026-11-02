@@ -16,3 +16,6 @@ __pycache__
 .coverage
 htmlcov
 *.log
+.env
+docker/.env
+.claude
