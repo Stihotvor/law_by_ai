@@ -2,6 +2,7 @@
 
 from typing import Protocol
 
+import agents.fetch.formats
 import agents.fetch.sources
 import agents.fetch.strategies  # noqa: F401  (triggers autoload)
 from agents.fetch.contracts import (
@@ -12,6 +13,7 @@ from agents.fetch.contracts import (
     FetchedDocument,
 )
 from agents.fetch.errors import DocumentRejectedError, SourceConfigError
+from agents.fetch.formats.base import parse_bytes
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
 from agents.fetch.strategies.base import STRATEGIES
@@ -61,3 +63,7 @@ class DocumentFetcherAgent:
             raise DocumentRejectedError(f"document rejected: {ref.url}")
         result = self._resolve(source).fetch_document(ref)
         return result.model_copy(update={"tenant_id": tenant_id})
+
+    def parse(self, doc_bytes: bytes, name: str, mime: str | None = None) -> str:
+        """Turn raw bytes into plain text. Raises UnsupportedFormatError."""
+        return parse_bytes(doc_bytes, name, mime)
