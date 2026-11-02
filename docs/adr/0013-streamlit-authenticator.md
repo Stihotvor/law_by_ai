@@ -57,7 +57,7 @@ from the authenticated session instead of a JWT claim.
     `AUTH_COOKIE_KEY` must be a strong secret in production.
 - **Multi-tenant**: unchanged — RLS policies key on the session-scoped
   `app.current_tenant` setting; users/tenants tables are RLS-protected
-  (ADR-0003, leak tests updated).
+  (ADR-0003). Cross-tenant leak tests are not built yet.
 - **RBAC**: unchanged — `admin`/`user` roles still gate UI operations.
 
 ## Alternatives Considered

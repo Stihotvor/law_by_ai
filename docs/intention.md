@@ -13,7 +13,7 @@ status: completed
 
 ## 👁️ Vision & Purpose
 
-**1.** *Elevator pitch* – A self-hosted AI lawyer that helps protect citizens' rights and assists with local bureaucracy.
+**1.** *Elevator pitch* – A self-hosted AI assistant that gives legal information, helps protect citizens' rights, and assists with local bureaucracy. It does not give legal advice (ADR-0015).
 
 **2.** *Pain point* – Civil-human-rights, family and private law, and daily routine tasks that require legal assistance.
 
@@ -165,7 +165,7 @@ Detailed targets live in ADR-0011.
 
 **55.** *Minimum Viable Product* – Data collection, processing, annotation, push to PostgreSQL (schema via Alembic migrations), vector store (Qdrant), graph store (Neo4j AuraDB), **citations with confidence**, **filters**, **document diffs**, **bureaucracy assistant**, and answering complex questions / internal data research — all on the **4–6 GB RAM + SLM** budget.
 
-**56.** *Target timeline* – **MVP**: end of **next month**. **v1**: end of **this year**.
+**56.** *Target timeline* – **MVP**: planning date **2027-02-28**. If work overruns, the date moves and the scope stays. **v1**: the date is set after the MVP.
 
 **57.** *Long-term vision* – A **legal-AI platform** for personal and family use, with the possibility of a free online service or bot for answering questions and a legal-tracker component.
 

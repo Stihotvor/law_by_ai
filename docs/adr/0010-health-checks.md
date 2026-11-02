@@ -6,16 +6,17 @@ status: proposed
 
 ## Context
 
-Docker-Compose runs many services (PostgreSQL, Chroma/Qdrant, Memgraph/Neo4j,
-Redis, Celery workers, Streamlit, Alloy). For SLA tracking and fast failure
+Docker-Compose runs many services (PostgreSQL, Qdrant, Redis, Celery workers,
+Streamlit, Alloy). Neo4j runs as cloud-managed AuraDB Free, outside Compose. For SLA tracking and fast failure
 detection, each service must expose liveness/health.
 
 ## Decision
 
 - Every container defines a **Docker healthcheck** (HTTP endpoint or
   CLI-based probe).
-- Services expose a health endpoint (e.g., FastAPI `/healthz` for API-facing
-  services; DB engines use their native probes).
+- Services expose a health endpoint (Streamlit uses its built-in
+  `/_stcore/health`; DB engines use their native probes). There is no separate
+  API server.
 - Health state is:
   - visible via `docker inspect`/Compose status,
   - exported into OTel metrics (service up/down) for the Grafana dashboards,

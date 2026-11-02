@@ -1,8 +1,13 @@
 ---
-status: proposed
+status: superseded
 ---
 
 # ADR-0004: JWT auth + RBAC (admin/user)
+
+## Status
+
+Superseded by [ADR-0013](0013-streamlit-authenticator.md). JWT is dropped. The
+RBAC part (`admin` and `user` roles) is retained.
 
 ## Context
 

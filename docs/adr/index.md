@@ -13,7 +13,7 @@ status: new
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
 | [ADR-0001](0001-plugin-architecture.md) | Protocol-based plugins with YAML registration | Superseded by ADR-0014 | 2026-07-31 |
-| [ADR-0002](0002-graph-database.md) | Memgraph (MVP) → Neo4j (production) | Proposed | 2026-07-31 |
+| [ADR-0002](0002-graph-database.md) | Neo4j AuraDB Free as the graph database | Proposed | 2026-07-31 |
 | [ADR-0003](0003-multi-tenancy.md) | Shared document storage, per-tenant state | Proposed | 2026-07-31 |
 | [ADR-0004](0004-auth-rbac.md) | JWT auth + RBAC (admin/user) | Superseded by ADR-0013 | 2026-07-31 |
 | [ADR-0005](0005-observability.md) | structlog + OTel → Grafana Alloy → Grafana Cloud | Proposed | 2026-07-31 |

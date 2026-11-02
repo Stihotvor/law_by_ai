@@ -472,7 +472,7 @@ law_by_ai/
 │   │   ├── manager.py       # PluginManager — deprecated (ADR-0014)
 │   │   └── exceptions.py    # Plugin-specific errors
 │   ├── security/
-│   │   ├── auth.py          # JWT issue/verify
+│   │   ├── passwords.py     # bcrypt hashing (ADR-0013)
 │   │   ├── rbac.py          # Role checks (admin/user)
 │   │   └── tenant.py        # tenant_id context helpers
 │   └── observability/
@@ -607,23 +607,18 @@ Tenant
 
 The work is tracked in [7 milestones](https://github.com/Stihotvor/law_by_ai/milestones):
 
+The MVP planning date is 2027-02-28. If work overruns, the date moves and the
+scope stays.
+
 ```mermaid
-gantt
-    title Project Phases
-    section Phase 1
-    Minimal Example :a1, 2026-01-01, 30d
-    section Phase 2
-    Foundation :a2, after a1, 30d
-    section Phase 3
-    Core Plugins :a3, after a2, 30d
-    section Phase 4
-    ETL & Embedding :a4, after a3, 30d
-    section Phase 5
-    Agents :a5, after a4, 30d
-    section Phase 6
-    Tasks & UI :a6, after a5, 30d
-    section Phase 7
-    Test & Polish :a7, after a6, 30d
+flowchart LR
+    P1[Phase 1<br/>Minimal Example] --> P2[Phase 2<br/>Foundation]
+    P2 --> P3[Phase 3<br/>Core Plugins]
+    P3 --> P4[Phase 4<br/>ETL & Embedding]
+    P4 --> P5[Phase 5<br/>Agents]
+    P5 --> P6[Phase 6<br/>Tasks & UI]
+    P6 --> P7[Phase 7<br/>Test & Polish]
+    P7 --> MVP([MVP, planning date 2027-02-28])
 ```
 
 ---
@@ -648,7 +643,7 @@ Records. See the [ADR index](adr/index.md) for full records.
 | ADR | Title | Status |
 |-----|-------|--------|
 | [ADR-0001](adr/0001-plugin-architecture.md) | Protocol-based plugins with YAML registration | Superseded by ADR-0014 |
-| [ADR-0002](adr/0002-graph-database.md) | Neo4j AuraDB (production graph DB) | Proposed |
+| [ADR-0002](adr/0002-graph-database.md) | Neo4j AuraDB Free as the graph database | Proposed |
 | [ADR-0003](adr/0003-multi-tenancy.md) | Shared document storage, per-tenant state | Proposed |
 | [ADR-0004](adr/0004-auth-rbac.md) | JWT auth + RBAC (admin/user) — JWT superseded by ADR-0013, RBAC retained | Superseded | 2026-07-31 |
 | [ADR-0005](adr/0005-observability.md) | structlog + OTel → Grafana Alloy → Grafana Cloud | Proposed |
