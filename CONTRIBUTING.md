@@ -66,9 +66,9 @@ uv run mutmut run && uv run mutmut results
 - New and changed lines need at least 90% coverage (`diff-cover`, pull requests only).
 - Mutation testing (`mutmut`) is scoped by `[tool.mutmut]` in `pyproject.toml` to
   `src/agents/fetch` with tests in `tests/unit/agents/fetch`. The CI job is
-  non-blocking and uploads a results summary. Try another scope by editing
-  `source_paths` and `pytest_add_cli_args_test_selection`. Example: scope
-  `src/config` with `tests/unit/config` gave 11 mutants, 6 killed, 5 survived.
+  non-blocking, runs in CI only, and uploads a results summary. To change the
+  scope, edit `source_paths` and `pytest_add_cli_args_test_selection` in
+  `pyproject.toml` (mutmut 3.8.1 reads its scope only from that file).
 
 ## Branching & PRs
 

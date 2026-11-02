@@ -76,7 +76,8 @@ fail_under = 66
 show_missing = true
 
 [tool.mutmut]
-# Scope: the document fetcher package (not yet on main). Override on the CLI to try another.
+# Scope: the document fetcher package. To change it, edit source_paths and
+# pytest_add_cli_args_test_selection here (mutmut 3.8.1 reads scope only from this file).
 source_paths = ["src/agents/fetch/"]
 pytest_add_cli_args_test_selection = ["tests/unit/agents/fetch/"]
 also_copy = ["src/"]
