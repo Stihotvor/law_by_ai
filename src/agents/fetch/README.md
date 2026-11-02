@@ -1,7 +1,7 @@
 # Fetch
 
 Document fetching for legal sources: list, read metadata, download raw bytes.
-Layout: `registry.py` (generic name registry), `contracts.py` (pydantic models),
+Layout: `registry.py` (generic name registry), `errors.py` (typed errors), `contracts.py` (pydantic models),
 `strategies/` (transports), `sources/` (one module per legal source),
 `formats/` (parsers: bytes to text), `document_fetcher.py` (agent).
 Modules in `strategies/`, `sources/`, and `formats/` are autoloaded; `base.py` and `_*` modules are skipped.
