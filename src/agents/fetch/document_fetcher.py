@@ -12,8 +12,8 @@ from agents.fetch.contracts import (
 )
 from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
 from agents.fetch.formats.base import FormatError, charset_of, find_parser
-from agents.fetch.formats.image import finish_ocr_text
 from agents.fetch.formats.pdf import NoTextLayerError, PdfParser
+from agents.fetch.formats.text import finish_ocr_text
 from agents.fetch.ocr.errors import OcrError
 from agents.fetch.ocr.manager import get_ocr_manager
 from agents.fetch.registry import UnknownNameError

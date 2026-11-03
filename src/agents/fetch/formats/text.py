@@ -23,6 +23,7 @@ _BLOCK_TAGS = frozenset(
 )
 _SKIP_TAGS = frozenset({"script", "style", "noscript", "template", "svg"})
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+_BLANKS_RE = re.compile(r"\n{3,}")
 _HSPACE_RE = re.compile(r"[^\S\n]+")
 
 
@@ -58,6 +59,14 @@ def clean_text(text: str) -> str:
     if "\x00" in text:
         raise BinaryContentError("data contains NUL characters")
     return _CONTROL_RE.sub(" ", text)
+
+
+def finish_ocr_text(text: str) -> str:
+    """Cap and clean text from the OCR provider (untrusted) like any parser output."""
+    _check_size(len(text))
+    text = clean_text(text.replace("\x00", "")).replace("\r\n", "\n").replace("\r", "\n")
+    text = "\n".join(_HSPACE_RE.sub(" ", line).rstrip() for line in text.split("\n"))
+    return _BLANKS_RE.sub("\n\n", text).strip()
 
 
 def _decode(data: bytes, charset: str | None, sniff_meta: bool) -> str:

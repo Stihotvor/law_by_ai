@@ -2,10 +2,9 @@
 
 from typing import ClassVar
 
-from agents.fetch.formats import base
 from agents.fetch.formats._safety import CorruptDocumentError
-from agents.fetch.formats.base import FORMATS, TextLimitError
-from agents.fetch.formats.text import clean_text
+from agents.fetch.formats.base import FORMATS
+from agents.fetch.formats.text import finish_ocr_text
 from agents.fetch.ocr.manager import get_ocr_manager
 
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
@@ -18,13 +17,6 @@ def _media_type(data: bytes) -> str:
     if data.startswith(_JPEG_MAGIC):
         return "image/jpeg"
     raise CorruptDocumentError("not a png or jpeg image")
-
-
-def finish_ocr_text(text: str) -> str:
-    """Cap and clean text from the OCR provider (untrusted) like any parser output."""
-    if len(text) > base.MAX_TEXT_CHARS:
-        raise TextLimitError(f"text exceeds {base.MAX_TEXT_CHARS} characters")
-    return clean_text(text.replace("\x00", "")).strip()
 
 
 @FORMATS.register("image")

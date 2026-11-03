@@ -7,7 +7,8 @@ from agents.fetch.formats import base
 from agents.fetch.formats import image as image_mod
 from agents.fetch.formats._safety import CorruptDocumentError
 from agents.fetch.formats.base import FORMATS, TextLimitError, find_parser
-from agents.fetch.formats.image import ImageParser, finish_ocr_text
+from agents.fetch.formats.image import ImageParser
+from agents.fetch.formats.text import finish_ocr_text
 from agents.fetch.ocr.errors import OcrDisabledError, OcrProviderError
 from agents.fetch.ocr.manager import OcrManager
 
@@ -118,3 +119,7 @@ def test_image_parse_output_is_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
     _use(monkeypatch, OcrManager(fake))
     monkeypatch.setattr(fake, "ocr_image", lambda data, media_type: "x\x00\x01y")
     assert ImageParser().parse(PNG) == "x y"
+
+
+def test_finish_ocr_text_normalises_newlines_and_blanks() -> None:
+    assert finish_ocr_text("a  \r\nb\r\r\r\rc \t\n\n\n\nd") == "a\nb\n\nc\n\nd"
