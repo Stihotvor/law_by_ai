@@ -1,6 +1,7 @@
 import time
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
+from typing import Any, cast
 
 import pytest
 
@@ -48,7 +49,7 @@ def test_no_text_message() -> None:
             return _parse_meta({"ELI": ref.external_id, "title": "t", "type": "u"}, ref)
 
     ref = DocumentRef(source="sejm_eli", external_id="DU/2024/1", url="https://x")
-    source = SejmEliSource(Strat())  # type: ignore[arg-type]
+    source = SejmEliSource(cast(Any, Strat()))
     with pytest.raises(DocumentNotFoundError) as err:
         source.fetch_document(ref)
     assert str(err.value) == "act has no text"

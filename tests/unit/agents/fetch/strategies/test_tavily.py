@@ -12,7 +12,7 @@ from tavily.errors import (
 )
 from tavily.errors import TimeoutError as TavilyTimeoutError
 
-import agents.fetch.document_fetcher  # noqa: F401
+from agents.fetch import document_fetcher
 from agents.fetch.contracts import DocumentFilter, DocumentRef
 from agents.fetch.errors import (
     DocumentNotFoundError,
@@ -27,6 +27,7 @@ from agents.fetch.sources.base import SOURCES
 from agents.fetch.strategies.base import STRATEGIES, FetchStrategy
 from agents.fetch.strategies.tavily import TavilyCrawlStrategy
 
+_REGISTERED = document_fetcher  # importing it registers the strategies
 BASE = "https://api.example/v1"
 KEY = "tvly-KEY-VALUE-123"
 
@@ -412,3 +413,12 @@ def test_client_construction_errors_are_typed(exc: Exception, kind: type[FetchEr
         with pytest.raises(kind) as err:
             strategy.list_refs("s", DocumentFilter())
     assert KEY not in str(err.value)
+
+
+@pytest.mark.parametrize("exc", [ValueError("secret"), TypeError("secret"), KeyError("secret")])
+def test_unexpected_sdk_errors_become_typed(exc: Exception) -> None:
+    client = _client()
+    client.map.side_effect = exc
+    with pytest.raises(FetchTransportError) as err:
+        _strategy(client).list_refs("s", DocumentFilter())
+    assert "secret" not in str(err.value)

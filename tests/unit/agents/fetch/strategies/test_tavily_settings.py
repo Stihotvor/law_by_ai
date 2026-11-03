@@ -24,3 +24,15 @@ def test_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     assert s.tavily_api_key == "k"
     assert s.tavily_timeout == 12.5
     assert s.tavily_max_pages == 3
+
+
+@pytest.mark.parametrize("name", ["TAVILY_TIMEOUT", "TAVILY_MAX_PAGES", "SEJM_MIN_INTERVAL"])
+@pytest.mark.parametrize("bad", ["0", "-1", "nan", "inf", "abc"])
+def test_numeric_settings_are_validated(
+    monkeypatch: pytest.MonkeyPatch, name: str, bad: str
+) -> None:
+    s = Settings()
+    monkeypatch.setenv(name, bad)
+    attr = name.lower()
+    with pytest.raises(ValueError, match=name):
+        getattr(s, attr)

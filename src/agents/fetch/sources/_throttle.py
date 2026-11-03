@@ -4,6 +4,8 @@ import threading
 import time
 from collections.abc import Callable
 
+_MAX_INTERVAL = 60.0
+
 
 class Throttle:
     """Sleep so that at least ``min_interval()`` seconds pass between calls.
@@ -28,7 +30,9 @@ class Throttle:
     def wait(self) -> None:
         with self._lock:
             if self._last is not None:
-                remaining = self._last + max(0.0, self._min_interval()) - self._clock()
+                remaining = (
+                    self._last + min(_MAX_INTERVAL, max(0.0, self._min_interval())) - self._clock()
+                )
                 if remaining > 0:
                     self._sleep(remaining)
             self._last = self._clock()

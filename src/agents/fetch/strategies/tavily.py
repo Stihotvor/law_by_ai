@@ -190,6 +190,9 @@ class TavilyCrawlStrategy:
             BadRequestError,
             TavilyTimeoutError,
             requests.exceptions.RequestException,
+            ValueError,
+            TypeError,
+            KeyError,
         ) as exc:
             raise _translate(exc) from exc
         finally:
