@@ -147,3 +147,10 @@ def test_every_action_is_pinned_to_a_full_sha():
             if ref.startswith("./"):
                 continue
             assert re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", ref), f"{name}: {ref}"
+
+
+def test_docs_workflow_triggers_on_build_inputs():
+    wf = _workflows()["docs.yml"]
+    expected = {".github/workflows/docs.yml", "pyproject.toml", "uv.lock", "docs/**"}
+    for event in ("push", "pull_request"):
+        assert expected <= set(wf[True][event]["paths"])
