@@ -30,7 +30,7 @@ from agents.fetch.errors import (
     SourceConfigError,
 )
 from agents.fetch.registry import Registry, UnknownNameError
-from agents.fetch.strategies._hosts import check_public_host, parse_base_url
+from agents.fetch.strategies._hosts import HTTPS_PORT, check_public_host, parse_base_url
 from agents.fetch.strategies._rest_mapper import (
     REST_MAPPERS,
     RestListing,
@@ -44,7 +44,6 @@ from config.settings import get_settings
 
 __all__ = ["REST_MAPPERS", "RestApiStrategy", "RestListing", "RestMapper", "with_content_variant"]
 
-_HTTPS_PORT = 443
 _monotonic = time.monotonic  # patchable clock for deadline tests
 
 
@@ -62,7 +61,7 @@ class RestApiStrategy:
         self._base = base_url.rstrip("/")
         self._allow_private = allow_private_hosts
         self._host = httpx.URL(self._base).host
-        self._port = parts.port or _HTTPS_PORT
+        self._port = parts.port or HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers
         self._transport = transport
         self._http: httpx.Client | None = None
@@ -129,10 +128,10 @@ class RestApiStrategy:
 
     def _guard(self, request: httpx.Request) -> None:
         url = request.url
-        check_public_host(url.host, allow_private=self._allow_private)
-        port = url.port or (_HTTPS_PORT if url.scheme == "https" else 80)
+        port = url.port or (HTTPS_PORT if url.scheme == "https" else 80)
         if url.scheme != "https" or url.host != self._host or port != self._port:
             raise RedirectNotAllowedError("redirect outside the source host or not https")
+        check_public_host(url.host, allow_private=self._allow_private)
 
     def _client(self) -> httpx.Client:
         with self._lock:
