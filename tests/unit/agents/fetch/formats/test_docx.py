@@ -12,11 +12,11 @@ from docx.document import Document as DocumentType
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 
+from agents.fetch.formats import base as base_module
 from agents.fetch.formats import docx as docx_module
-from agents.fetch.formats.base import find_parser
+from agents.fetch.formats.base import TextLimitError, find_parser
 from agents.fetch.formats.docx import (
     CorruptDocumentError,
-    DocumentLimitError,
     DocxParser,
     EncryptedDocumentError,
     NoTextLayerError,
@@ -195,7 +195,7 @@ def test_body_not_xml_is_corrupt() -> None:
 def test_zip_bomb_total(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(docx_module, "MAX_UNCOMPRESSED_BYTES", 1024 * 1024)
     data = _rewrite(_simple("x"), extra={"big.bin": bytes(2 * 1024 * 1024)})
-    with pytest.raises(DocumentLimitError) as info:
+    with pytest.raises(TextLimitError) as info:
         _parse(data)
     assert str(info.value) == "docx is too large when unpacked"
 
@@ -210,7 +210,7 @@ def test_total_at_limit_passes(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_zip_bomb_ratio() -> None:
     data = _rewrite(_simple("x"), extra={"big.bin": bytes(2 * 1024 * 1024)})
-    with pytest.raises(DocumentLimitError) as info:
+    with pytest.raises(TextLimitError) as info:
         _parse(data)
     assert str(info.value) == "docx compression ratio is too high"
 
@@ -229,7 +229,7 @@ def test_ratio_at_limit_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_too_many_entries() -> None:
     extra = {f"f{i}.txt": b"x" for i in range(1001)}
-    with pytest.raises(DocumentLimitError) as info:
+    with pytest.raises(TextLimitError) as info:
         _parse(_rewrite(_simple("x"), extra=extra))
     assert str(info.value) == "docx has too many entries"
 
@@ -267,7 +267,7 @@ def _with_body(data: bytes, body: bytes) -> bytes:
 
 def test_nesting_limit() -> None:
     base = _simple("x")
-    with pytest.raises(DocumentLimitError) as info:
+    with pytest.raises(TextLimitError) as info:
         _parse(_with_body(base, _nested_table_xml(9)))
     assert str(info.value) == "docx tables are nested too deeply"
     assert _parse(_with_body(base, _nested_table_xml(3))) == "deep"
@@ -278,16 +278,16 @@ def test_nesting_at_limit_passes() -> None:
 
 
 def test_text_limit(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(docx_module, "MAX_TEXT_CHARS", 10)
-    with pytest.raises(DocumentLimitError) as info:
+    monkeypatch.setattr(base_module, "MAX_TEXT_CHARS", 10)
+    with pytest.raises(TextLimitError) as info:
         _parse(_simple("x" * 20))
     assert str(info.value) == "docx text is too large"
     assert _parse(_simple("x" * 10)) == "x" * 10
 
 
 def test_text_limit_is_cumulative(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(docx_module, "MAX_TEXT_CHARS", 10)
-    with pytest.raises(DocumentLimitError):
+    monkeypatch.setattr(base_module, "MAX_TEXT_CHARS", 10)
+    with pytest.raises(TextLimitError):
         _parse(_simple("x" * 6, "y" * 6))
 
 
@@ -408,7 +408,7 @@ def test_ratio_boundaries(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(docx_module, "MAX_COMPRESSION_RATIO", ratio)
     assert _parse(data) == "x"  # ratio equal to the maximum is allowed
     monkeypatch.setattr(docx_module, "MAX_COMPRESSION_RATIO", ratio - 0.5)
-    with pytest.raises(DocumentLimitError):
+    with pytest.raises(TextLimitError):
         _parse(data)
 
 

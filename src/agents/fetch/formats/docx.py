@@ -11,23 +11,21 @@ from docx.document import Document as DocumentType
 from docx.table import Table, _Row
 from docx.text.paragraph import Paragraph
 
+from agents.fetch.formats import base
 from agents.fetch.formats._safety import (
     MAX_COMPRESSION_RATIO,
     MAX_NESTING_DEPTH,
-    MAX_TEXT_CHARS,
     MAX_UNCOMPRESSED_BYTES,
     MAX_ZIP_ENTRIES,
     RATIO_MIN_BYTES,
     CorruptDocumentError,
-    DocumentLimitError,
     EncryptedDocumentError,
     NoTextLayerError,
 )
-from agents.fetch.formats.base import FORMATS, FormatError
+from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError
 
 __all__ = [
     "CorruptDocumentError",
-    "DocumentLimitError",
     "DocxParser",
     "EncryptedDocumentError",
     "NoTextLayerError",
@@ -40,13 +38,13 @@ _CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
 def _check_infos(infos: list[zipfile.ZipInfo]) -> None:
     if len(infos) > MAX_ZIP_ENTRIES:
-        raise DocumentLimitError("docx has too many entries")
+        raise TextLimitError("docx has too many entries")
     if sum(i.file_size for i in infos) > MAX_UNCOMPRESSED_BYTES:
-        raise DocumentLimitError("docx is too large when unpacked")
+        raise TextLimitError("docx is too large when unpacked")
     for info in infos:
         ratio = info.file_size / max(info.compress_size, 1)
         if info.file_size > RATIO_MIN_BYTES and ratio > MAX_COMPRESSION_RATIO:
-            raise DocumentLimitError("docx compression ratio is too high")
+            raise TextLimitError("docx compression ratio is too high")
         if info.flag_bits & 0x1:
             raise EncryptedDocumentError("docx has an encrypted entry")
     if _BODY_MEMBER not in {i.filename for i in infos}:
@@ -78,7 +76,7 @@ def _row_texts(row: _Row, depth: int) -> list[str]:
 
 def _lines(items: Iterable[Paragraph | Table], depth: int) -> Iterator[str]:
     if depth > MAX_NESTING_DEPTH:
-        raise DocumentLimitError("docx tables are nested too deeply")
+        raise TextLimitError("docx tables are nested too deeply")
     for item in items:
         if isinstance(item, Paragraph):
             yield item.text
@@ -98,8 +96,8 @@ def _collect(document: DocumentType) -> list[str]:
         if not line:
             continue
         total += len(line)
-        if total > MAX_TEXT_CHARS:
-            raise DocumentLimitError("docx text is too large")
+        if total > base.MAX_TEXT_CHARS:
+            raise TextLimitError("docx text is too large")
         lines.append(line)
     return lines
 
