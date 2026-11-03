@@ -53,8 +53,8 @@ self-hosted deployment.
 7. **OCR through `OcrManager`.** All OCR goes through one `OcrManager`. It has
    one provider: Mistral Document AI. OCR is **off by default**. When OCR is
    off, an image or a scanned input raises a typed `OcrDisabledError`. It is an
-   error, not a result. The system parses nothing locally, and nothing leaves
-   the host. The `ocr/` package is a leaf package. It imports nothing from the
+   error, not a result. The system does not read the scan locally, and nothing
+   leaves the host. The `ocr/` package is a leaf package. It imports nothing from the
    other fetcher packages. A later ADR may add another provider (a local model
    or a gateway) without a change in the callers.
 8. **No local folder strategy.** The fetcher does not read paths from the local
@@ -77,8 +77,9 @@ self-hosted deployment.
     This applies to the first URL and to every redirect. It rejects the request
     unless all resolved addresses are global. Loopback, link-local, and private
     addresses fail this check. A source can opt out with `allow_private_hosts`.
-    The connection is not pinned to the checked address. A DNS rebinding window
-    remains. The project accepts this risk.
+    The connection is not pinned to the checked address. A host can change its
+    address between the check and the connection (DNS rebinding). The project
+    accepts this risk.
 15. **Size and time limits.** `FETCH_MAX_BYTES` limits the size of a fetched
     body for every strategy. A larger body raises `ResponseTooLargeError`.
     `FETCH_TOTAL_TIMEOUT` is a total deadline for reading a body. A slow body
