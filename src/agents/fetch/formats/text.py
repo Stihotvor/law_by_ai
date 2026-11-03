@@ -1,4 +1,8 @@
-"""Plain text and HTML parsers."""
+"""Plain text and HTML parsers.
+
+Undecodable legacy text falls back to cp1250 (Polish); because cp1250 accepts
+almost any bytes, binary data is rejected by the NUL check instead.
+"""
 
 import codecs
 import re

@@ -180,3 +180,11 @@ def test_txt_nul_raises() -> None:
 def test_control_chars_become_space() -> None:
     assert txt(b"a\x01b\x0bc\x1fd\te\nf") == "a b c d\te\nf"
     assert html(b"<p>a\x01b\x0cc</p>") == "a b c"
+
+
+def test_binary_png_header_raises() -> None:
+    png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\x00"
+    with pytest.raises(BinaryContentError):
+        txt(png)
+    with pytest.raises(BinaryContentError):
+        html(png)
