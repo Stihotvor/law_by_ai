@@ -22,7 +22,7 @@ from agents.fetch.formats._safety import (
     EncryptedDocumentError,
     NoTextLayerError,
 )
-from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError
+from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError, UnsupportedFormatError
 from agents.fetch.formats.text import clean_text
 
 __all__ = [
@@ -55,7 +55,7 @@ def _check_infos(infos: list[zipfile.ZipInfo]) -> None:
 
 def _check_zip(data: bytes) -> None:
     if data.startswith(_OLE_SIGNATURE):
-        raise CorruptDocumentError("docx is not a zip (encrypted or legacy doc)")
+        raise UnsupportedFormatError("docx is an OLE container (encrypted docx or legacy doc)")
     try:
         with zipfile.ZipFile(BytesIO(data)) as archive:
             infos = archive.infolist()

@@ -16,7 +16,7 @@ from docx.text.paragraph import Paragraph
 
 from agents.fetch.formats import base as base_module
 from agents.fetch.formats import docx as docx_module
-from agents.fetch.formats.base import TextLimitError, find_parser
+from agents.fetch.formats.base import TextLimitError, UnsupportedFormatError, find_parser
 from agents.fetch.formats.docx import (
     CorruptDocumentError,
     DocxParser,
@@ -158,7 +158,6 @@ def _truncated() -> bytes:
         b"",
         b"PK\x03\x04junk",
         _png(),
-        b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 64,
         _truncated(),
     ],
 )
@@ -174,9 +173,9 @@ def test_bad_zip_message() -> None:
 
 
 def test_ole_message() -> None:
-    with pytest.raises(CorruptDocumentError) as info:
+    with pytest.raises(UnsupportedFormatError) as info:
         _parse(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
-    assert str(info.value) == "docx is not a zip (encrypted or legacy doc)"
+    assert str(info.value) == "docx is an OLE container (encrypted docx or legacy doc)"
 
 
 def test_zip_without_body() -> None:
