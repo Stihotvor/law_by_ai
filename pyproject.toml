@@ -43,7 +43,7 @@ dev = [
     "mutmut==3.8.1",
 ]
 docs = [
-    "mkdocs-material==9.7.7",
+    "mkdocs-material==9.8.0",
     "pymdown-extensions==11.0.1",
 ]
 
