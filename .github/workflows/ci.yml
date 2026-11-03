@@ -127,7 +127,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --extra dev
       - name: Bandit security scan
-        run: uv run bandit -r src/ -c pyproject.toml
+        run: uv run bandit -r src/ scripts/ -c pyproject.toml
       - name: pip-audit dependency vulnerabilities
         run: uv run pip-audit
 

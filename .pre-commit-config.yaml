@@ -9,7 +9,7 @@ repos:
     rev: 1.9.4
     hooks:
       - id: bandit
-        files: ^src/
+        files: ^(src|scripts)/
         args: [-c, pyproject.toml]
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.411

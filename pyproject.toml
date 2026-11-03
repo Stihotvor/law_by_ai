@@ -91,4 +91,4 @@ pytest_add_cli_args_test_selection = ["tests/unit/agents/fetch/"]
 also_copy = ["src/"]
 
 [tool.bandit]
-exclude_dirs = ["tests", "docs", "scripts", "evals"]
+exclude_dirs = ["tests", "docs"]
