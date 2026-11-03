@@ -1,5 +1,6 @@
 """Document fetcher agent: resolves a source and fetches raw documents."""
 
+import logging
 from types import TracebackType
 from typing import Protocol, Self
 
@@ -26,6 +27,9 @@ from agents.fetch.ocr.manager import get_ocr_manager
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
 from agents.fetch.strategies.base import STRATEGIES, FetchStrategy
+
+_log = logging.getLogger(__name__)
+_warned_never_rejected = False
 
 PARSE_ERRORS = (FormatError, OcrError)
 
@@ -61,6 +65,10 @@ def _check_tenant(tenant_id: object) -> None:
 
 class DocumentFetcherAgent:
     def __init__(self, rejection: RejectionChecker | None = None) -> None:
+        global _warned_never_rejected
+        if rejection is None and not _warned_never_rejected:
+            _warned_never_rejected = True
+            _log.warning("no rejection checker given: rejected documents are not blocked")
         self._rejection: RejectionChecker = rejection or NeverRejected()
         self._strategies: dict[str, FetchStrategy] = {}
 

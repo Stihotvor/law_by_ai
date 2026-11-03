@@ -259,3 +259,14 @@ def test_private_host_opt_in_forwarded(
     registries.register("priv")(PrivateSource)
     DocumentFetcherAgent().list_documents("priv", DocumentFilter())
     assert PrivateStrategy.kwargs == [{"allow_private_hosts": True}]
+
+
+def test_never_rejected_warns_once(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr("agents.fetch.document_fetcher._warned_never_rejected", False)
+    with caplog.at_level("WARNING"):
+        DocumentFetcherAgent()
+        DocumentFetcherAgent()
+        DocumentFetcherAgent(Rejecting())
+    assert len(caplog.records) == 1
