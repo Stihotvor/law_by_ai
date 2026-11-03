@@ -194,3 +194,10 @@ def test_html_repeated_blocks_stay_bounded(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 100)
     assert html("<p>" * 100_000) == ""
     assert html("a" + "<p>" * 100_000 + "b") == "a\nb"
+
+
+def test_html_charset_outside_meta_ignored() -> None:
+    script = b'<script>var s = "charset=iso-8859-2";</script><p>'
+    comment = b"<!-- charset=iso-8859-2 --><p>"
+    for head in (script, comment):
+        assert html(head + PL.encode()) == PL

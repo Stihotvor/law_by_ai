@@ -12,7 +12,7 @@ from typing import ClassVar
 from agents.fetch.formats import base
 from agents.fetch.formats.base import FORMATS, BinaryContentError, TextLimitError
 
-_META_RE = re.compile(rb'charset\s*=\s*["\']?([A-Za-z0-9._:-]+)', re.I)
+_META_RE = re.compile(rb'<meta\b[^>]*?charset\s*=\s*["\']?([A-Za-z0-9._:-]+)', re.I)
 _SNIFF_BYTES = 2048
 _BLOCK_TAGS = frozenset(
     {
