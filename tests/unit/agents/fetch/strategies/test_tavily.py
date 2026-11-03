@@ -1,3 +1,4 @@
+import threading
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -379,6 +380,18 @@ def test_any_sdk_exception_becomes_typed(exc: Exception, kind: type[FetchError])
     assert "secret" not in str(err.value)
     if kind is FetchTransportError:
         assert type(exc).__name__ in str(err.value)
+
+
+def test_total_timeout_bounds_a_blocked_call(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TAVILY_TIMEOUT", "0.2")
+    release = threading.Event()
+    client = MagicMock()
+    client.map.side_effect = lambda **_: release.wait(5)
+    try:
+        with pytest.raises(FetchTransportError, match="total timeout"):
+            _strategy(client).list_refs("s", DocumentFilter())
+    finally:
+        release.set()
 
 
 def test_injected_client_not_closed() -> None:

@@ -9,13 +9,21 @@ per 5 pages, only for pages that are read) costs less. The name keeps the
 "Tavily crawl" wording of the design.
 
 Every ``list_refs`` call runs ``map`` again and costs credits, also for later
-pages of the same listing. ``TAVILY_MAX_PAGES`` caps what one call can see.
+pages of the same listing. ``TAVILY_MAX_PAGES`` caps what one call can see. The order of the pages is not
+stable between calls, so paging can skip or repeat a page, and the cursor offset
+never exceeds ``TAVILY_MAX_PAGES``.
+
+Each SDK call runs in a worker thread so the whole call is bounded by
+``TAVILY_TIMEOUT``. The SDK only has a per-socket timeout, and the worker thread
+ends when that socket times out.
 
 ``read`` returns Tavily's plain text extraction of a web page. It is not the
 original bytes of the page.
 """
 
 import re
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
@@ -178,11 +186,16 @@ class TavilyCrawlStrategy:
 
     def _call(self, method: str, **kwargs: Any) -> Any:
         client, owned = self._open()
+        pool = ThreadPoolExecutor(max_workers=1)
         try:
-            return getattr(client, method)(**kwargs)
+            future = pool.submit(getattr(client, method), **kwargs)
+            return future.result(timeout=get_settings().tavily_timeout)
+        except FuturesTimeoutError as exc:
+            raise FetchTransportError("tavily: total timeout") from exc
         except Exception as exc:
             raise _translate(exc) from exc
         finally:
+            pool.shutdown(wait=False, cancel_futures=True)
             if owned:
                 client.close()
 
