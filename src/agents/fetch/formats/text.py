@@ -54,14 +54,14 @@ def _check_size(size: int) -> None:
         raise TextLimitError(f"text exceeds {base.MAX_TEXT_CHARS} characters")
 
 
-def _clean(text: str) -> str:
+def clean_text(text: str) -> str:
     if "\x00" in text:
         raise BinaryContentError("data contains NUL characters")
     return _CONTROL_RE.sub(" ", text)
 
 
 def _decode(data: bytes, charset: str | None, sniff_meta: bool) -> str:
-    return _clean(_decode_raw(data, charset, sniff_meta))
+    return clean_text(_decode_raw(data, charset, sniff_meta))
 
 
 def _decode_raw(data: bytes, charset: str | None, sniff_meta: bool) -> str:
