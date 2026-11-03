@@ -71,3 +71,14 @@ def test_keys_default_empty(clean: pytest.MonkeyPatch) -> None:
     s = _fresh(clean)
     assert s.minio_access_key == ""
     assert s.minio_secret_key == ""
+
+
+@pytest.mark.parametrize("name", ["FETCH_HTTP_TIMEOUT", "FETCH_MAX_BYTES"])
+@pytest.mark.parametrize("value", ["0", "-1", "abc", "nan", "inf"])
+def test_fetch_limits_must_be_positive_finite(
+    clean: pytest.MonkeyPatch, name: str, value: str
+) -> None:
+    clean.setenv(name, value)
+    s = Settings()
+    with pytest.raises(ValueError, match=name):
+        _ = s.fetch_http_timeout if name == "FETCH_HTTP_TIMEOUT" else s.fetch_max_bytes
