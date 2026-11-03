@@ -124,6 +124,20 @@ def test_chunked_response_joined() -> None:
     assert _provider(Recorder(httpx.Response(200, content=chunks()))).ocr_pdf(b"x") == "ok"
 
 
+def test_total_deadline_between_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
+    ticks = iter([0.0, 0.5, 500.0])
+    monkeypatch.setattr(mistral_mod, "_now", lambda: next(ticks))
+
+    def chunks() -> Iterator[bytes]:
+        yield b"{"
+        yield b'"pages"'
+        yield b":[]}"
+
+    with pytest.raises(OcrProviderError) as exc:
+        _provider(Recorder(httpx.Response(200, content=chunks()))).ocr_pdf(b"x")
+    assert str(exc.value) == "ocr timeout"
+
+
 def test_all_empty() -> None:
     with pytest.raises(OcrProviderError) as exc:
         _provider(Recorder(_ok(_page(0, " "), _page(1, "")))).ocr_pdf(b"x")
@@ -270,6 +284,14 @@ def test_bad_shape(content: bytes) -> None:
             "OCR base URL must not hold credentials",
         ),
         ({"base_url": "https://"}, "OCR base URL has no host"),
+        (
+            {"base_url": "https://api.mistral.ai/v1?x=1"},
+            "OCR base URL must not hold a query or fragment",
+        ),
+        (
+            {"base_url": "https://api.mistral.ai/v1#f"},
+            "OCR base URL must not hold a query or fragment",
+        ),
         ({"api_key": ""}, "Mistral API key is not set"),
     ],
 )

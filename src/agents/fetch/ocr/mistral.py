@@ -2,6 +2,7 @@
 
 import base64
 import json
+import time
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -10,6 +11,7 @@ import httpx
 from agents.fetch.ocr.errors import OcrConfigError, OcrInputError, OcrProviderError
 
 _MAX_RESPONSE_BYTES = 16 * 1024 * 1024
+_now = time.monotonic
 _IMAGE_TYPES = frozenset({"image/png", "image/jpeg"})
 
 
@@ -19,6 +21,8 @@ def _parse_host(base_url: str) -> str:
     parts = urlsplit(base_url)
     if "@" in parts.netloc:
         raise OcrConfigError("OCR base URL must not hold credentials")
+    if parts.query or parts.fragment:
+        raise OcrConfigError("OCR base URL must not hold a query or fragment")
     if not parts.hostname:
         raise OcrConfigError("OCR base URL has no host")
     return parts.hostname
@@ -50,7 +54,7 @@ def _extract_text(raw: bytes) -> str:
     return "\n\n".join(texts)
 
 
-def _read_capped(response: httpx.Response) -> bytes:
+def _read_capped(response: httpx.Response, deadline: float) -> bytes:
     declared = response.headers.get("content-length")
     if declared is not None and declared.isdigit() and int(declared) > _MAX_RESPONSE_BYTES:
         raise OcrProviderError("response too large")
@@ -61,6 +65,8 @@ def _read_capped(response: httpx.Response) -> bytes:
         if total > _MAX_RESPONSE_BYTES:
             raise OcrProviderError("response too large")
         chunks.append(chunk)
+        if _now() > deadline:
+            raise OcrProviderError("ocr timeout")
     return b"".join(chunks)
 
 
@@ -118,6 +124,7 @@ class MistralOcrProvider:
             "include_image_base64": False,
         }
         headers = {"Authorization": f"Bearer {self._api_key}"}
+        deadline = _now() + self._timeout
         try:
             with (
                 httpx.Client(
@@ -131,7 +138,7 @@ class MistralOcrProvider:
                 ) as response,
             ):
                 self._check_status(response)
-                raw = _read_capped(response)
+                raw = _read_capped(response, deadline)
         except httpx.HTTPError as exc:
             raise OcrProviderError(f"request failed: {type(exc).__name__}") from exc
         return _extract_text(raw)
