@@ -42,7 +42,7 @@ Variable               Purpose                                Default
 ``OCR_TIMEOUT``           total seconds per OCR request           ``120.0``
 ``OCR_MAX_BYTES``         max OCR input size in bytes             ``20971520``
 ``FETCH_HTTP_TIMEOUT``    total seconds per fetch HTTP request    ``10.0``
-``FETCH_TOTAL_TIMEOUT``   total seconds to read one body       ``60.0``
+``FETCH_TOTAL_TIMEOUT``   total seconds to read one body          ``60.0``
 ``FETCH_MAX_BYTES``       max fetched body size in bytes          ``52428800``
 ``MINIO_ENDPOINT``        MinIO ``host:port`` (no scheme)         ``localhost:9000``
 ``MINIO_ACCESS_KEY``      MinIO access key                        *(empty)*
@@ -66,6 +66,7 @@ Usage::
 
 from __future__ import annotations
 
+import math
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -306,8 +307,11 @@ class Settings:
 
     @property
     def fetch_total_timeout(self) -> float:
-        """Wall-clock seconds allowed for one whole fetch, body included."""
-        return float(os.getenv("FETCH_TOTAL_TIMEOUT", "60.0"))
+        """Wall-clock seconds allowed for reading one response body (finite, above zero)."""
+        value = float(os.getenv("FETCH_TOTAL_TIMEOUT", "60.0"))
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError("FETCH_TOTAL_TIMEOUT must be a finite number above zero")
+        return value
 
     @property
     def fetch_max_bytes(self) -> int:

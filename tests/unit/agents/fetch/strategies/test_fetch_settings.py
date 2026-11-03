@@ -75,3 +75,10 @@ def test_keys_default_empty(clean: pytest.MonkeyPatch) -> None:
     s = _fresh(clean)
     assert s.minio_access_key == ""
     assert s.minio_secret_key == ""
+
+
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf", "0", "-1"])
+def test_total_timeout_rejects_bad_values(clean: pytest.MonkeyPatch, value: str) -> None:
+    clean.setenv("FETCH_TOTAL_TIMEOUT", value)
+    with pytest.raises(ValueError, match="FETCH_TOTAL_TIMEOUT"):
+        _ = Settings().fetch_total_timeout
