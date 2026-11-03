@@ -641,7 +641,6 @@ def test_invalid_url_maps_to_transport_error() -> None:
 
 def test_close_closes_client_and_is_idempotent() -> None:
     s = _strategy(lambda r: httpx.Response(200, content=b"x"))
-    s.close()
     s.read(_ref())
     client = s._http
     assert client is not None
@@ -650,3 +649,18 @@ def test_close_closes_client_and_is_idempotent() -> None:
     s.close()
     assert client.is_closed
     s.close()
+
+
+def test_closed_strategy_does_not_rebuild_client() -> None:
+    s = _strategy(lambda r: httpx.Response(200, content=b"x"))
+    s.close()
+    with pytest.raises(FetchTransportError, match="closed"):
+        s.read(_ref())
+
+
+def test_client_closed_mid_request_is_typed() -> None:
+    s = _strategy(lambda r: httpx.Response(200, content=b"x"))
+    client = s._client()
+    client.close()
+    with pytest.raises(FetchTransportError, match="closed"):
+        s.read(_ref())

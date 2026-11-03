@@ -17,6 +17,7 @@ from agents.fetch.contracts import (
 )
 from agents.fetch.errors import (
     DocumentRejectedError,
+    FetchTransportError,
     InvalidTenantError,
     SourceConfigError,
     UnknownSourceError,
@@ -79,10 +80,12 @@ class DocumentFetcherAgent:
         self._rejection: RejectionChecker = rejection or NeverRejected()
         self._strategies: dict[str, FetchStrategy] = {}
         self._lock = threading.Lock()
+        self._closed = False
 
     def close(self) -> None:
         """Close cached strategies that have a ``close`` method."""
         with self._lock:
+            self._closed = True
             strategies, self._strategies = list(self._strategies.values()), {}
         first: Exception | None = None
         for strategy in strategies:
@@ -118,6 +121,8 @@ class DocumentFetcherAgent:
                 f"source {source!r} uses unknown strategy {source_cls.strategy_name!r}"
             ) from exc
         with self._lock:
+            if self._closed:
+                raise FetchTransportError("closed")
             strategy = self._strategies.get(source)
             if strategy is None:
                 strategy = self._strategies[source] = _build(strategy_cls, source_cls)

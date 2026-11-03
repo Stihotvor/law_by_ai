@@ -13,6 +13,7 @@ from agents.fetch.contracts import (
 from agents.fetch.document_fetcher import DocumentFetcherAgent
 from agents.fetch.errors import (
     DocumentRejectedError,
+    FetchTransportError,
     InvalidTenantError,
     SourceConfigError,
     UnknownSourceError,
@@ -304,3 +305,10 @@ def test_rejection_message_escapes_and_cuts_id() -> None:
         DocumentFetcherAgent(Rejecting()).fetch_document("fake", ref)
     assert "\n" not in str(rej.value)
     assert len(str(rej.value)) < 100
+
+
+def test_closed_agent_does_not_rebuild_strategies() -> None:
+    agent = DocumentFetcherAgent()
+    agent.close()
+    with pytest.raises(FetchTransportError, match="closed"):
+        agent.list_documents("fake", DocumentFilter())

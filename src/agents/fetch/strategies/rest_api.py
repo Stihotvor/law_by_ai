@@ -67,9 +67,11 @@ class RestApiStrategy:
         self._transport = transport
         self._http: httpx.Client | None = None
         self._lock = threading.Lock()
+        self._closed = False
 
     def close(self) -> None:
         with self._lock:
+            self._closed = True
             client, self._http = self._http, None
         if client is not None:
             client.close()
@@ -134,6 +136,8 @@ class RestApiStrategy:
 
     def _client(self) -> httpx.Client:
         with self._lock:
+            if self._closed:
+                raise FetchTransportError("closed")
             if self._http is None:
                 self._http = self._new_client()
             return self._http
@@ -165,6 +169,8 @@ class RestApiStrategy:
                 return self._consume(response, label, limit, deadline)
         except (httpx.HTTPError, httpx.InvalidURL) as exc:
             raise FetchTransportError(f"{label}: {type(exc).__name__}") from exc
+        except RuntimeError as exc:  # httpx raises it for a client closed mid-request
+            raise FetchTransportError("closed") from exc
 
     @staticmethod
     def _consume(response: httpx.Response, label: str, limit: int, deadline: float) -> bytes:
