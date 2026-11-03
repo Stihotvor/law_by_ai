@@ -20,6 +20,7 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -96,6 +97,7 @@ jobs:
 
   typecheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: lint
     steps:
       - name: Checkout
@@ -111,6 +113,7 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: lint
     steps:
       - name: Checkout
@@ -128,6 +131,7 @@ jobs:
 
   integration-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [lint, unit-test, typecheck, security]
     steps:
       - name: Checkout

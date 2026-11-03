@@ -118,3 +118,14 @@ def test_precommit_revs_match_pinned_dev_tools():
     assert revs["ruff-pre-commit"] == pins["ruff"]
     assert revs["pyright-python"] == pins["pyright"]
     assert revs["bandit"] == pins["bandit"]
+
+
+def _workflows() -> dict[str, dict]:
+    paths = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+    return {p.name: yaml.safe_load(p.read_text()) for p in paths}
+
+
+def test_every_workflow_job_has_timeout():
+    for name, wf in _workflows().items():
+        for job, spec in wf["jobs"].items():
+            assert "timeout-minutes" in spec, f"{name}:{job} lacks timeout-minutes"
