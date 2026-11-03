@@ -11,11 +11,12 @@ from agents.fetch.contracts import (
     FetchedDocument,
 )
 from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
+from agents.fetch.formats.base import parse_bytes
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
 from agents.fetch.strategies.base import STRATEGIES
 
-for _package in ("agents.fetch.sources", "agents.fetch.strategies"):
+for _package in ("agents.fetch.sources", "agents.fetch.strategies", "agents.fetch.formats"):
     importlib.import_module(_package)  # triggers autoload
 
 
@@ -66,3 +67,11 @@ class DocumentFetcherAgent:
             raise DocumentRejectedError(f"document rejected: {ref.source}/{ref.external_id}")
         result = self._resolve(source).fetch_document(ref)
         return result.model_copy(update={"tenant_id": tenant_id})
+
+    def parse(self, doc_bytes: bytes, name: str, mime: str | None = None) -> str:
+        """Turn raw bytes into plain text. Raises FormatError subclasses.
+
+        UnsupportedFormatError: no parser matches the name or MIME type.
+        TextLimitError: extracted text is over the character cap.
+        """
+        return parse_bytes(doc_bytes, name, mime)
