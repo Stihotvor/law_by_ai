@@ -274,12 +274,21 @@ def _extract(body: Any) -> MagicMock:
 
 
 def test_read_returns_utf8_and_rebuilds_url() -> None:
-    client = _extract({"results": [{"url": "u", "raw_content": "zażółć"}]})
+    client = _extract({"results": [{"url": BASE + "/a/b", "raw_content": "zażółć"}]})
     ref = DocumentRef(source="s", external_id="a/b", url="https://evil.example/x")
     assert _strategy(client).read(ref) == "zażółć".encode()
     client.extract.assert_called_once_with(
         urls=BASE + "/a/b", extract_depth="basic", format="text", timeout=60.0
     )
+
+
+@pytest.mark.parametrize(
+    "url", ["https://other.example/v1/a/b", BASE + "/a/c", 5, "u", BASE + "/a/b?x=1"]
+)
+def test_read_rejects_result_for_another_url(url: Any) -> None:
+    client = _extract({"results": [{"url": url, "raw_content": "x"}]})
+    with pytest.raises(PayloadError):
+        _strategy(client).read(_ref("a/b"))
 
 
 def test_read_failed_results_is_transport_error() -> None:

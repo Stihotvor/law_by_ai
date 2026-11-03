@@ -173,7 +173,7 @@ class TavilyCrawlStrategy:
             format="text",
             timeout=_clamp(get_settings().tavily_timeout, _EXTRACT_TIMEOUT),
         )
-        data = self._content(body)
+        data = self._content(body, ref.external_id)
         if len(data) > get_settings().fetch_max_bytes:
             raise ResponseTooLargeError("extracted text is larger than the size limit")
         return data
@@ -232,8 +232,7 @@ class TavilyCrawlStrategy:
         eid = url[len(self._base) + 1 :]
         return None if _bad_id(eid) else eid
 
-    @staticmethod
-    def _content(body: Any) -> bytes:
+    def _content(self, body: Any, eid: str) -> bytes:
         if not isinstance(body, dict):
             raise PayloadError("tavily extract: unexpected response")
         results = body.get("results")
@@ -247,4 +246,8 @@ class TavilyCrawlStrategy:
         text = first.get("raw_content") if len(results) == 1 and isinstance(first, dict) else None
         if not isinstance(text, str) or not text:
             raise PayloadError("tavily extract: unexpected result")
+        if "url" in first and (
+            not isinstance(first["url"], str) or self._relative(first["url"]) != eid
+        ):
+            raise PayloadError("tavily extract: result is for another url")
         return text.encode("utf-8")
