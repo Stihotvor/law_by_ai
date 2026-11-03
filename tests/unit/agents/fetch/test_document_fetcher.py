@@ -314,3 +314,81 @@ def test_closed_agent_does_not_rebuild_strategies() -> None:
     agent.close()
     with pytest.raises(FetchTransportError, match="closed"):
         agent.list_documents("fake", DocumentFilter())
+
+
+def test_invalid_tenant_message_is_exact() -> None:
+    with pytest.raises(InvalidTenantError) as info:
+        DocumentFetcherAgent().fetch_document("fake", REF, tenant_id="a b")
+    assert str(info.value) == "tenant_id must match [A-Za-z0-9_-]{1,64}"
+
+
+def test_private_host_flag_without_keyword_message_is_exact(
+    registries: Registry[type[LegalSource]],
+) -> None:
+    registries.register("priv")(PrivateSource)
+    with pytest.raises(SourceConfigError) as info:
+        DocumentFetcherAgent().list_documents("priv", DocumentFilter())
+    assert str(info.value) == "strategy does not support allow_private_hosts"
+
+
+def test_private_host_strategy_gets_the_base_url(
+    monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
+) -> None:
+    strategies: Registry[type[FetchStrategy]] = Registry("strategies")
+    strategies.register("fake_strategy")(PrivateStrategy)
+    monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
+    registries.register("priv")(PrivateSource)
+    DocumentFetcherAgent().list_documents("priv", DocumentFilter())
+    assert PrivateStrategy.built_with == ["https://fake.example"]
+
+
+def test_no_warning_when_a_checker_is_given_first(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(DocumentFetcherAgent, "_warned_never_rejected", False)
+    with caplog.at_level("WARNING"):
+        DocumentFetcherAgent(Rejecting())
+    assert caplog.records == []
+    assert DocumentFetcherAgent._warned_never_rejected is False
+
+
+def test_never_rejected_warning_text_is_exact(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(DocumentFetcherAgent, "_warned_never_rejected", False)
+    with caplog.at_level("WARNING"):
+        DocumentFetcherAgent()
+    assert [r.getMessage() for r in caplog.records] == [
+        "no rejection checker given: rejected documents are not blocked"
+    ]
+
+
+def test_new_agent_is_open() -> None:
+    assert DocumentFetcherAgent()._closed is False
+
+
+def test_closed_message_is_exact() -> None:
+    agent = DocumentFetcherAgent()
+    agent.close()
+    with pytest.raises(FetchTransportError) as info:
+        agent.list_documents("fake", DocumentFilter())
+    assert str(info.value) == "closed"
+
+
+def test_rejection_label_is_cut_at_64_characters() -> None:
+    ref = REF.model_copy(update={"external_id": "x" * 100})
+    with pytest.raises(DocumentRejectedError) as rej:
+        DocumentFetcherAgent(Rejecting()).fetch_document("fake", ref)
+    label = ("fake/" + "x" * 100)[:64]
+    assert str(rej.value) == f"document rejected: {label!r}"
+
+
+def test_parse_uses_the_mime_type_when_the_name_has_no_suffix() -> None:
+    assert DocumentFetcherAgent().parse(b"<p>x</p>", "page", "text/html") == "x"
+
+
+def test_parse_passes_the_mime_charset_to_the_parser() -> None:
+    # 0xA3 is "£" in latin-1 and "Ł" in cp1250 (the fallback).
+    mime = "text/plain; charset=iso-8859-1"
+    assert DocumentFetcherAgent().parse(b"\xa3", "a.txt", mime) == "£"
+    assert DocumentFetcherAgent().parse(b"\xa3", "a.txt") == "Ł"

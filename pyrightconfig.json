@@ -1,6 +1,6 @@
 {
   "include": ["src", "migrations", "tests", "scripts"],
-  "exclude": ["docs", "site", "evals"],
+  "exclude": ["docs", "site"],
   "typeCheckingMode": "standard",
   "strict": ["src/agents", "src/core"],
   "pythonVersion": "3.13",
