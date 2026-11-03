@@ -425,23 +425,43 @@ def test_injected_client_not_closed() -> None:
     client.close.assert_not_called()
 
 
-def test_owned_client_closed_after_each_operation() -> None:
+def test_owned_client_is_reused_and_closed_by_close() -> None:
     with patch("agents.fetch.strategies.tavily.TavilyClient") as cls:
         cls.return_value.map.return_value = {"results": []}
         cls.return_value.extract.return_value = {"results": [{"raw_content": "x"}]}
         strategy = TavilyCrawlStrategy(BASE)
         strategy.list_refs("s", DocumentFilter())
-        assert cls.return_value.close.call_count == 1
         strategy.read(_ref())
-        assert cls.return_value.close.call_count == 2
-
-
-def test_owned_client_closed_on_error() -> None:
-    with patch("agents.fetch.strategies.tavily.TavilyClient") as cls:
-        cls.return_value.map.side_effect = ForbiddenError("x")
-        with pytest.raises(FetchTransportError):
-            TavilyCrawlStrategy(BASE).list_refs("s", DocumentFilter())
+        cls.assert_called_once_with(api_key=KEY)
+        cls.return_value.close.assert_not_called()
+        strategy.close()
+        strategy.close()
         cls.return_value.close.assert_called_once_with()
+
+
+def test_closed_strategy_refuses_calls() -> None:
+    client = _client()
+    strategy = _strategy(client)
+    strategy.close()
+    client.close.assert_not_called()
+    with pytest.raises(FetchTransportError, match="closed"):
+        strategy.list_refs("s", DocumentFilter())
+    client.map.assert_not_called()
+
+
+def test_timeout_leaves_client_open(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TAVILY_TIMEOUT", "0.2")
+    release = threading.Event()
+    with patch("agents.fetch.strategies.tavily.TavilyClient") as cls:
+        cls.return_value.map.side_effect = lambda **_: release.wait(5)
+        strategy = TavilyCrawlStrategy(BASE)
+        try:
+            with pytest.raises(FetchTransportError, match="total timeout"):
+                strategy.list_refs("s", DocumentFilter())
+            cls.return_value.close.assert_not_called()
+        finally:
+            release.set()
+            strategy.close()
 
 
 def test_registered() -> None:
