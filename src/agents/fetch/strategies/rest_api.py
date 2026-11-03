@@ -137,6 +137,12 @@ class RestApiStrategy:
         self._port = parts.port or _HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers
         self._transport = transport
+        self._http: httpx.Client | None = None
+
+    def close(self) -> None:
+        if self._http is not None:
+            self._http.close()
+            self._http = None
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
         mapper = self._mapper(source)
@@ -196,6 +202,11 @@ class RestApiStrategy:
             raise RedirectNotAllowedError("redirect outside the source host or not https")
 
     def _client(self) -> httpx.Client:
+        if self._http is None:
+            self._http = self._new_client()
+        return self._http
+
+    def _new_client(self) -> httpx.Client:
         return httpx.Client(
             timeout=httpx.Timeout(get_settings().fetch_http_timeout),
             follow_redirects=True,
@@ -218,10 +229,7 @@ class RestApiStrategy:
         limit = settings.fetch_max_bytes
         deadline = _monotonic() + settings.fetch_total_timeout
         try:
-            with (
-                self._client() as client,
-                client.stream("GET", self._base + path, params=params) as response,
-            ):
+            with self._client().stream("GET", self._base + path, params=params) as response:
                 return self._consume(response, label, limit, deadline)
         except httpx.HTTPError as exc:
             raise FetchTransportError(f"{label}: {type(exc).__name__}") from exc

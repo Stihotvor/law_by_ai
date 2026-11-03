@@ -64,6 +64,9 @@ class MinioStrategy:
             client = self._build_client()
         self._client = client
 
+    def close(self) -> None:
+        self._client._http.clear()
+
     @staticmethod
     def _build_client() -> Minio:
         settings = get_settings()

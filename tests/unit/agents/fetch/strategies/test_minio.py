@@ -455,3 +455,9 @@ def test_cursor_remainder_must_be_safe(cursor: str) -> None:
     with pytest.raises(InvalidReferenceError):
         s.list_refs("gov", DocumentFilter(cursor=cursor))
     c.list_objects.assert_not_called()
+
+
+def test_close_clears_connection_pool() -> None:
+    s, client = _make()
+    s.close()
+    client._http.clear.assert_called_once_with()

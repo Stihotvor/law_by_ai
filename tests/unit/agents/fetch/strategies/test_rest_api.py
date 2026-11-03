@@ -606,3 +606,16 @@ def test_base_url_userinfo_rejected(url: str) -> None:
 def test_base_url_without_host_rejected(url: str) -> None:
     with pytest.raises(SourceConfigError):
         RestApiStrategy(url)
+
+
+def test_close_closes_client_and_is_idempotent() -> None:
+    s = _strategy(lambda r: httpx.Response(200, content=b"x"))
+    s.close()
+    s.read(_ref())
+    client = s._http
+    assert client is not None
+    s.read(_ref())
+    assert s._http is client
+    s.close()
+    assert client.is_closed
+    s.close()

@@ -189,3 +189,32 @@ def test_unknown_strategy_message(registries: Registry[type[LegalSource]]) -> No
     with pytest.raises(SourceConfigError) as info:
         DocumentFetcherAgent().list_documents("bad", DocumentFilter())
     assert str(info.value) == "source 'bad' uses unknown strategy 'missing'"
+
+
+class ClosableStrategy(FakeStrategy):
+    closed: ClassVar[int] = 0
+
+    def close(self) -> None:
+        type(self).closed += 1
+
+
+def test_strategy_cached_per_source_and_closed(
+    monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
+) -> None:
+    strategies: Registry[type[FetchStrategy]] = Registry("strategies")
+    strategies.register("fake_strategy")(ClosableStrategy)
+    monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
+    ClosableStrategy.closed = 0
+    with DocumentFetcherAgent() as agent:
+        agent.list_documents("fake", DocumentFilter())
+        agent.list_documents("fake", DocumentFilter())
+        assert FakeStrategy.built_with == ["https://fake.example"]
+    assert ClosableStrategy.closed == 1
+    agent.close()
+    assert ClosableStrategy.closed == 1
+
+
+def test_close_skips_strategy_without_close() -> None:
+    agent = DocumentFetcherAgent()
+    agent.list_documents("fake", DocumentFilter())
+    agent.close()

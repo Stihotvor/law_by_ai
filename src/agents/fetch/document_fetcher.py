@@ -1,6 +1,7 @@
 """Document fetcher agent: resolves a source and fetches raw documents."""
 
-from typing import Protocol
+from types import TracebackType
+from typing import Protocol, Self
 
 import agents.fetch.formats
 import agents.fetch.sources
@@ -19,7 +20,7 @@ from agents.fetch.ocr.errors import OcrError
 from agents.fetch.ocr.manager import get_ocr_manager
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
-from agents.fetch.strategies.base import STRATEGIES
+from agents.fetch.strategies.base import STRATEGIES, FetchStrategy
 
 PARSE_ERRORS = (FormatError, OcrError)
 
@@ -42,6 +43,26 @@ def _check_source(source: str, ref: DocumentRef) -> None:
 class DocumentFetcherAgent:
     def __init__(self, rejection: RejectionChecker | None = None) -> None:
         self._rejection: RejectionChecker = rejection or NeverRejected()
+        self._strategies: dict[str, FetchStrategy] = {}
+
+    def close(self) -> None:
+        """Close cached strategies that have a ``close`` method."""
+        strategies, self._strategies = list(self._strategies.values()), {}
+        for strategy in strategies:
+            closer = getattr(strategy, "close", None)
+            if callable(closer):
+                closer()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self.close()
 
     def _resolve(self, source: str) -> LegalSource:
         try:
@@ -54,7 +75,10 @@ class DocumentFetcherAgent:
             raise SourceConfigError(
                 f"source {source!r} uses unknown strategy {source_cls.strategy_name!r}"
             ) from exc
-        return source_cls(strategy_cls(source_cls.base_url))
+        strategy = self._strategies.get(source)
+        if strategy is None:
+            strategy = self._strategies[source] = strategy_cls(source_cls.base_url)
+        return source_cls(strategy)
 
     def list_documents(self, source: str, flt: DocumentFilter) -> DocumentPage:
         return self._resolve(source).list_documents(flt)
