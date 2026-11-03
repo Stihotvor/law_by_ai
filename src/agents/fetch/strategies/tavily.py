@@ -203,7 +203,7 @@ class TavilyCrawlStrategy:
         if not isinstance(body, dict) or not isinstance(body.get("results"), list):
             raise PayloadError("tavily map: unexpected response")
         found: set[str] = set()
-        for item in body["results"]:
+        for item in body["results"][: get_settings().tavily_max_pages]:
             eid = self._relative(item) if isinstance(item, str) else None
             if eid is not None:
                 found.add(eid)

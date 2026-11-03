@@ -126,6 +126,11 @@ def test_list_refs_call_and_filtering() -> None:
     )
 
 
+def test_map_results_beyond_max_pages_are_ignored() -> None:
+    client = _client(_urls(*[f"p{i}" for i in range(20)]))
+    assert _ids(client, limit=50) == sorted(f"p{i}" for i in range(7))
+
+
 def test_refs_carry_urls() -> None:
     page = _strategy(_client(_urls("a/b"))).list_refs("s", DocumentFilter())
     ref = page.items[0]
