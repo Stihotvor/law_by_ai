@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Initialize the database with a test tenant and admin user."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -12,7 +13,16 @@ from core.security import ADMIN
 from plugins.relational_db.postgres import PostgreSQLStore
 
 
-def main():
+def admin_password() -> str:
+    """Return the seed admin password from SEED_ADMIN_PASSWORD (required)."""
+    password = os.environ.get("SEED_ADMIN_PASSWORD")
+    if not password:
+        raise SystemExit("SEED_ADMIN_PASSWORD must be set to seed the admin user.")
+    return password
+
+
+def main() -> None:
+    password = admin_password()
     plugin = PostgreSQLStore()
     plugin.initialize()
 
@@ -27,7 +37,7 @@ def main():
     try:
         user = plugin.create_user(
             email="admin@example.com",
-            password="admin",
+            password=password,
             role=ADMIN,
             tenant_id="platform",
             name="Admin",
