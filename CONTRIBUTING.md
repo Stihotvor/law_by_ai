@@ -60,11 +60,13 @@ The gate agent reads its checks from `.claude/quality-gates.json` (lint, format,
 ```bash
 PYTHONPATH=src uv run pytest -m "not integration" --cov --cov-branch --cov-report=xml --cov-report=term-missing
 uv run diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
+uv run coverage report --include='src/agents/*' --fail-under=100
 uv run mutmut run && uv run mutmut results
 ```
 
 - Repo-wide branch coverage must stay at or above `fail_under` in `pyproject.toml`
-  (66%, the baseline; raise it as coverage grows, never lower it).
+  (88%; raise it as coverage grows, never lower it).
+- `src/agents` has its own floor of 100% (CI runs `coverage report --include='src/agents/*' --fail-under=100`).
 - New and changed lines need at least 90% coverage (`diff-cover`, pull requests only).
 - Mutation testing (`mutmut`) is scoped by `[tool.mutmut]` in `pyproject.toml` to
   `src/agents/fetch` with tests in `tests/unit/agents/fetch`. The CI job is

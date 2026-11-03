@@ -81,7 +81,7 @@ branch = true
 source = ["src"]
 
 [tool.coverage.report]
-fail_under = 66
+fail_under = 88
 show_missing = true
 
 [tool.mutmut]

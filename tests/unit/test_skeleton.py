@@ -154,3 +154,11 @@ def test_docs_workflow_triggers_on_build_inputs():
     expected = {".github/workflows/docs.yml", "pyproject.toml", "uv.lock", "docs/**"}
     for event in ("push", "pull_request"):
         assert expected <= set(wf[True][event]["paths"])
+
+
+def test_coverage_floors_are_enforced():
+    cfg = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert cfg["tool"]["coverage"]["report"]["fail_under"] >= 88
+    steps = _workflows()["ci.yml"]["jobs"]["unit-test"]["steps"]
+    runs = " ".join(s.get("run", "") for s in steps)
+    assert "--include='src/agents/*' --fail-under=100" in runs

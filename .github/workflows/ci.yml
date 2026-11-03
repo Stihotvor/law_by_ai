@@ -52,6 +52,8 @@ jobs:
         run: uv sync --locked --extra dev
       - name: Run unit tests (no external services)
         run: uv run pytest -m "not integration" -q --cov --cov-branch --cov-report=xml --cov-report=term-missing
+      - name: Coverage floor for src/agents
+        run: uv run coverage report --include='src/agents/*' --fail-under=100
       - name: Coverage of changed lines
         if: github.event_name == 'pull_request'
         env:
