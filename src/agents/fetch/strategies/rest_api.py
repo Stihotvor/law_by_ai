@@ -15,7 +15,6 @@ import json
 import time
 from collections.abc import Mapping
 from typing import Any
-from urllib.parse import urlsplit
 
 import httpx
 
@@ -30,7 +29,7 @@ from agents.fetch.errors import (
     SourceConfigError,
 )
 from agents.fetch.registry import Registry, UnknownNameError
-from agents.fetch.strategies._hosts import check_public_host
+from agents.fetch.strategies._hosts import check_public_host, parse_base_url
 from agents.fetch.strategies._rest_mapper import (
     REST_MAPPERS,
     RestListing,
@@ -58,16 +57,10 @@ class RestApiStrategy:
         transport: httpx.BaseTransport | None = None,
         allow_private_hosts: bool = False,
     ) -> None:
-        if not base_url.startswith("https://"):
-            raise SourceConfigError("base_url must start with https://")
+        parts = parse_base_url(base_url)
         self._base = base_url.rstrip("/")
-        parts = urlsplit(self._base)
-        if parts.username is not None or parts.password is not None or "@" in parts.netloc:
-            raise SourceConfigError("base_url must not contain credentials")
-        if not parts.hostname:
-            raise SourceConfigError("base_url needs a host")
-        check_public_host(parts.hostname, allow_private=allow_private_hosts)
-        self._host = parts.hostname
+        self._allow_private = allow_private_hosts
+        self._host = str(parts.hostname)
         self._port = parts.port or _HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers
         self._transport = transport
@@ -131,6 +124,7 @@ class RestApiStrategy:
 
     def _guard(self, request: httpx.Request) -> None:
         url = request.url
+        check_public_host(url.host, allow_private=self._allow_private)
         port = url.port or (_HTTPS_PORT if url.scheme == "https" else 80)
         if url.scheme != "https" or url.host != self._host or port != self._port:
             raise RedirectNotAllowedError("redirect outside the source host or not https")

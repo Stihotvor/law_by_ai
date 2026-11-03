@@ -1,10 +1,9 @@
 """Tavily based fetch strategy for sites without an API.
 
 The strategy discovers pages with Tavily ``map`` and reads one page with Tavily
-``extract``. It does not call ``crawl``. The agent builds a fresh strategy for
-every call, so a crawl result cannot be cached between ``list_refs`` and
-``read``. ``crawl`` would pay for page content in the list step and again in the
-read step. ``map`` (URLs only, 1 credit per 10 pages) plus ``extract`` (1 credit
+``extract``. It does not call ``crawl``. A crawl result is not cached between
+``list_refs`` and ``read``. ``crawl`` would pay for page content in the list step
+and again in the read step. ``map`` (URLs only, 1 credit per 10 pages) plus ``extract`` (1 credit
 per 5 pages, only for pages that are read) costs less. The name keeps the
 "Tavily crawl" wording of the design.
 
@@ -40,7 +39,7 @@ from agents.fetch.errors import (
     ResponseTooLargeError,
     SourceConfigError,
 )
-from agents.fetch.strategies._hosts import check_public_host
+from agents.fetch.strategies._hosts import parse_base_url
 from agents.fetch.strategies.base import STRATEGIES
 from config.settings import get_settings
 
@@ -99,18 +98,10 @@ class TavilyCrawlStrategy:
         base_url: str,
         *,
         client: TavilyClient | None = None,
-        allow_private_hosts: bool = False,
     ) -> None:
-        if not base_url.startswith("https://"):
-            raise SourceConfigError("base_url must start with https://")
+        parts = parse_base_url(base_url)
         self._base = base_url.rstrip("/")
-        parts = urlsplit(self._base)
-        if parts.username is not None or parts.password is not None or "@" in parts.netloc:
-            raise SourceConfigError("base_url must not contain credentials")
-        if not parts.hostname:
-            raise SourceConfigError("base_url needs a host")
-        check_public_host(parts.hostname, allow_private=allow_private_hosts)
-        self._host = parts.hostname
+        self._host = str(parts.hostname)
         self._port = parts.port or _HTTPS_PORT
         self._path = parts.path
         self._client = client
