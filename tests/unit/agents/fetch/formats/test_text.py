@@ -164,7 +164,7 @@ def test_txt_over_limit_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_html_over_limit_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 10)
+    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 13)
     assert html("<p>aaaaa</p><p>bbbbb</p>") == "aaaaa\nbbbbb"
     with pytest.raises(TextLimitError):
         html("<p>aaaaaa</p><p>bbbbb</p>")
@@ -188,3 +188,9 @@ def test_binary_png_header_raises() -> None:
         txt(png)
     with pytest.raises(BinaryContentError):
         html(png)
+
+
+def test_html_repeated_blocks_stay_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 100)
+    assert html("<p>" * 100_000) == ""
+    assert html("a" + "<p>" * 100_000 + "b") == "a\nb"

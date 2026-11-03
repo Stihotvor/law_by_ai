@@ -97,13 +97,20 @@ class _TextExtractor(HTMLParser):
         if tag in _SKIP_TAGS:
             self._skip_depth += 1
         elif tag in _BLOCK_TAGS:
-            self.pieces.append("\n")
+            self._newline()
+
+    def _newline(self) -> None:
+        if self.pieces and self.pieces[-1] == "\n":
+            return
+        self._size += 1
+        _check_size(self._size)
+        self.pieces.append("\n")
 
     def handle_endtag(self, tag: str) -> None:
         if tag in _SKIP_TAGS:
             self._skip_depth = max(0, self._skip_depth - 1)
         elif tag in _BLOCK_TAGS:
-            self.pieces.append("\n")
+            self._newline()
 
     def handle_data(self, data: str) -> None:
         if self._skip_depth == 0:
