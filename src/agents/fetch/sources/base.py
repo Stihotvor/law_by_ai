@@ -34,7 +34,7 @@ class LegalSource(ABC):
         """Return raw bytes, no parsing, tenant_id None."""
 
 
-def _validate_source(name: str, cls: type[LegalSource]) -> None:
+def _validate_source(name: str, cls: object) -> None:
     if not (isinstance(cls, type) and issubclass(cls, LegalSource)):
         raise TypeError(f"{cls!r} is not a LegalSource subclass")
     if getattr(cls, "name", None) != name:

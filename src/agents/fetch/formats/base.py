@@ -3,7 +3,7 @@
 import re
 from collections.abc import Callable
 from pathlib import PurePosixPath
-from typing import ClassVar, Protocol, runtime_checkable
+from typing import ClassVar, Protocol, TypeGuard, runtime_checkable
 
 from agents.fetch.errors import FetchError
 from agents.fetch.registry import Registry
@@ -51,11 +51,17 @@ def _valid_mime(value: object) -> bool:
     )
 
 
+def _is_tuple(value: object) -> TypeGuard[tuple[object, ...]]:
+    return isinstance(value, tuple)
+
+
 def _all_valid(values: object, check: Callable[[object], bool]) -> bool:
-    return isinstance(values, tuple) and len(values) > 0 and all(check(v) for v in values)
+    if not _is_tuple(values):
+        return False
+    return len(values) > 0 and all(check(v) for v in values)
 
 
-def _validate_parser(name: str, cls: type[FormatParser]) -> None:
+def _validate_parser(name: str, cls: object) -> None:
     if not isinstance(cls, type):
         raise TypeError(f"format {name!r}: not a class")
     if not _all_valid(getattr(cls, "suffixes", None), _valid_suffix):

@@ -1,12 +1,12 @@
 """Mistral Document AI OCR adapter. No logging here: content and key must not leak."""
 
 import base64
-import json
 import time
 from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
+from pydantic import BaseModel, StrictInt, StrictStr
 
 from agents.fetch.ocr.errors import OcrConfigError, OcrInputError, OcrProviderError
 
@@ -32,22 +32,21 @@ def _data_url(media_type: str, data: bytes) -> str:
     return f"data:{media_type};base64,{base64.b64encode(data).decode('ascii')}"
 
 
+class _Page(BaseModel):
+    index: StrictInt
+    markdown: StrictStr
+
+
+class _Payload(BaseModel):
+    pages: list[_Page]
+
+
 def _extract_text(raw: bytes) -> str:
     try:
-        payload = json.loads(raw)
+        payload = _Payload.model_validate_json(raw)
     except (ValueError, RecursionError) as exc:
         raise OcrProviderError("unexpected response shape") from exc
-    pages = payload.get("pages") if isinstance(payload, dict) else None
-    if not isinstance(pages, list):
-        raise OcrProviderError("unexpected response shape")
-    items: list[tuple[int, str]] = []
-    for page in pages:
-        if not isinstance(page, dict):
-            raise OcrProviderError("unexpected response shape")
-        index, markdown = page.get("index"), page.get("markdown")
-        if isinstance(index, bool) or not isinstance(index, int) or not isinstance(markdown, str):
-            raise OcrProviderError("unexpected response shape")
-        items.append((index, markdown.strip()))
+    items = [(page.index, page.markdown.strip()) for page in payload.pages]
     texts = [text for _, text in sorted(items, key=lambda item: item[0]) if text]
     if not texts:
         raise OcrProviderError("OCR returned no text")
