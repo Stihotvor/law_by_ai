@@ -9,6 +9,7 @@ from agents.fetch.errors import FetchError
 from agents.fetch.registry import Registry
 
 MAX_TEXT_CHARS = 5_000_000
+_SHOWN_CHARS = 64
 _CHARSET_RE = re.compile(r'charset\s*=\s*"?([A-Za-z0-9._:-]+)"?', re.I)
 
 
@@ -97,7 +98,10 @@ def find_parser(name: str, mime: str | None = None) -> FormatParser:
     if found is None and mime is not None:
         found = _by_mime(mime.split(";")[0].strip().lower())
     if found is None:
-        raise UnsupportedFormatError(f"unsupported format: name={name!r} mime={mime!r}")
+        shown = mime if mime is None else mime[:_SHOWN_CHARS]
+        raise UnsupportedFormatError(
+            f"unsupported format: name={name[:_SHOWN_CHARS]!r} mime={shown!r}"
+        )
     return found
 
 

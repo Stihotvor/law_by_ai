@@ -161,3 +161,11 @@ def test_parse_bytes_passes_charset_and_mime() -> None:
     data = "\u0105".encode("iso-8859-2")
     assert parse_bytes(data, "a.txt", "text/plain; charset=iso-8859-2") == "\u0105"
     assert parse_bytes(b"<p>x</p>", "blob", "text/html") == "x"
+
+
+def test_unsupported_message_truncates_name_and_mime() -> None:
+    with pytest.raises(UnsupportedFormatError) as exc:
+        find_parser("n" * 500, "m/" + "x" * 500)
+    assert (
+        str(exc.value) == f"unsupported format: name={'n' * 64!r} mime={('m/' + 'x' * 500)[:64]!r}"
+    )
