@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -575,7 +575,7 @@ def test_redirect_message_and_default_port() -> None:
 
 
 def test_mapper_supplied_invalid_id_is_payload_error() -> None:
-    mapper = _mapper(parse_list=lambda payload: RestListing(external_ids=(5,)))  # type: ignore[arg-type]
+    mapper = _mapper(parse_list=lambda payload: RestListing(external_ids=cast(Any, (5,))))
     s = _strategy(lambda r: _json({}), mapper)
     with pytest.raises(PayloadError):
         s.list_refs("src", DocumentFilter())
