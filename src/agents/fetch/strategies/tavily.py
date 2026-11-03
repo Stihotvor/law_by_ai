@@ -55,6 +55,7 @@ _MAP_BREADTH = 20
 _MAP_TIMEOUT = (10.0, 150.0)
 _EXTRACT_TIMEOUT = (1.0, 60.0)
 _CURSOR = re.compile(r"[0-9]{1,9}")
+_ENCODED = re.compile(r"%(2e|2f|5c)", re.IGNORECASE)
 _STATUS_ERRORS: tuple[tuple[type[Exception], int], ...] = (
     (UsageLimitExceededError, 429),
     (ForbiddenError, 403),
@@ -87,7 +88,8 @@ def _bad_id(external_id: str) -> bool:
         not external_id
         or external_id.startswith("/")
         or any(seg in {"", ".", ".."} for seg in segments)
-        or any(c in external_id for c in ("\\", "#"))
+        or any(c in external_id for c in ("\\", "#", "?"))
+        or _ENCODED.search(external_id) is not None
         or "://" in external_id
     )
 
@@ -150,7 +152,7 @@ class TavilyCrawlStrategy:
 
     def get_meta(self, ref: DocumentRef) -> DocumentMeta:
         _check_id(ref.external_id)
-        segments = [s for s in ref.external_id.split("?")[0].split("/") if s]
+        segments = [s for s in ref.external_id.split("/") if s]
         title = unquote(segments[-1]) if segments else ref.external_id
         return DocumentMeta(
             ref=ref,

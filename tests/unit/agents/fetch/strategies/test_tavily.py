@@ -116,7 +116,7 @@ def test_list_refs_call_and_filtering() -> None:
             None,
         ]
     )
-    assert _ids(client) == ["a.html", "d/e?x=1", "z.html"]
+    assert _ids(client) == ["a.html", "z.html"]
     client.map.assert_called_once_with(
         url=BASE,
         max_depth=2,
@@ -227,7 +227,7 @@ def test_extract_timeout_clamp(
 
 def test_get_meta_no_call() -> None:
     client = _client()
-    meta = _strategy(client).get_meta(_ref("docs/My%20Page.html?x=1"))
+    meta = _strategy(client).get_meta(_ref("docs/My%20Page.html"))
     assert meta.title == "My Page.html"
     assert meta.doc_type is None
     assert meta.published_at is None
@@ -237,12 +237,27 @@ def test_get_meta_no_call() -> None:
 
 
 def test_get_meta_title_falls_back_to_id() -> None:
-    assert _strategy(_client()).get_meta(_ref("?q=1")).title == "?q=1"
     assert _strategy(_client()).get_meta(_ref("x/%20")).title == " "
 
 
 @pytest.mark.parametrize(
-    "eid", ["/a", "a//b", "../a", "a/./b", "a\\b", "a#b", "a://b", "a\x01b", "a\x7fb"]
+    "eid",
+    [
+        "/a",
+        "a//b",
+        "../a",
+        "a/./b",
+        "a\\b",
+        "a#b",
+        "a://b",
+        "a\x01b",
+        "a\x7fb",
+        "a?x=1",
+        "a%2eb",
+        "a%2Fb",
+        "a%5Cb",
+        "a%5cb",
+    ],
 )
 def test_unsafe_ids(eid: str) -> None:
     strategy = _strategy(_client())
