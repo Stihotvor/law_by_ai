@@ -8,6 +8,7 @@ from typing import Any, cast
 import pypdf
 import pytest
 from pypdf import PasswordType, PdfWriter
+from pypdf.errors import DependencyError
 from pypdf.generic import (
     DecodedStreamObject,
     DictionaryObject,
@@ -118,6 +119,20 @@ def test_decrypt_exception_is_encrypted_error(monkeypatch: pytest.MonkeyPatch) -
     assert isinstance(info.value.__cause__, RuntimeError)
     assert "secret content" not in str(info.value)
     assert str(info.value) == "pdf is encrypted"
+
+
+def test_missing_crypto_dependency_has_accurate_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(self: object, password: str) -> None:
+        raise DependencyError("cryptography missing")
+
+    monkeypatch.setattr(pypdf.PdfReader, "decrypt", boom)
+    data = _pdf(["x"], user_password="pw", algorithm="RC4-128")
+    with pytest.raises(EncryptedDocumentError) as info:
+        PdfParser().parse(data)
+    assert isinstance(info.value.__cause__, DependencyError)
+    assert str(info.value) == "pdf is encrypted and decryption support is missing"
 
 
 def test_page_limit(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,9 +1,14 @@
-"""PDF parser (text layer only)."""
+"""PDF parser (text layer only).
+
+Per-page extraction time and size are not bounded here. The caller runs the
+parser under a task time limit.
+"""
 
 from io import BytesIO
 from typing import ClassVar
 
 from pypdf import PasswordType, PdfReader
+from pypdf.errors import DependencyError
 
 from agents.fetch.formats import base
 from agents.fetch.formats._safety import (
@@ -39,6 +44,8 @@ def _open(data: bytes) -> PdfReader:
 def _decrypt(reader: PdfReader) -> None:
     try:
         result = reader.decrypt("")
+    except DependencyError as exc:
+        raise EncryptedDocumentError("pdf is encrypted and decryption support is missing") from exc
     except Exception as exc:
         raise EncryptedDocumentError("pdf is encrypted") from exc
     if result == PasswordType.NOT_DECRYPTED:
