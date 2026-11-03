@@ -1,6 +1,6 @@
 import pytest
 
-from agents.fetch.formats.base import TextLimitError
+from agents.fetch.formats.base import BinaryContentError, TextLimitError
 from agents.fetch.formats.text import HtmlParser, PlainTextParser
 
 PL = "zażółć gęślą jaźń"
@@ -168,3 +168,15 @@ def test_html_over_limit_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     assert html("<p>aaaaa</p><p>bbbbb</p>") == "aaaaa\nbbbbb"
     with pytest.raises(TextLimitError):
         html("<p>aaaaaa</p><p>bbbbb</p>")
+
+
+def test_txt_nul_raises() -> None:
+    with pytest.raises(BinaryContentError):
+        txt(b"ab\x00cd")
+    with pytest.raises(BinaryContentError):
+        html(b"<p>ab\x00cd</p>")
+
+
+def test_control_chars_become_space() -> None:
+    assert txt(b"a\x01b\x0bc\x1fd\te\nf") == "a b c d\te\nf"
+    assert html(b"<p>a\x01b\x0cc</p>") == "a b c"

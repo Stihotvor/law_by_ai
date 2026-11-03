@@ -6,7 +6,7 @@ from html.parser import HTMLParser
 from typing import ClassVar
 
 from agents.fetch.formats import base
-from agents.fetch.formats.base import FORMATS, TextLimitError
+from agents.fetch.formats.base import FORMATS, BinaryContentError, TextLimitError
 
 _META_RE = re.compile(rb'charset\s*=\s*["\']?([A-Za-z0-9._:-]+)', re.I)
 _SNIFF_BYTES = 2048
@@ -17,6 +17,7 @@ _BLOCK_TAGS = frozenset(
     }
 )
 _SKIP_TAGS = frozenset({"script", "style"})
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 _HSPACE_RE = re.compile(r"[^\S\n]+")
 
 
@@ -48,7 +49,17 @@ def _check_size(size: int) -> None:
         raise TextLimitError(f"text exceeds {base.MAX_TEXT_CHARS} characters")
 
 
+def _clean(text: str) -> str:
+    if "\x00" in text:
+        raise BinaryContentError("data contains NUL characters")
+    return _CONTROL_RE.sub(" ", text)
+
+
 def _decode(data: bytes, charset: str | None, sniff_meta: bool) -> str:
+    return _clean(_decode_raw(data, charset, sniff_meta))
+
+
+def _decode_raw(data: bytes, charset: str | None, sniff_meta: bool) -> str:
     candidates = [_bom_charset(data), charset]
     if sniff_meta:
         candidates.append(_meta_charset(data))

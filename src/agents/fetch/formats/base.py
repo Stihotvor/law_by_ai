@@ -20,6 +20,10 @@ class UnsupportedFormatError(FormatError):
     """No parser matches the file name or MIME type."""
 
 
+class BinaryContentError(FormatError):
+    """The data decodes to text containing NUL, so it is binary."""
+
+
 class TextLimitError(FormatError):
     """A text or structural limit (size, pages, entries, ratio, depth) was exceeded."""
 
