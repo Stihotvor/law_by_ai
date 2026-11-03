@@ -45,7 +45,7 @@ dev = [
 ]
 docs = [
     "mkdocs-material==9.7.7",
-    "pymdown-extensions==11.0.1",
+    "pymdown-extensions==12.3",
 ]
 
 [tool.setuptools.packages.find]
