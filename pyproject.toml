@@ -14,13 +14,19 @@ authors = [{ name = "Yevhen D." }]
 dependencies = [
     "bcrypt>=4.2",
     "celery[redis]>=5.4",
+    "httpx==0.28.1",
+    "minio==7.2.20",
     "psycopg[binary]>=3.1",
+    "pydantic==2.14.2",
+    "pypdf==6.21.4",
+    "python-docx==1.2.0",
     "python-dotenv>=1.0",
     "pyyaml>=6.0",
     "redis>=5.0",
     "sqlalchemy>=2.0",
     "streamlit>=1.40",
     "streamlit-authenticator>=0.4.2",
+    "tavily-python==0.8.5",
 ]
 
 [project.optional-dependencies]

@@ -5,7 +5,7 @@ direct integrations (`PostgreSQLStore` today; later Qdrant, Neo4j, LLM /
 embedding clients), invoked asynchronously via Celery tasks or synchronously
 from the UI. Human-in-the-loop: users trigger or approve each step.
 
-- `document_fetcher.py` — fetch + OCR + persist
+- `fetch/` — fetch + parse + OCR + persist (strategies, sources, formats)
 - `document_processor.py` — chunk, embed, store vectors, build graph edges
 - `legal_research.py` — answer questions with citations + confidence
 - `change_tracker.py` — document diffs (ADR-0007)

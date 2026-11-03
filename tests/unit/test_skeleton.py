@@ -11,6 +11,7 @@ PACKAGES = (
     "core/observability",
     "plugins",
     "agents",
+    "agents/fetch",
     "tasks",
     "ui",
     "ui/pages",
