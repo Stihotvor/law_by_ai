@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -135,7 +136,7 @@ def _no_parse() -> type:
 )
 def test_validate_rejects(cls: object) -> None:
     with pytest.raises(TypeError, match=r"^format 'x': "):
-        _validate_parser("x", cls)  # type: ignore[arg-type]
+        _validate_parser("x", cast(Any, cls))
 
 
 def test_register_and_duplicate() -> None:
@@ -153,7 +154,7 @@ def test_parse_bytes() -> None:
 
 
 def test_validate_accepts_short_suffix() -> None:
-    _validate_parser("x", _derive(suffixes=(".a",)))  # type: ignore[arg-type]
+    _validate_parser("x", cast(Any, _derive(suffixes=(".a",))))
 
 
 def test_parse_bytes_passes_charset_and_mime() -> None:

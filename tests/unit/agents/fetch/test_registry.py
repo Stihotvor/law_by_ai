@@ -89,7 +89,8 @@ def test_autoload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import types
 
     mod = types.ModuleType("tests_reg")
-    mod.REG = reg  # type: ignore[attr-defined]
+    attr = "REG"
+    setattr(mod, attr, reg)
     monkeypatch.setitem(sys.modules, "tests_reg", mod)
     autoload(pkg, reg)
     assert reg.names() == ("alpha",)

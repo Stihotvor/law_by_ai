@@ -1,10 +1,8 @@
 """Document fetcher agent: resolves a source and fetches raw documents."""
 
+import importlib
 from typing import Protocol
 
-import agents.fetch.formats
-import agents.fetch.sources
-import agents.fetch.strategies  # noqa: F401  (triggers autoload)
 from agents.fetch.contracts import (
     DocumentFilter,
     DocumentMeta,
@@ -17,6 +15,9 @@ from agents.fetch.formats.base import parse_bytes
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
 from agents.fetch.strategies.base import STRATEGIES
+
+for _package in ("agents.fetch.sources", "agents.fetch.strategies", "agents.fetch.formats"):
+    importlib.import_module(_package)  # triggers autoload
 
 
 class RejectionChecker(Protocol):
