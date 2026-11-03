@@ -1,3 +1,4 @@
+import threading
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -7,12 +8,13 @@ from tavily.errors import (
     BadRequestError,
     ForbiddenError,
     InvalidAPIKeyError,
+    KeylessUnsupportedEndpointError,
     MissingAPIKeyError,
     UsageLimitExceededError,
 )
 from tavily.errors import TimeoutError as TavilyTimeoutError
 
-import agents.fetch.document_fetcher  # noqa: F401
+from agents.fetch import document_fetcher
 from agents.fetch.contracts import DocumentFilter, DocumentRef
 from agents.fetch.errors import (
     DocumentNotFoundError,
@@ -27,6 +29,7 @@ from agents.fetch.sources.base import SOURCES
 from agents.fetch.strategies.base import STRATEGIES, FetchStrategy
 from agents.fetch.strategies.tavily import TavilyCrawlStrategy
 
+_REGISTERED = document_fetcher  # importing it registers the strategies
 BASE = "https://api.example/v1"
 KEY = "tvly-KEY-VALUE-123"
 
@@ -92,7 +95,8 @@ def test_key_comes_from_settings_and_session_ignores_env() -> None:
     assert KEY not in repr(strategy)
 
 
-def test_list_refs_call_and_filtering() -> None:
+def test_list_refs_call_and_filtering(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TAVILY_MAX_PAGES", "50")
     client = _client(
         [
             *_urls("z.html", "a.html", "a.html", "d/e?x=1"),
@@ -113,16 +117,21 @@ def test_list_refs_call_and_filtering() -> None:
             None,
         ]
     )
-    assert _ids(client) == ["a.html", "d/e?x=1", "z.html"]
+    assert _ids(client) == ["a.html", "z.html"]
     client.map.assert_called_once_with(
         url=BASE,
         max_depth=2,
         max_breadth=20,
-        limit=7,
+        limit=50,
         allow_external=False,
         select_domains=[r"^api\.example$"],
         timeout=60.0,
     )
+
+
+def test_map_results_beyond_max_pages_are_ignored() -> None:
+    client = _client(_urls(*[f"p{i}" for i in range(20)]))
+    assert _ids(client, limit=50) == sorted(f"p{i}" for i in range(7))
 
 
 def test_refs_carry_urls() -> None:
@@ -167,7 +176,7 @@ def test_paging_exact_end_has_no_cursor() -> None:
     assert page.next_cursor is None
 
 
-@pytest.mark.parametrize("cursor", ["abc", "-1", "1e3", "9999999999", "", "1 "])
+@pytest.mark.parametrize("cursor", ["abc", "-1", "1e3", "9999999999", "", "1 ", "8"])
 def test_bad_cursor_makes_no_call(cursor: str) -> None:
     client = _client()
     with pytest.raises(InvalidReferenceError):
@@ -219,7 +228,7 @@ def test_extract_timeout_clamp(
 
 def test_get_meta_no_call() -> None:
     client = _client()
-    meta = _strategy(client).get_meta(_ref("docs/My%20Page.html?x=1"))
+    meta = _strategy(client).get_meta(_ref("docs/My%20Page.html"))
     assert meta.title == "My Page.html"
     assert meta.doc_type is None
     assert meta.published_at is None
@@ -229,12 +238,27 @@ def test_get_meta_no_call() -> None:
 
 
 def test_get_meta_title_falls_back_to_id() -> None:
-    assert _strategy(_client()).get_meta(_ref("?q=1")).title == "?q=1"
     assert _strategy(_client()).get_meta(_ref("x/%20")).title == " "
 
 
 @pytest.mark.parametrize(
-    "eid", ["/a", "a//b", "../a", "a/./b", "a\\b", "a#b", "a://b", "a\x01b", "a\x7fb"]
+    "eid",
+    [
+        "/a",
+        "a//b",
+        "../a",
+        "a/./b",
+        "a\\b",
+        "a#b",
+        "a://b",
+        "a\x01b",
+        "a\x7fb",
+        "a?x=1",
+        "a%2eb",
+        "a%2Fb",
+        "a%5Cb",
+        "a%5cb",
+    ],
 )
 def test_unsafe_ids(eid: str) -> None:
     strategy = _strategy(_client())
@@ -251,12 +275,21 @@ def _extract(body: Any) -> MagicMock:
 
 
 def test_read_returns_utf8_and_rebuilds_url() -> None:
-    client = _extract({"results": [{"url": "u", "raw_content": "zażółć"}]})
+    client = _extract({"results": [{"url": BASE + "/a/b", "raw_content": "zażółć"}]})
     ref = DocumentRef(source="s", external_id="a/b", url="https://evil.example/x")
     assert _strategy(client).read(ref) == "zażółć".encode()
     client.extract.assert_called_once_with(
         urls=BASE + "/a/b", extract_depth="basic", format="text", timeout=60.0
     )
+
+
+@pytest.mark.parametrize(
+    "url", ["https://other.example/v1/a/b", BASE + "/a/c", 5, "u", BASE + "/a/b?x=1"]
+)
+def test_read_rejects_result_for_another_url(url: Any) -> None:
+    client = _extract({"results": [{"url": url, "raw_content": "x"}]})
+    with pytest.raises(PayloadError):
+        _strategy(client).read(_ref("a/b"))
 
 
 def test_read_failed_results_is_transport_error() -> None:
@@ -354,11 +387,36 @@ def test_fetch_error_passes_through() -> None:
     assert got.value is err
 
 
-def test_unexpected_error_is_not_swallowed() -> None:
+@pytest.mark.parametrize(
+    ("exc", "kind"),
+    [
+        (MissingAPIKeyError(), SourceConfigError),
+        (KeylessUnsupportedEndpointError("map"), FetchTransportError),
+        (Exception("secret"), FetchTransportError),
+        (AttributeError("secret"), FetchTransportError),
+        (RuntimeError("secret"), FetchTransportError),
+    ],
+)
+def test_any_sdk_exception_becomes_typed(exc: Exception, kind: type[FetchError]) -> None:
     client = MagicMock()
-    client.map.side_effect = RuntimeError("boom")
-    with pytest.raises(RuntimeError):
+    client.map.side_effect = exc
+    with pytest.raises(kind) as err:
         _strategy(client).list_refs("s", DocumentFilter())
+    assert "secret" not in str(err.value)
+    if kind is FetchTransportError:
+        assert type(exc).__name__ in str(err.value)
+
+
+def test_total_timeout_bounds_a_blocked_call(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TAVILY_TIMEOUT", "0.2")
+    release = threading.Event()
+    client = MagicMock()
+    client.map.side_effect = lambda **_: release.wait(5)
+    try:
+        with pytest.raises(FetchTransportError, match="total timeout"):
+            _strategy(client).list_refs("s", DocumentFilter())
+    finally:
+        release.set()
 
 
 def test_injected_client_not_closed() -> None:
@@ -412,3 +470,12 @@ def test_client_construction_errors_are_typed(exc: Exception, kind: type[FetchEr
         with pytest.raises(kind) as err:
             strategy.list_refs("s", DocumentFilter())
     assert KEY not in str(err.value)
+
+
+@pytest.mark.parametrize("exc", [ValueError("secret"), TypeError("secret"), KeyError("secret")])
+def test_unexpected_sdk_errors_become_typed(exc: Exception) -> None:
+    client = _client()
+    client.map.side_effect = exc
+    with pytest.raises(FetchTransportError) as err:
+        _strategy(client).list_refs("s", DocumentFilter())
+    assert "secret" not in str(err.value)

@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 from collections.abc import Callable, Iterator
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -92,7 +92,7 @@ def test_pages_sorted_and_joined() -> None:
 
 @pytest.mark.parametrize("index", [True, False])
 def test_bool_page_index_rejected(index: bool) -> None:
-    rec = Recorder(_ok(_page(index, "a")))  # type: ignore[arg-type]
+    rec = Recorder(_ok(_page(cast(Any, index), "a")))
     with pytest.raises(OcrProviderError):
         _provider(rec).ocr_pdf(b"x")
 
@@ -122,6 +122,20 @@ def test_chunked_response_joined() -> None:
         yield raw[5:]
 
     assert _provider(Recorder(httpx.Response(200, content=chunks()))).ocr_pdf(b"x") == "ok"
+
+
+def test_total_deadline_between_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
+    ticks = iter([0.0, 0.5, 500.0])
+    monkeypatch.setattr(mistral_mod, "_now", lambda: next(ticks))
+
+    def chunks() -> Iterator[bytes]:
+        yield b"{"
+        yield b'"pages"'
+        yield b":[]}"
+
+    with pytest.raises(OcrProviderError) as exc:
+        _provider(Recorder(httpx.Response(200, content=chunks()))).ocr_pdf(b"x")
+    assert str(exc.value) == "ocr timeout"
 
 
 def test_all_empty() -> None:
@@ -270,6 +284,14 @@ def test_bad_shape(content: bytes) -> None:
             "OCR base URL must not hold credentials",
         ),
         ({"base_url": "https://"}, "OCR base URL has no host"),
+        (
+            {"base_url": "https://api.mistral.ai/v1?x=1"},
+            "OCR base URL must not hold a query or fragment",
+        ),
+        (
+            {"base_url": "https://api.mistral.ai/v1#f"},
+            "OCR base URL must not hold a query or fragment",
+        ),
         ({"api_key": ""}, "Mistral API key is not set"),
     ],
 )
@@ -318,3 +340,10 @@ def test_no_leaks(caplog: pytest.LogCaptureFixture) -> None:
     for text in [*messages, logged, repr(_provider(Recorder(_ok())))]:
         for leaked in (KEY, b64, MARKER, "response body"):
             assert leaked not in text
+
+
+def test_deeply_nested_json_is_a_typed_error() -> None:
+    body = b"[" * 100000 + b"]" * 100000
+    rec = Recorder(httpx.Response(200, content=body))
+    with pytest.raises(OcrProviderError):
+        _provider(rec).ocr_pdf(b"x")

@@ -113,3 +113,11 @@ def test_threads_are_serialised() -> None:
         th.join()
     assert not overlap
     assert fake.sleeps == [pytest.approx(0.5)] * 5
+
+
+def test_sleep_is_bounded() -> None:
+    fake = Fake()
+    t = _throttle(fake, interval=1e9)
+    t.wait()
+    t.wait()
+    assert fake.sleeps == [60.0]

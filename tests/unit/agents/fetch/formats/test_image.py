@@ -3,10 +3,12 @@ from unittest.mock import MagicMock
 import pytest
 
 import agents.fetch.document_fetcher
+from agents.fetch.formats import base
 from agents.fetch.formats import image as image_mod
 from agents.fetch.formats._safety import CorruptDocumentError
-from agents.fetch.formats.base import FORMATS, find_parser
+from agents.fetch.formats.base import FORMATS, TextLimitError, find_parser
 from agents.fetch.formats.image import ImageParser
+from agents.fetch.formats.text import finish_ocr_text
 from agents.fetch.ocr.errors import OcrDisabledError, OcrProviderError
 from agents.fetch.ocr.manager import OcrManager
 
@@ -98,3 +100,26 @@ def test_provider_failure_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(OcrProviderError) as exc:
         ImageParser().parse(PNG)
     assert exc.value is fake.error
+
+
+def test_finish_ocr_text_cleans_control_chars_and_nul() -> None:
+    assert finish_ocr_text("  a\x00b\x07c \n") == "ab c"
+
+
+def test_finish_ocr_text_caps_length(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(base, "MAX_TEXT_CHARS", 5)
+    assert finish_ocr_text("12345") == "12345"
+    with pytest.raises(TextLimitError) as info:
+        finish_ocr_text("123456")
+    assert "123456" not in str(info.value)
+
+
+def test_image_parse_output_is_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = Fake()
+    _use(monkeypatch, OcrManager(fake))
+    monkeypatch.setattr(fake, "ocr_image", lambda data, media_type: "x\x00\x01y")
+    assert ImageParser().parse(PNG) == "x y"
+
+
+def test_finish_ocr_text_normalises_newlines_and_blanks() -> None:
+    assert finish_ocr_text("a  \r\nb\r\r\r\rc \t\n\n\n\nd") == "a\nb\n\nc\n\nd"

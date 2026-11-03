@@ -39,6 +39,8 @@ dev = [
     "ruff>=0.6",
     "pre-commit>=3.8",
     "freezegun>=1.5",
+    "diff-cover==11.0.0",
+    "mutmut==3.8.1",
 ]
 docs = [
     "mkdocs-material==9.7.7",
@@ -70,6 +72,21 @@ markers = [
     "integration: integration tests that need external services",
     "security: auth, RBAC, and tenant isolation tests",
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 66
+show_missing = true
+
+[tool.mutmut]
+# Scope: the document fetcher package. To change it, edit source_paths and
+# pytest_add_cli_args_test_selection here (mutmut 3.8.1 reads scope only from this file).
+source_paths = ["src/agents/fetch/"]
+pytest_add_cli_args_test_selection = ["tests/unit/agents/fetch/"]
+also_copy = ["src/"]
 
 [tool.bandit]
 exclude_dirs = ["tests", "docs", "scripts", "evals"]

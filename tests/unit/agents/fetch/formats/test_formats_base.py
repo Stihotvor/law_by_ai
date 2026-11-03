@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -135,7 +136,7 @@ def _no_parse() -> type:
 )
 def test_validate_rejects(cls: object) -> None:
     with pytest.raises(TypeError, match=r"^format 'x': "):
-        _validate_parser("x", cls)  # type: ignore[arg-type]
+        _validate_parser("x", cast(Any, cls))
 
 
 def test_register_and_duplicate() -> None:
@@ -153,10 +154,18 @@ def test_parse_bytes() -> None:
 
 
 def test_validate_accepts_short_suffix() -> None:
-    _validate_parser("x", _derive(suffixes=(".a",)))  # type: ignore[arg-type]
+    _validate_parser("x", cast(Any, _derive(suffixes=(".a",))))
 
 
 def test_parse_bytes_passes_charset_and_mime() -> None:
     data = "\u0105".encode("iso-8859-2")
     assert parse_bytes(data, "a.txt", "text/plain; charset=iso-8859-2") == "\u0105"
     assert parse_bytes(b"<p>x</p>", "blob", "text/html") == "x"
+
+
+def test_unsupported_message_truncates_name_and_mime() -> None:
+    with pytest.raises(UnsupportedFormatError) as exc:
+        find_parser("n" * 500, "m/" + "x" * 500)
+    assert (
+        str(exc.value) == f"unsupported format: name={'n' * 64!r} mime={('m/' + 'x' * 500)[:64]!r}"
+    )

@@ -8,13 +8,14 @@ from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 import agents.fetch.document_fetcher as df
 from agents.fetch.document_fetcher import PARSE_ERRORS, DocumentFetcherAgent
+from agents.fetch.formats import base
 from agents.fetch.formats import image as image_mod
 from agents.fetch.formats._safety import (
     CorruptDocumentError,
     EncryptedDocumentError,
     NoTextLayerError,
 )
-from agents.fetch.formats.base import FormatError, UnsupportedFormatError
+from agents.fetch.formats.base import FormatError, TextLimitError, UnsupportedFormatError
 from agents.fetch.ocr.errors import OcrDisabledError, OcrError
 from agents.fetch.ocr.manager import OcrManager
 
@@ -129,3 +130,19 @@ def test_parse_errors_and_unsupported() -> None:
     assert (FormatError, OcrError) == PARSE_ERRORS
     with pytest.raises(UnsupportedFormatError):
         DocumentFetcherAgent().parse(b"x", "a.xyz", "application/x-unknown")
+
+
+def test_scanned_pdf_ocr_text_is_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = Fake()
+    monkeypatch.setattr(fake, "ocr_pdf", lambda data: "a\x00b\x07c")
+    _use(monkeypatch, OcrManager(fake))
+    assert DocumentFetcherAgent().parse(_blank_pdf(), "a.pdf") == "ab c"
+
+
+def test_scanned_pdf_ocr_text_is_capped(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = Fake()
+    monkeypatch.setattr(fake, "ocr_pdf", lambda data: "x" * 6)
+    _use(monkeypatch, OcrManager(fake))
+    monkeypatch.setattr(base, "MAX_TEXT_CHARS", 5)
+    with pytest.raises(TextLimitError):
+        DocumentFetcherAgent().parse(_blank_pdf(), "a.pdf")

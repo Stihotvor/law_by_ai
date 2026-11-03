@@ -45,7 +45,7 @@ def test_full_filter_params() -> None:
         cursor="40",
     )
     params = _list_params(flt)
-    assert params["pubDateFrom"] == "2024-02-01"
+    assert params["pubDateFrom"] == "2024-01-31"
     assert params["pubDateTo"] == "2024-06-01"
     assert params["type"] == "Ustawa"
     assert params["title"] == "kodeks pracy"
@@ -57,9 +57,9 @@ def test_warsaw_date_from_other_zone() -> None:
     flt = DocumentFilter(
         date_from=datetime(2024, 3, 1, 0, 30, tzinfo=timezone(timedelta(hours=-5)))
     )
-    assert _list_params(flt)["pubDateFrom"] == "2024-03-01"
-    flt = DocumentFilter(date_from=datetime(2024, 3, 1, 0, 30, tzinfo=timezone(timedelta(hours=5))))
     assert _list_params(flt)["pubDateFrom"] == "2024-02-29"
+    flt = DocumentFilter(date_from=datetime(2024, 3, 1, 0, 30, tzinfo=timezone(timedelta(hours=5))))
+    assert _list_params(flt)["pubDateFrom"] == "2024-02-28"
 
 
 @pytest.mark.parametrize("cursor", ["abc", "-1", "1e3", "9999999999", ""])
@@ -125,7 +125,8 @@ def _act(**over: Any) -> dict[str, Any]:
         "type": "Obwieszczenie",
         "status": "obowiązujący",
         "inForce": "IN_FORCE",
-        "announcementDate": "2023-12-07",
+        "announcementDate": "2023-11-01",
+        "promulgation": "2023-12-07",
         "changeDate": "2026-03-31T13:20:23",
         "textHTML": True,
         "textPDF": True,
@@ -158,13 +159,13 @@ def test_parse_meta_fields() -> None:
 
 def test_parse_meta_missing_date_and_optional_keys() -> None:
     payload = _act()
-    for key in ("announcementDate", "address", "textHTML", "textPDF"):
+    for key in ("promulgation", "address", "textHTML", "textPDF"):
         del payload[key]
     meta = _parse_meta(payload, _ref())
     assert meta.published_at is None
     assert meta.extra["address"] is None
     assert meta.extra["content_type"] is None
-    assert _parse_meta(_act(announcementDate=""), _ref()).published_at is None
+    assert _parse_meta(_act(promulgation=""), _ref()).published_at is None
 
 
 def test_parse_meta_eli_mismatch() -> None:

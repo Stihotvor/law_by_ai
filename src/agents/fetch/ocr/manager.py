@@ -49,6 +49,7 @@ class OcrManager:
 
 @lru_cache(maxsize=1)
 def get_ocr_manager() -> OcrManager:
+    """Cached for the process: changed OCR settings take effect after a restart."""
     settings = get_settings()
     if not settings.ocr_enabled:
         return OcrManager(None)

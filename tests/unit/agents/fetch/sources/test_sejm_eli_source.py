@@ -1,6 +1,6 @@
 import json
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -130,7 +130,7 @@ def test_bad_eli_in_search(events: list[str]) -> None:
 
 def test_through_the_agent(monkeypatch: pytest.MonkeyPatch, events: list[str]) -> None:
     source, _ = _source(events)
-    transport = source.strategy._transport  # type: ignore[attr-defined]
+    transport = cast(Any, source.strategy)._transport
     real_init: Callable[..., None] = RestApiStrategy.__init__
 
     def init(self: RestApiStrategy, base_url: str, **kw: Any) -> None:
