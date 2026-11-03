@@ -42,6 +42,7 @@ Variable               Purpose                                Default
 ``OCR_TIMEOUT``           total seconds per OCR request           ``120.0``
 ``OCR_MAX_BYTES``         max OCR input size in bytes             ``20971520``
 ``FETCH_HTTP_TIMEOUT``    total seconds per fetch HTTP request    ``10.0``
+``FETCH_TOTAL_TIMEOUT``   total seconds to read one body       ``60.0``
 ``FETCH_MAX_BYTES``       max fetched body size in bytes          ``52428800``
 ``MINIO_ENDPOINT``        MinIO ``host:port`` (no scheme)         ``localhost:9000``
 ``MINIO_ACCESS_KEY``      MinIO access key                        *(empty)*
@@ -302,6 +303,11 @@ class Settings:
     def fetch_http_timeout(self) -> float:
         """Total timeout in seconds for one fetch HTTP request."""
         return float(os.getenv("FETCH_HTTP_TIMEOUT", "10.0"))
+
+    @property
+    def fetch_total_timeout(self) -> float:
+        """Wall-clock seconds allowed for one whole fetch, body included."""
+        return float(os.getenv("FETCH_TOTAL_TIMEOUT", "60.0"))
 
     @property
     def fetch_max_bytes(self) -> int:

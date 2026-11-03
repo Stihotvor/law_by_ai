@@ -355,6 +355,21 @@ def test_too_large_by_stream_without_header() -> None:
         _strategy(handler).read(_ref())
 
 
+def test_total_deadline_stops_slow_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    ticks = iter([0.0, 1.0, 100.0, 200.0])
+    monkeypatch.setattr("agents.fetch.strategies.rest_api._monotonic", lambda: next(ticks))
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        def gen() -> Any:
+            yield b"x"
+            yield b"x"
+
+        return httpx.Response(200, content=gen())
+
+    with pytest.raises(FetchTransportError, match="total timeout"):
+        _strategy(handler).read(_ref())
+
+
 def test_stream_exactly_max_ok() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         def gen() -> Any:

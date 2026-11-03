@@ -13,6 +13,7 @@ into ``FetchedDocument.content_type``.
 
 import json
 import re
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -38,6 +39,7 @@ from config.settings import get_settings
 _MAPPER_ERRORS = (KeyError, IndexError, TypeError, ValueError, AttributeError)
 _ID_PLACEHOLDER = "{external_id}"
 _HTTPS_PORT = 443
+_monotonic = time.monotonic  # patchable clock for deadline tests
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,18 +214,20 @@ class RestApiStrategy:
 
     def _get_bytes(self, path: str, params: Mapping[str, str] | None, label: str = "") -> bytes:
         label = label or "GET " + path
-        limit = get_settings().fetch_max_bytes
+        settings = get_settings()
+        limit = settings.fetch_max_bytes
+        deadline = _monotonic() + settings.fetch_total_timeout
         try:
             with (
                 self._client() as client,
                 client.stream("GET", self._base + path, params=params) as response,
             ):
-                return self._consume(response, label, limit)
+                return self._consume(response, label, limit, deadline)
         except httpx.HTTPError as exc:
             raise FetchTransportError(f"{label}: {type(exc).__name__}") from exc
 
     @staticmethod
-    def _consume(response: httpx.Response, label: str, limit: int) -> bytes:
+    def _consume(response: httpx.Response, label: str, limit: int, deadline: float) -> bytes:
         status = response.status_code
         if status == 404:
             raise DocumentNotFoundError(f"{label}: not found")
@@ -235,6 +239,8 @@ class RestApiStrategy:
         chunks: list[bytes] = []
         size = 0
         for chunk in response.iter_bytes():
+            if _monotonic() > deadline:
+                raise FetchTransportError(f"{label}: total timeout")
             size += len(chunk)
             if size > limit:
                 raise ResponseTooLargeError(f"{label}: body larger than {limit} bytes")
