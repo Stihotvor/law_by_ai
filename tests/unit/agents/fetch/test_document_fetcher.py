@@ -11,7 +11,12 @@ from agents.fetch.contracts import (
     FetchedDocument,
 )
 from agents.fetch.document_fetcher import DocumentFetcherAgent
-from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
+from agents.fetch.errors import (
+    DocumentRejectedError,
+    InvalidTenantError,
+    SourceConfigError,
+    UnknownSourceError,
+)
 from agents.fetch.registry import Registry, UnknownNameError
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
@@ -218,3 +223,15 @@ def test_close_skips_strategy_without_close() -> None:
     agent = DocumentFetcherAgent()
     agent.list_documents("fake", DocumentFilter())
     agent.close()
+
+
+@pytest.mark.parametrize("bad", ["", "x" * 65, "a\nb", "a\x7f", 5, b"t"])
+def test_invalid_tenant_rejected(bad: object) -> None:
+    with pytest.raises(InvalidTenantError) as info:
+        DocumentFetcherAgent().fetch_document("fake", REF, tenant_id=bad)  # type: ignore[arg-type]
+    assert "x" * 65 not in str(info.value)
+
+
+def test_valid_tenant_boundary() -> None:
+    doc = DocumentFetcherAgent().fetch_document("fake", REF, tenant_id="t" * 64)
+    assert doc.tenant_id == "t" * 64

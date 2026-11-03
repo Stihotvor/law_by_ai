@@ -13,7 +13,12 @@ from agents.fetch.contracts import (
     DocumentRef,
     FetchedDocument,
 )
-from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
+from agents.fetch.errors import (
+    DocumentRejectedError,
+    InvalidTenantError,
+    SourceConfigError,
+    UnknownSourceError,
+)
 from agents.fetch.formats.base import FormatError, charset_of, find_parser
 from agents.fetch.formats.pdf import NoTextLayerError, PdfParser
 from agents.fetch.ocr.errors import OcrError
@@ -38,6 +43,20 @@ class NeverRejected:
 def _check_source(source: str, ref: DocumentRef) -> None:
     if ref.source != source:
         raise ValueError(f"ref.source {ref.source!r} does not match source {source!r}")
+
+
+_MAX_TENANT_LEN = 64
+
+
+def _check_tenant(tenant_id: object) -> None:
+    if tenant_id is None:
+        return
+    if not isinstance(tenant_id, str):
+        raise InvalidTenantError("tenant_id must be a string")
+    if not tenant_id or len(tenant_id) > _MAX_TENANT_LEN:
+        raise InvalidTenantError(f"tenant_id must be 1 to {_MAX_TENANT_LEN} characters")
+    if any(ord(c) < 32 or ord(c) == 127 for c in tenant_id):
+        raise InvalidTenantError("tenant_id has control characters")
 
 
 class DocumentFetcherAgent:
@@ -90,6 +109,7 @@ class DocumentFetcherAgent:
     def fetch_document(
         self, source: str, ref: DocumentRef, *, tenant_id: str | None = None
     ) -> FetchedDocument:
+        _check_tenant(tenant_id)
         _check_source(source, ref)
         if self._rejection.is_rejected(ref.url):
             raise DocumentRejectedError(f"document rejected: {ref.source}/{ref.external_id}")

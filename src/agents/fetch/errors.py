@@ -43,3 +43,7 @@ class PayloadError(FetchError):
 
 class InvalidReferenceError(FetchError):
     """external_id or cursor is unsafe or outside the source scope."""
+
+
+class InvalidTenantError(FetchError):
+    """tenant_id is empty, not a string, too long or has control characters."""
