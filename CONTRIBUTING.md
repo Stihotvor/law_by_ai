@@ -55,6 +55,8 @@ formatting and lint issues.
 
 ### Coverage and mutation gates
 
+The gate agent reads its checks from `.claude/quality-gates.json` (lint, format, types, security, tests, lock, audit).
+
 ```bash
 PYTHONPATH=src uv run pytest -m "not integration" --cov --cov-branch --cov-report=xml --cov-report=term-missing
 uv run diff-cover coverage.xml --compare-branch=origin/main --fail-under=90

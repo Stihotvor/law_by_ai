@@ -1,0 +1,12 @@
+{
+  "checks": [
+    { "name": "lint", "tool": "ruff", "cmd": ["ruff", "check", "src", "tests", "migrations"] },
+    { "name": "format", "tool": "ruff", "cmd": ["ruff", "format", "--check", "src", "tests", "migrations"] },
+    { "name": "types", "tool": "pyright", "cmd": ["pyright", "--pythonpath", ".venv/bin/python"] },
+    { "name": "security", "tool": "bandit", "cmd": ["bandit", "-q", "-r", "src/", "-c", "pyproject.toml"] },
+    { "name": "tests", "tool": "pytest", "module": "pytest_cov",
+      "cmd": ["pytest", "-m", "not integration", "-q", "--cov", "--cov-branch"] },
+    { "name": "lock", "tool": "uv", "cmd": ["uv", "lock", "--check"] },
+    { "name": "audit", "tool": "pip-audit", "network": true, "cmd": ["pip-audit"] }
+  ]
+}
