@@ -1,11 +1,12 @@
-FROM python:3.13-slim AS builder
+FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uv/bin/uv
+FROM python:3.13.18-slim-trixie@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1 AS builder
+
+COPY --from=uv /uv /uv/bin/uv
 
 ENV PATH="/uv/bin:$PATH" \
     UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_NO_DEV=1
+    UV_LINK_MODE=copy
 
 WORKDIR /app
 
@@ -18,12 +19,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
 # ---------- shared base ----------
-FROM python:3.13-slim AS base
+FROM python:3.13.18-slim-trixie@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1 AS base
 
 ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
-RUN useradd --create-home --shell /usr/sbin/nologin appuser
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin appuser
 
 WORKDIR /app
 
@@ -49,12 +51,13 @@ CMD ["streamlit", "run", "src/ui/app.py", "--server.port=8501", "--server.addres
 # smoke tests that read docs/ and .github/) runs against the live stack.
 FROM base AS test
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uv/bin/uv
-ENV PATH="/uv/bin:$PATH"
+COPY --from=uv /uv /uv/bin/uv
+ENV PATH="/uv/bin:$PATH" \
+    UV_LINK_MODE=copy
 
 COPY --from=builder --chown=appuser:appuser /app /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --extra dev
+    uv sync --locked --extra dev
 
 USER appuser
 CMD ["pytest"]

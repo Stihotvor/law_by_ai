@@ -926,6 +926,7 @@ name = "law-by-ai"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "alembic" },
     { name = "bcrypt" },
     { name = "celery", extra = ["redis"] },
     { name = "httpx" },
@@ -961,45 +962,38 @@ docs = [
     { name = "pymdown-extensions" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "alembic" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=1.7" },
-    { name = "bcrypt", specifier = ">=4.2" },
-    { name = "celery", extras = ["redis"], specifier = ">=5.4" },
+    { name = "alembic", specifier = "==1.19.1" },
+    { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = "==1.9.4" },
+    { name = "bcrypt", specifier = "==5.0.0" },
+    { name = "celery", extras = ["redis"], specifier = "==5.6.3" },
     { name = "diff-cover", marker = "extra == 'dev'", specifier = "==11.0.0" },
-    { name = "freezegun", marker = "extra == 'dev'", specifier = ">=1.5" },
+    { name = "freezegun", marker = "extra == 'dev'", specifier = "==1.5.5" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "minio", specifier = "==7.2.20" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = "==9.7.7" },
     { name = "mutmut", marker = "extra == 'dev'", specifier = "==3.8.1" },
-    { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.7" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.8" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
+    { name = "pip-audit", marker = "extra == 'dev'", specifier = "==2.10.1" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.6.1" },
+    { name = "psycopg", extras = ["binary"], specifier = "==3.3.4" },
     { name = "pydantic", specifier = "==2.14.2" },
     { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = "==11.0.1" },
     { name = "pypdf", specifier = "==6.21.4" },
-    { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
+    { name = "pyright", marker = "extra == 'dev'", specifier = "==1.1.411" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = "==9.1.1" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.1.0" },
     { name = "python-docx", specifier = "==1.2.0" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "redis", specifier = ">=5.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
-    { name = "sqlalchemy", specifier = ">=2.0" },
-    { name = "streamlit", specifier = ">=1.40" },
-    { name = "streamlit-authenticator", specifier = ">=0.4.2" },
+    { name = "python-dotenv", specifier = "==1.2.2" },
+    { name = "pyyaml", specifier = "==6.0.3" },
+    { name = "redis", specifier = "==6.4.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = "==0.16.1" },
+    { name = "sqlalchemy", specifier = "==2.0.51" },
+    { name = "streamlit", specifier = "==1.66.1" },
+    { name = "streamlit-authenticator", specifier = "==0.4.2" },
     { name = "tavily-python", specifier = "==0.8.5" },
 ]
 provides-extras = ["dev", "docs"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "alembic", specifier = ">=1.19.1" }]
 
 [[package]]
 name = "libcst"

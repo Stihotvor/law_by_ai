@@ -10,6 +10,9 @@ on:
     paths:
       - 'docs/**'
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -19,11 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.13"
-      - run: pip install mkdocs-material pymdown-extensions
-      - run: mkdocs build --strict -f docs/mkdocs.yml
+      - run: uv sync --locked --extra docs
+      - run: uv run mkdocs build --strict -f docs/mkdocs.yml
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -33,8 +36,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.13"
-      - run: pip install mkdocs-material pymdown-extensions
-      - run: mkdocs gh-deploy --force -f docs/mkdocs.yml
+      - run: uv sync --locked --extra docs
+      - run: uv run mkdocs gh-deploy --force -f docs/mkdocs.yml

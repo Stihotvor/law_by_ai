@@ -1,6 +1,9 @@
 """Smoke tests for the repo skeleton and Docker setup (issue #6)."""
 
+import tomllib
 from pathlib import Path
+
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -34,9 +37,29 @@ def test_pyproject_uses_src_layout():
 
 def test_dockerfile_uses_python313_slim_and_nonroot():
     text = (ROOT / "docker" / "Dockerfile").read_text()
-    assert "python:3.13-slim" in text
+    assert "python:3.13" in text
+    assert "-slim" in text
+    assert "@sha256:" in text
     assert "appuser" in text
     assert "USER appuser" in text
+
+
+def test_dockerfile_pins_images_uid_and_uv():
+    text = (ROOT / "docker" / "Dockerfile").read_text()
+    for line in text.splitlines():
+        if line.startswith("FROM ") and not line.startswith(("FROM base", "FROM builder")):
+            assert "@sha256:" in line
+    assert "COPY --from=ghcr.io" not in text
+    assert ":latest" not in text
+    assert "--uid 10001" in text
+    assert "PYTHONDONTWRITEBYTECODE=1" in text
+
+
+def test_dockerignore_keeps_local_secret_files_out_of_context():
+    lines = (ROOT / ".dockerignore").read_text().splitlines()
+    for entry in (".env", "docker/.env", ".claude"):
+        assert entry in lines
+    assert not any(line.strip() in ("*.env*", ".env*", "*.example") for line in lines)
 
 
 def test_dockerfile_has_runtime_and_test_targets():
@@ -83,3 +106,15 @@ def test_env_example_and_runtime_stubs_present():
 def test_readme_in_each_skeleton_dir():
     for rel in ("src", *(f"src/{p}" for p in PACKAGES), "src/evals", "scripts", "docker", "tests"):
         assert (ROOT / rel / "README.md").exists(), f"missing {rel}/README.md"
+
+
+def test_precommit_revs_match_pinned_dev_tools():
+    dev = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"][
+        "dev"
+    ]
+    pins = {d.split("==")[0].split("[")[0]: d.split("==")[1] for d in dev}
+    config = yaml.safe_load((ROOT / ".pre-commit-config.yaml").read_text())
+    revs = {r["repo"].rsplit("/", 1)[-1]: r["rev"].removeprefix("v") for r in config["repos"]}
+    assert revs["ruff-pre-commit"] == pins["ruff"]
+    assert revs["pyright-python"] == pins["pyright"]
+    assert revs["bandit"] == pins["bandit"]

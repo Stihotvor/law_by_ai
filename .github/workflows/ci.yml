@@ -23,16 +23,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Set up Python
-        uses: actions/setup-python@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.13"
-      - name: Install ruff
-        run: pip install ruff
+      - name: Install dependencies
+        run: uv sync --locked --extra dev
       - name: Ruff lint
-        run: ruff check .
+        run: uv run ruff check .
       - name: Ruff format check
-        run: ruff format --check .
+        run: uv run ruff format --check .
 
   unit-test:
     runs-on: ubuntu-latest
@@ -48,7 +48,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --locked --extra dev
       - name: Run unit tests (no external services)
         run: uv run pytest -m "not integration" -q --cov --cov-branch --cov-report=xml --cov-report=term-missing
       - name: Coverage of changed lines
@@ -70,7 +70,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --locked --extra dev
       - name: Check mutation target
         id: target
         run: |
@@ -105,7 +105,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --locked --extra dev
       - name: Run pyright
         run: uv run pyright
 
@@ -120,7 +120,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install dependencies
-        run: uv sync --frozen --extra dev
+        run: uv sync --locked --extra dev
       - name: Bandit security scan
         run: uv run bandit -r src/ -c pyproject.toml
       - name: pip-audit dependency vulnerabilities
