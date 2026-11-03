@@ -77,12 +77,19 @@ def test_keys_default_empty(clean: pytest.MonkeyPatch) -> None:
     assert s.minio_secret_key == ""
 
 
-@pytest.mark.parametrize("name", ["FETCH_HTTP_TIMEOUT", "FETCH_TOTAL_TIMEOUT", "FETCH_MAX_BYTES"])
+@pytest.mark.parametrize(
+    ("name", "attr"),
+    [
+        ("FETCH_HTTP_TIMEOUT", "fetch_http_timeout"),
+        ("FETCH_TOTAL_TIMEOUT", "fetch_total_timeout"),
+        ("FETCH_MAX_BYTES", "fetch_max_bytes"),
+    ],
+)
 @pytest.mark.parametrize("value", ["0", "-1", "abc", "nan", "inf"])
 def test_fetch_limits_must_be_positive_finite(
-    clean: pytest.MonkeyPatch, name: str, value: str
+    clean: pytest.MonkeyPatch, name: str, attr: str, value: str
 ) -> None:
     clean.setenv(name, value)
     s = Settings()
     with pytest.raises(ValueError, match=name):
-        _ = getattr(s, name.lower())
+        _ = getattr(s, attr)

@@ -68,7 +68,7 @@ def _check_id(external_id: str, mapper: RestMapper) -> None:
         raise InvalidReferenceError("unsafe external_id")
 
 
-def _build_path(template: str, external_id: str, mapper: RestMapper) -> str:
+def build_path(template: str, external_id: str, mapper: RestMapper) -> str:
     _check_id(external_id, mapper)
     return template.format(external_id=quote(external_id, safe=mapper.id_safe))
 
@@ -80,11 +80,11 @@ def with_content_variant(
     template = mapper.alt_content_paths.get(variant)
     if template is None:
         raise SourceConfigError(f"unknown content variant {variant!r}")
-    path = _build_path(template, ref.external_id, mapper)
+    path = build_path(template, ref.external_id, mapper)
     return ref.model_copy(update={"url": base_url.rstrip("/") + path})
 
 
-def _call[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+def call_mapper[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     try:
         return fn(*args, **kwargs)
     except FetchError:

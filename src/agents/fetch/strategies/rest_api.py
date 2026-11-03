@@ -35,8 +35,8 @@ from agents.fetch.strategies._rest_mapper import (
     REST_MAPPERS,
     RestListing,
     RestMapper,
-    _build_path,
-    _call,
+    build_path,
+    call_mapper,
     with_content_variant,
 )
 from agents.fetch.strategies.base import STRATEGIES
@@ -77,9 +77,9 @@ class RestApiStrategy:
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
         mapper = self._mapper(source)
-        params = _call(mapper.list_params, flt)
+        params = call_mapper(mapper.list_params, flt)
         body = self._get_json("GET " + mapper.list_path, mapper.list_path, params)
-        listing = _call(mapper.parse_list, body)
+        listing = call_mapper(mapper.parse_list, body)
         if len(listing.external_ids) > flt.limit:
             raise PayloadError("mapper returned more ids than limit")
         try:
@@ -101,7 +101,7 @@ class RestApiStrategy:
         mapper = self._mapper(ref.source)
         path = self._path(mapper.meta_path, ref.external_id, mapper)
         body = self._get_json("GET " + path, path, None)
-        meta = _call(mapper.parse_meta, body, ref)
+        meta = call_mapper(mapper.parse_meta, body, ref)
         if meta.ref != ref:
             raise PayloadError("mapper returned a different ref")
         return meta
@@ -124,7 +124,7 @@ class RestApiStrategy:
 
     @staticmethod
     def _path(template: str, external_id: str, mapper: RestMapper) -> str:
-        return _build_path(template, external_id, mapper)
+        return build_path(template, external_id, mapper)
 
     def _guard(self, request: httpx.Request) -> None:
         url = request.url

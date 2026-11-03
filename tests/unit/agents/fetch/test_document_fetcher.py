@@ -88,6 +88,7 @@ class Rejecting:
 def registries(monkeypatch: pytest.MonkeyPatch) -> Registry[type[LegalSource]]:
     FakeStrategy.built_with.clear()
     FakeStrategy.reads.clear()
+    PrivateStrategy.kwargs.clear()
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
     sources.register("fake")(FakeSource)
@@ -267,7 +268,7 @@ def test_private_host_opt_in_forwarded(
 def test_never_rejected_warns_once(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    monkeypatch.setattr("agents.fetch.document_fetcher._warned_never_rejected", False)
+    monkeypatch.setattr(DocumentFetcherAgent, "_warned_never_rejected", False)
     with caplog.at_level("WARNING"):
         DocumentFetcherAgent()
         DocumentFetcherAgent()

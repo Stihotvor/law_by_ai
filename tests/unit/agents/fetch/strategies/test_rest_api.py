@@ -355,13 +355,21 @@ def test_too_large_by_stream_without_header() -> None:
         _strategy(handler).read(_ref())
 
 
+class FakeClock:
+    now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
 def test_total_deadline_stops_slow_body(monkeypatch: pytest.MonkeyPatch) -> None:
-    ticks = iter([0.0, 1.0, 100.0, 200.0])
-    monkeypatch.setattr("agents.fetch.strategies.rest_api._monotonic", lambda: next(ticks))
+    clock = FakeClock()
+    monkeypatch.setattr("agents.fetch.strategies.rest_api._monotonic", clock)
 
     def handler(req: httpx.Request) -> httpx.Response:
         def gen() -> Any:
             yield b"x"
+            clock.now = 100.0  # the deadline passes while the body is streamed
             yield b"x"
 
         return httpx.Response(200, content=gen())
