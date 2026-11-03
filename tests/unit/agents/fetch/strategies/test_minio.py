@@ -457,7 +457,14 @@ def test_cursor_remainder_must_be_safe(cursor: str) -> None:
     c.list_objects.assert_not_called()
 
 
-def test_close_clears_connection_pool() -> None:
+def test_close_clears_own_pool_only(monkeypatch: pytest.MonkeyPatch) -> None:
     s, client = _make()
     s.close()
-    client._http.clear.assert_called_once_with()
+    assert not client._http.clear.called
+    monkeypatch.setattr("agents.fetch.strategies.minio.Minio", MagicMock())
+    own = MinioStrategy(BASE)
+    assert own._pool is not None
+    cleared: list[bool] = []
+    monkeypatch.setattr(own._pool, "clear", lambda: cleared.append(True))
+    own.close()
+    assert cleared == [True]
