@@ -30,9 +30,13 @@ def test_naive_datetime_rejected() -> None:
         FetchedDocument(meta=META, content=b"", fetched_at=naive)
 
 
+def _assign(obj: object, name: str, value: object) -> None:
+    setattr(obj, name, value)
+
+
 def test_frozen_and_extra_forbidden() -> None:
     with pytest.raises(ValidationError):
-        REF.source = "other"  # type: ignore[misc]
+        _assign(REF, "source", "other")
     kwargs: dict[str, Any] = {"source": "s", "external_id": "1", "url": "u", "bogus": 1}
     with pytest.raises(ValidationError):
         DocumentRef(**kwargs)

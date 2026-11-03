@@ -18,3 +18,5 @@ site/
 htmlcov/
 .ruff_cache/
 *.log
+coverage.xml
+mutants/

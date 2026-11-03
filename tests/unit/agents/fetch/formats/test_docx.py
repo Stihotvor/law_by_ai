@@ -5,16 +5,18 @@ import zipfile
 from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from docx import Document
 from docx.document import Document as DocumentType
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
+from docx.text.paragraph import Paragraph
 
 from agents.fetch.formats import base as base_module
 from agents.fetch.formats import docx as docx_module
-from agents.fetch.formats.base import TextLimitError, find_parser
+from agents.fetch.formats.base import TextLimitError, UnsupportedFormatError, find_parser
 from agents.fetch.formats.docx import (
     CorruptDocumentError,
     DocxParser,
@@ -120,7 +122,7 @@ def test_hyperlink_text_kept_url_absent() -> None:
             f'<w:hyperlink {nsdecls("w", "r")} r:id="{rel}">'
             "<w:r><w:t>link text</w:t></w:r></w:hyperlink>"
         )
-        paragraph._p.append(link)  # pyright: ignore[reportPrivateUsage]
+        cast(Any, paragraph)._p.append(link)
 
     out = _parse(_docx(build))
     assert out == "see link text"
@@ -156,7 +158,6 @@ def _truncated() -> bytes:
         b"",
         b"PK\x03\x04junk",
         _png(),
-        b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 64,
         _truncated(),
     ],
 )
@@ -172,9 +173,9 @@ def test_bad_zip_message() -> None:
 
 
 def test_ole_message() -> None:
-    with pytest.raises(CorruptDocumentError) as info:
+    with pytest.raises(UnsupportedFormatError) as info:
         _parse(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1")
-    assert str(info.value) == "docx is not a zip (encrypted or legacy doc)"
+    assert str(info.value) == "docx is an OLE container (encrypted docx or legacy doc)"
 
 
 def test_zip_without_body() -> None:
@@ -393,7 +394,7 @@ def test_cell_with_several_paragraphs_joined_by_space() -> None:
 
 
 def test_delete_control_character() -> None:
-    assert _parse(_simple("a\x7fb")) == "ab"
+    assert _parse(_simple("a\x7fb")) == "a\x7fb"
 
 
 def test_ratio_boundaries(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -421,3 +422,35 @@ def test_unsupported_zip_compression_is_corrupt(
     monkeypatch.setattr(zipfile.ZipFile, "infolist", boom)
     with pytest.raises(CorruptDocumentError):
         DocxParser().parse(_docx(lambda d: d.add_paragraph("x")))
+
+
+def test_huge_grid_span_is_not_expanded() -> None:
+    def build(doc: DocumentType) -> None:
+        table = doc.add_table(rows=1, cols=2)
+        table.cell(0, 0).text = "a"
+        table.cell(0, 1).text = "b"
+
+    base = _docx(build)
+    xml = _member(base, "word/document.xml")
+    xml = xml.replace(b"<w:tcPr>", b'<w:tcPr><w:gridSpan w:val="1000000"/>', 1)
+    data = _rewrite(base, replace={"word/document.xml": xml})
+    started = time.monotonic()
+    assert _parse(data) == "a | b"
+    assert time.monotonic() - started < 2
+
+
+def test_body_part_cap_boundary(monkeypatch: pytest.MonkeyPatch) -> None:
+    data = _simple("x")
+    size = len(_member(data, "word/document.xml"))
+    monkeypatch.setattr(docx_module, "MAX_BODY_BYTES", size)
+    assert _parse(data) == "x"
+    monkeypatch.setattr(docx_module, "MAX_BODY_BYTES", size - 1)
+    with pytest.raises(TextLimitError) as info:
+        _parse(data)
+    assert str(info.value) == "docx body is too large when unpacked"
+
+
+def test_nul_and_controls_are_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
+    # XML cannot carry control characters, so inject them at the paragraph text level.
+    monkeypatch.setattr(Paragraph, "text", property(lambda self: "a\x00b\x01c\x1fd"))
+    assert _parse(_simple("x")) == "ab c d"

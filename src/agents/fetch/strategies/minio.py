@@ -19,13 +19,13 @@ from agents.fetch.errors import (
 from agents.fetch.strategies.base import STRATEGIES
 from config.settings import get_settings
 
-_TRANSPORT_ERRORS = (MinioException, urllib3.exceptions.HTTPError)
+_TRANSPORT_ERRORS = (MinioException, urllib3.exceptions.HTTPError, ValueError)
 
 
 def _prefix_from(base_url: str) -> str:
     path = urlsplit(base_url).path.lstrip("/")
     path = path.rstrip("/")
-    if not path or "\\" in path or any(s in {"", ".."} for s in path.split("/")):
+    if not path or "\\" in path or any(s in {"", ".", ".."} for s in path.split("/")):
         raise SourceConfigError("base_url needs a path prefix without '..'")
     return path + "/"
 

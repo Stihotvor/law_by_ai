@@ -81,6 +81,18 @@ def load_env(env_file: str | Path | None = None, *, override: bool = False) -> N
     load_dotenv(dotenv_path=env_file or ROOT_DIR / ".env", override=override)
 
 
+def _positive[N: (int, float)](name: str, default: str, kind: type[N]) -> N:
+    """Read env ``name`` as a positive, finite number or raise ``ValueError``."""
+    raw = os.getenv(name, default)
+    try:
+        value = kind(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be a number, got {raw!r}") from None
+    if not 0 < value < float("inf"):
+        raise ValueError(f"{name} must be positive and finite, got {raw!r}")
+    return value
+
+
 class Settings:
     """Typed access to environment-based configuration.
 
@@ -286,23 +298,23 @@ class Settings:
     @property
     def ocr_timeout(self) -> float:
         """Total timeout in seconds for one OCR request."""
-        return float(os.getenv("OCR_TIMEOUT", "120.0"))
+        return _positive("OCR_TIMEOUT", "120.0", float)
 
     @property
     def ocr_max_bytes(self) -> int:
         """Maximum size in bytes of one OCR input before base64."""
-        return int(os.getenv("OCR_MAX_BYTES", "20971520"))
+        return _positive("OCR_MAX_BYTES", "20971520", int)
 
     # --- Document fetch ------------------------------------------------------
     @property
     def fetch_http_timeout(self) -> float:
         """Total timeout in seconds for one fetch HTTP request."""
-        return float(os.getenv("FETCH_HTTP_TIMEOUT", "10.0"))
+        return _positive("FETCH_HTTP_TIMEOUT", "10.0", float)
 
     @property
     def fetch_max_bytes(self) -> int:
         """Maximum size in bytes of one fetched document body."""
-        return int(os.getenv("FETCH_MAX_BYTES", "52428800"))
+        return _positive("FETCH_MAX_BYTES", "52428800", int)
 
     @property
     def minio_endpoint(self) -> str:

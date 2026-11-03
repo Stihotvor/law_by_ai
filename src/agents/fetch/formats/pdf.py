@@ -1,10 +1,14 @@
-"""PDF parser (text layer only)."""
+"""PDF parser (text layer only).
 
-import re
+Per-page extraction time and size are not bounded here. The caller runs the
+parser under a task time limit.
+"""
+
 from io import BytesIO
 from typing import ClassVar
 
 from pypdf import PasswordType, PdfReader
+from pypdf.errors import DependencyError
 
 from agents.fetch.formats import base
 from agents.fetch.formats._safety import (
@@ -14,6 +18,7 @@ from agents.fetch.formats._safety import (
     NoTextLayerError,
 )
 from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError
+from agents.fetch.formats.text import clean_text
 
 __all__ = [
     "CorruptDocumentError",
@@ -22,12 +27,10 @@ __all__ = [
     "PdfParser",
 ]
 
-_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
-
 
 def _clean(text: str) -> str:
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-    text = _CONTROL_RE.sub("", text)
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\x00", "")
+    text = clean_text(text)
     return "\n".join(line.rstrip(" ") for line in text.split("\n")).strip()
 
 
@@ -41,6 +44,8 @@ def _open(data: bytes) -> PdfReader:
 def _decrypt(reader: PdfReader) -> None:
     try:
         result = reader.decrypt("")
+    except DependencyError as exc:
+        raise EncryptedDocumentError("pdf is encrypted and decryption support is missing") from exc
     except Exception as exc:
         raise EncryptedDocumentError("pdf is encrypted") from exc
     if result == PasswordType.NOT_DECRYPTED:

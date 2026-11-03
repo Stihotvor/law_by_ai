@@ -455,3 +455,15 @@ def test_cursor_remainder_must_be_safe(cursor: str) -> None:
     with pytest.raises(InvalidReferenceError):
         s.list_refs("gov", DocumentFilter(cursor=cursor))
     c.list_objects.assert_not_called()
+
+
+def test_prefix_rejects_dot_segment() -> None:
+    with pytest.raises(SourceConfigError):
+        MinioStrategy("https://m.local/a/./b", client=MagicMock())
+
+
+def test_client_value_error_is_transport_error() -> None:
+    s, c = _make()
+    c.stat_object.side_effect = ValueError("bad bucket")
+    with pytest.raises(FetchTransportError):
+        s.get_meta(_ref())

@@ -27,6 +27,7 @@ status: new
 | [ADR-0013](0013-streamlit-authenticator.md) | streamlit-authenticator for the core app (JWT replaced) | Accepted | 2026-08-12 |
 | [ADR-0014](0014-hardcoded-postgresql.md) | Hardcoded PostgreSQL; plugin system deprecated | Accepted | 2026-08-12 |
 | [ADR-0015](0015-information-only-answers.md) | Answers are legal information, not legal advice | Proposed | 2026-11-01 |
+| [ADR-0016](0016-document-fetcher.md) | Registry and strategy design for the document fetcher | Proposed | 2026-11-02 |
 
 ## How to add an ADR
 

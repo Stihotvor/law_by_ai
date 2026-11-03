@@ -50,8 +50,12 @@ def test_invalid_paths_rejected(over: dict[str, str]) -> None:
         _make(**over)
 
 
+def _assign(obj: object, name: str, value: object) -> None:
+    setattr(obj, name, value)
+
+
 def test_frozen() -> None:
     with pytest.raises(dataclasses.FrozenInstanceError):
-        _make().list_path = "/x"  # type: ignore[misc]
+        _assign(_make(), "list_path", "/x")
     with pytest.raises(dataclasses.FrozenInstanceError):
-        RestListing(()).next_cursor = "x"  # type: ignore[misc]
+        _assign(RestListing(()), "next_cursor", "x")
