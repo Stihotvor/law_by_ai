@@ -1,6 +1,9 @@
+import contextlib
+import time
+
 import pytest
 
-from agents.fetch.formats.base import BinaryContentError, TextLimitError
+from agents.fetch.formats.base import BinaryContentError, FormatError, TextLimitError
 from agents.fetch.formats.text import HtmlParser, PlainTextParser
 
 PL = "zażółć gęślą jaźń"
@@ -201,3 +204,19 @@ def test_html_charset_outside_meta_ignored() -> None:
     comment = b"<!-- charset=iso-8859-2 --><p>"
     for head in (script, comment):
         assert html(head + PL.encode()) == PL
+
+
+def test_html_skips_noscript_template_svg_keeps_title() -> None:
+    src = (
+        "<title>T</title>a<noscript>n</noscript>b<template>t</template>c<svg><text>s</text></svg>d"
+    )
+    assert html(src) == "Tabcd"
+
+
+@pytest.mark.parametrize("unit", ["<!--", "<a ", "<![CDATA[", "&#"])
+def test_html_malformed_megabyte_is_fast(unit: str) -> None:
+    data = (unit * (1_000_000 // len(unit))).encode()
+    start = time.monotonic()
+    with contextlib.suppress(FormatError):
+        html(data)
+    assert time.monotonic() - start < 5

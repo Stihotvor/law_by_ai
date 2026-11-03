@@ -2,6 +2,7 @@
 
 Undecodable legacy text falls back to cp1250 (Polish); because cp1250 accepts
 almost any bytes, binary data is rejected by the NUL check instead.
+The size cap counts characters before whitespace normalisation.
 """
 
 import codecs
@@ -20,7 +21,7 @@ _BLOCK_TAGS = frozenset(
         *("header", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "hr"),
     }
 )
-_SKIP_TAGS = frozenset({"script", "style"})
+_SKIP_TAGS = frozenset({"script", "style", "noscript", "template", "svg"})
 _CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 _HSPACE_RE = re.compile(r"[^\S\n]+")
 
