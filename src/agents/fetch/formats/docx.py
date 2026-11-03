@@ -1,10 +1,9 @@
 """DOCX parser (body paragraphs and tables, in document order)."""
 
-import re
 import zipfile
 from collections.abc import Iterable, Iterator
 from io import BytesIO
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 from docx import Document
 from docx.document import Document as DocumentType
@@ -23,6 +22,7 @@ from agents.fetch.formats._safety import (
     NoTextLayerError,
 )
 from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError
+from agents.fetch.formats.text import clean_text
 
 __all__ = [
     "CorruptDocumentError",
@@ -33,7 +33,6 @@ __all__ = [
 
 _OLE_SIGNATURE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 _BODY_MEMBER = "word/document.xml"
-_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
 
 def _check_infos(infos: list[zipfile.ZipInfo]) -> None:
@@ -66,9 +65,10 @@ def _row_texts(row: _Row, depth: int) -> list[str]:
     texts: list[str] = []
     previous: object = None
     for cell in row.cells:
-        if previous is not None and cell._tc is previous:  # pyright: ignore[reportPrivateUsage]
+        element = cast(Any, cell)._tc
+        if previous is not None and element is previous:
             continue
-        previous = cell._tc  # pyright: ignore[reportPrivateUsage]
+        previous = element
         parts = (line for line in _lines(cell.iter_inner_content(), depth + 1) if line)
         texts.append(" ".join(parts))
     return texts
@@ -92,7 +92,7 @@ def _collect(document: DocumentType) -> list[str]:
     total = 0
     for line in _lines(document.iter_inner_content(), 0):
         line = line.replace("\r\n", "\n").replace("\r", "\n").replace("\xa0", " ")
-        line = _CONTROL_RE.sub("", line).strip()
+        line = clean_text(line.replace("\x00", "")).strip()
         if not line:
             continue
         total += len(line)

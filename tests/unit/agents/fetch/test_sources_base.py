@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 import pytest
 
@@ -25,13 +25,18 @@ class _Base(LegalSource):
         raise NotImplementedError
 
 
+def _abstract_legal_source(arg: object) -> object:
+    factory: Any = LegalSource
+    return factory(arg)
+
+
 def _reg() -> Registry[type[LegalSource]]:
     return Registry("sources", _validate_source)
 
 
 def test_abstract() -> None:
     with pytest.raises(TypeError):
-        LegalSource(object())  # type: ignore[abstract, arg-type]
+        _abstract_legal_source(object())
 
 
 def test_valid_subclass_registers() -> None:
@@ -73,7 +78,7 @@ def test_invalid_sources() -> None:
     ]
     for name, cls in cases:
         with pytest.raises(TypeError):
-            _reg().register(name)(cls)  # type: ignore[arg-type]
+            _reg().register(name)(cast(Any, cls))
 
 
 def test_real_sources_match_modules() -> None:
@@ -96,7 +101,7 @@ def test_real_sources_consistent() -> None:
 
 def _rejects(name: str, cls: object, message: str) -> None:
     with pytest.raises(TypeError) as info:
-        _reg().register(name)(cls)  # type: ignore[arg-type]
+        _reg().register(name)(cast(Any, cls))
     assert str(info.value) == message
 
 

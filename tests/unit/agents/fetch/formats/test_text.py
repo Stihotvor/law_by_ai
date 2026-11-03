@@ -1,6 +1,9 @@
+import contextlib
+import time
+
 import pytest
 
-from agents.fetch.formats.base import TextLimitError
+from agents.fetch.formats.base import BinaryContentError, FormatError, TextLimitError
 from agents.fetch.formats.text import HtmlParser, PlainTextParser
 
 PL = "zażółć gęślą jaźń"
@@ -164,7 +167,56 @@ def test_txt_over_limit_raises(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_html_over_limit_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 10)
+    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 13)
     assert html("<p>aaaaa</p><p>bbbbb</p>") == "aaaaa\nbbbbb"
     with pytest.raises(TextLimitError):
         html("<p>aaaaaa</p><p>bbbbb</p>")
+
+
+def test_txt_nul_raises() -> None:
+    with pytest.raises(BinaryContentError):
+        txt(b"ab\x00cd")
+    with pytest.raises(BinaryContentError):
+        html(b"<p>ab\x00cd</p>")
+
+
+def test_control_chars_become_space() -> None:
+    assert txt(b"a\x01b\x0bc\x1fd\te\nf") == "a b c d\te\nf"
+    assert html(b"<p>a\x01b\x0cc</p>") == "a b c"
+
+
+def test_binary_png_header_raises() -> None:
+    png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\x00"
+    with pytest.raises(BinaryContentError):
+        txt(png)
+    with pytest.raises(BinaryContentError):
+        html(png)
+
+
+def test_html_repeated_blocks_stay_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("agents.fetch.formats.base.MAX_TEXT_CHARS", 100)
+    assert html("<p>" * 100_000) == ""
+    assert html("a" + "<p>" * 100_000 + "b") == "a\nb"
+
+
+def test_html_charset_outside_meta_ignored() -> None:
+    script = b'<script>var s = "charset=iso-8859-2";</script><p>'
+    comment = b"<!-- charset=iso-8859-2 --><p>"
+    for head in (script, comment):
+        assert html(head + PL.encode()) == PL
+
+
+def test_html_skips_noscript_template_svg_keeps_title() -> None:
+    src = (
+        "<title>T</title>a<noscript>n</noscript>b<template>t</template>c<svg><text>s</text></svg>d"
+    )
+    assert html(src) == "Tabcd"
+
+
+@pytest.mark.parametrize("unit", ["<!--", "<a ", "<![CDATA[", "&#"])
+def test_html_malformed_megabyte_is_fast(unit: str) -> None:
+    data = (unit * (1_000_000 // len(unit))).encode()
+    start = time.monotonic()
+    with contextlib.suppress(FormatError):
+        html(data)
+    assert time.monotonic() - start < 5

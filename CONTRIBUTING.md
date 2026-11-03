@@ -53,6 +53,24 @@ formatting and lint issues.
 - Tests requiring external services (PostgreSQL, Qdrant, Memgraph, Redis) are
   marked `integration` and are excluded from default runs.
 
+### Coverage and mutation gates
+
+```bash
+PYTHONPATH=src uv run pytest -m "not integration" --cov --cov-branch --cov-report=xml --cov-report=term-missing
+uv run diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
+uv run mutmut run && uv run mutmut results
+```
+
+- Repo-wide branch coverage must stay at or above `fail_under` in `pyproject.toml`
+  (66%, the baseline; raise it as coverage grows, never lower it).
+- New and changed lines need at least 90% coverage (`diff-cover`, pull requests only).
+- Mutation testing (`mutmut`) is scoped by `[tool.mutmut]` in `pyproject.toml` to
+  `src/agents/fetch` with tests in `tests/unit/agents/fetch`. The CI job is
+  non-blocking, runs in CI only, and uploads a results summary. To change the
+  scope, edit `source_paths` and `pytest_add_cli_args_test_selection` in
+  `pyproject.toml` (mutmut 3.8.1 reads its scope only from that file). The CI
+  job skips with a notice while `src/agents/fetch` does not exist.
+
 ## Branching & PRs
 
 - Use a `feature/`, `fix/`, or `docs/` branch named after the issue

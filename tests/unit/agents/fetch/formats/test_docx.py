@@ -5,12 +5,14 @@ import zipfile
 from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from docx import Document
 from docx.document import Document as DocumentType
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
+from docx.text.paragraph import Paragraph
 
 from agents.fetch.formats import base as base_module
 from agents.fetch.formats import docx as docx_module
@@ -120,7 +122,7 @@ def test_hyperlink_text_kept_url_absent() -> None:
             f'<w:hyperlink {nsdecls("w", "r")} r:id="{rel}">'
             "<w:r><w:t>link text</w:t></w:r></w:hyperlink>"
         )
-        paragraph._p.append(link)  # pyright: ignore[reportPrivateUsage]
+        cast(Any, paragraph)._p.append(link)
 
     out = _parse(_docx(build))
     assert out == "see link text"
@@ -393,7 +395,7 @@ def test_cell_with_several_paragraphs_joined_by_space() -> None:
 
 
 def test_delete_control_character() -> None:
-    assert _parse(_simple("a\x7fb")) == "ab"
+    assert _parse(_simple("a\x7fb")) == "a\x7fb"
 
 
 def test_ratio_boundaries(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -421,3 +423,9 @@ def test_unsupported_zip_compression_is_corrupt(
     monkeypatch.setattr(zipfile.ZipFile, "infolist", boom)
     with pytest.raises(CorruptDocumentError):
         DocxParser().parse(_docx(lambda d: d.add_paragraph("x")))
+
+
+def test_nul_and_controls_are_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
+    # XML cannot carry control characters, so inject them at the paragraph text level.
+    monkeypatch.setattr(Paragraph, "text", property(lambda self: "a\x00b\x01c\x1fd"))
+    assert _parse(_simple("x")) == "ab c d"

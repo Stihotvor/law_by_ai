@@ -1,6 +1,5 @@
 """PDF parser (text layer only)."""
 
-import re
 from io import BytesIO
 from typing import ClassVar
 
@@ -14,6 +13,7 @@ from agents.fetch.formats._safety import (
     NoTextLayerError,
 )
 from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError
+from agents.fetch.formats.text import clean_text
 
 __all__ = [
     "CorruptDocumentError",
@@ -22,12 +22,10 @@ __all__ = [
     "PdfParser",
 ]
 
-_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
-
 
 def _clean(text: str) -> str:
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-    text = _CONTROL_RE.sub("", text)
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\x00", "")
+    text = clean_text(text)
     return "\n".join(line.rstrip(" ") for line in text.split("\n")).strip()
 
 
