@@ -12,19 +12,19 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Yevhen D." }]
 dependencies = [
-    "alembic==1.19.1",
+    "alembic==1.20.1",
     "bcrypt==5.0.0",
     "celery[redis]==5.6.3",
     "httpx==0.28.1",
     "minio==7.2.20",
-    "psycopg[binary]==3.3.4",
+    "psycopg[binary]==3.3.6",
     "pydantic==2.14.2",
     "pypdf==6.21.4",
     "python-docx==1.2.0",
-    "python-dotenv==1.2.2",
+    "python-dotenv==1.2.4",
     "pyyaml==6.0.3",
     "redis==6.4.0",
-    "sqlalchemy==2.0.51",
+    "sqlalchemy==2.1.6",
     "streamlit==1.66.1",
     "streamlit-authenticator==0.4.2",
     "tavily-python==0.8.5",
@@ -34,17 +34,17 @@ dependencies = [
 dev = [
     "bandit[toml]==1.9.4",
     "pip-audit==2.10.1",
-    "pytest==9.1.1",
+    "pytest==9.2.0",
     "pytest-cov==7.1.0",
-    "pyright==1.1.411",
-    "ruff==0.16.1",
-    "pre-commit==4.6.1",
+    "pyright==1.1.414",
+    "ruff==0.17.3",
+    "pre-commit==4.7.0",
     "freezegun==1.5.5",
     "diff-cover==11.0.0",
     "mutmut==3.8.1",
 ]
 docs = [
-    "mkdocs-material==9.7.7",
+    "mkdocs-material==9.8.0",
     "pymdown-extensions==11.0.1",
 ]
 
