@@ -60,10 +60,8 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RUF", "ASYNC"]
-ignore = ["RUF012"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]
 "scripts/seed_db.py" = ["E402"]
 
 [tool.pytest.ini_options]
