@@ -68,7 +68,8 @@ uv run mutmut run && uv run mutmut results
   `src/agents/fetch` with tests in `tests/unit/agents/fetch`. The CI job is
   non-blocking, runs in CI only, and uploads a results summary. To change the
   scope, edit `source_paths` and `pytest_add_cli_args_test_selection` in
-  `pyproject.toml` (mutmut 3.8.1 reads its scope only from that file).
+  `pyproject.toml` (mutmut 3.8.1 reads its scope only from that file). The CI
+  job skips with a notice while `src/agents/fetch` does not exist.
 
 ## Branching & PRs
 

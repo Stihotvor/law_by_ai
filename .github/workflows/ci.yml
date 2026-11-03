@@ -71,10 +71,19 @@ jobs:
           python-version: "3.13"
       - name: Install dependencies
         run: uv sync --frozen --extra dev
+      - name: Check mutation target
+        id: target
+        run: |
+          if [ -d src/agents/fetch ] && [ -d tests/unit/agents/fetch ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Mutation target src/agents/fetch not present; skipping."
+          fi
       - name: Run mutation tests (scope set in pyproject.toml)
+        if: steps.target.outputs.present == 'true'
         run: uv run mutmut run
       - name: Summarise results
-        if: always()
+        if: always() && steps.target.outputs.present == 'true'
         run: uv run mutmut results > mutation-summary.txt
       - name: Upload mutation summary
         if: always()
