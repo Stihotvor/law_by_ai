@@ -48,6 +48,10 @@ Variable               Purpose                                Default
 ``MINIO_SECRET_KEY``      MinIO secret key                        *(empty)*
 ``MINIO_BUCKET``          MinIO bucket for legal documents        ``legal-documents``
 ``MINIO_SECURE``          use TLS for MinIO                       ``true``
+``TAVILY_API_KEY``        Tavily API key                          *(empty)*
+``TAVILY_TIMEOUT``        seconds per Tavily request              ``60.0``
+``TAVILY_MAX_PAGES``      pages per Tavily map call               ``20``
+``SEJM_MIN_INTERVAL``     seconds between Sejm requests           ``0.5``
 =====================  =====================================  ================================
 
 Usage::
@@ -340,6 +344,27 @@ class Settings:
     def minio_secure(self) -> bool:
         """Whether to use TLS when talking to MinIO."""
         return os.getenv("MINIO_SECURE", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+    # --- Tavily and source politeness ---------------------------------------
+    @property
+    def tavily_api_key(self) -> str:
+        """Tavily API key (secret, env only, empty when unset)."""
+        return os.getenv("TAVILY_API_KEY", "")
+
+    @property
+    def tavily_timeout(self) -> float:
+        """Seconds allowed for one Tavily request."""
+        return _positive("TAVILY_TIMEOUT", "60.0", float)
+
+    @property
+    def tavily_max_pages(self) -> int:
+        """Maximum pages one Tavily map call may return."""
+        return _positive("TAVILY_MAX_PAGES", "20", int)
+
+    @property
+    def sejm_min_interval(self) -> float:
+        """Minimum seconds between two outbound Sejm requests."""
+        return _positive("SEJM_MIN_INTERVAL", "0.5", float)
 
 
 @lru_cache(maxsize=1)
