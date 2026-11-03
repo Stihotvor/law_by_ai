@@ -348,3 +348,21 @@ def test_deeply_nested_json_is_a_typed_error() -> None:
     rec = Recorder(httpx.Response(200, content=body))
     with pytest.raises(OcrProviderError):
         _provider(rec).ocr_pdf(b"x")
+
+
+def test_deadline_exactly_reached_is_not_a_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    ticks = iter([0.0, 5.0, 5.0])
+    monkeypatch.setattr(mistral_mod, "_now", lambda: next(ticks))
+
+    def chunks() -> Iterator[bytes]:
+        yield b'{"pages":'
+        yield b'[{"index":0,"markdown":"ok"}]}'
+
+    resp = httpx.Response(200, content=chunks())
+    assert _provider(Recorder(resp)).ocr_pdf(b"x") == "ok"
+
+
+def test_base_url_strips_only_trailing_slashes() -> None:
+    rec = Recorder(_ok(_page(0, "ok")))
+    _provider(rec, base_url="https://api.mistral.ai/vX//").ocr_pdf(b"x")
+    assert str(rec.requests[0].url) == "https://api.mistral.ai/vX/ocr"
