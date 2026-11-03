@@ -9,9 +9,9 @@ per 5 pages, only for pages that are read) costs less. The name keeps the
 "Tavily crawl" wording of the design.
 
 Every ``list_refs`` call runs ``map`` again and costs credits, also for later
-pages of the same listing. ``TAVILY_MAX_PAGES`` caps what one call can see. The order of the pages is not
-stable between calls, so paging can skip or repeat a page, and the cursor offset
-never exceeds ``TAVILY_MAX_PAGES``.
+pages of the same listing. ``TAVILY_MAX_PAGES`` caps what one call
+can see. The order of the pages is not stable between calls, so paging can skip
+or repeat a page, and the cursor offset never exceeds ``TAVILY_MAX_PAGES``.
 
 Each SDK call runs in a worker thread so the whole call is bounded by
 ``TAVILY_TIMEOUT``. The SDK only has a per-socket timeout, and the worker thread

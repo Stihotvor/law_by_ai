@@ -95,7 +95,8 @@ def test_key_comes_from_settings_and_session_ignores_env() -> None:
     assert KEY not in repr(strategy)
 
 
-def test_list_refs_call_and_filtering() -> None:
+def test_list_refs_call_and_filtering(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TAVILY_MAX_PAGES", "50")
     client = _client(
         [
             *_urls("z.html", "a.html", "a.html", "d/e?x=1"),
@@ -121,7 +122,7 @@ def test_list_refs_call_and_filtering() -> None:
         url=BASE,
         max_depth=2,
         max_breadth=20,
-        limit=7,
+        limit=50,
         allow_external=False,
         select_domains=[r"^api\.example$"],
         timeout=60.0,
