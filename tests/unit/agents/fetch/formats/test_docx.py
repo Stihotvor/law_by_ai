@@ -425,6 +425,21 @@ def test_unsupported_zip_compression_is_corrupt(
         DocxParser().parse(_docx(lambda d: d.add_paragraph("x")))
 
 
+def test_huge_grid_span_is_not_expanded() -> None:
+    def build(doc: DocumentType) -> None:
+        table = doc.add_table(rows=1, cols=2)
+        table.cell(0, 0).text = "a"
+        table.cell(0, 1).text = "b"
+
+    base = _docx(build)
+    xml = _member(base, "word/document.xml")
+    xml = xml.replace(b"<w:tcPr>", b'<w:tcPr><w:gridSpan w:val="1000000"/>', 1)
+    data = _rewrite(base, replace={"word/document.xml": xml})
+    started = time.monotonic()
+    assert _parse(data) == "a | b"
+    assert time.monotonic() - started < 2
+
+
 def test_nul_and_controls_are_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
     # XML cannot carry control characters, so inject them at the paragraph text level.
     monkeypatch.setattr(Paragraph, "text", property(lambda self: "a\x00b\x01c\x1fd"))

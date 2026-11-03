@@ -7,7 +7,7 @@ from typing import Any, ClassVar, cast
 
 from docx import Document
 from docx.document import Document as DocumentType
-from docx.table import Table, _Row
+from docx.table import Table, _Cell, _Row
 from docx.text.paragraph import Paragraph
 
 from agents.fetch.formats import base
@@ -63,12 +63,8 @@ def _check_zip(data: bytes) -> None:
 
 def _row_texts(row: _Row, depth: int) -> list[str]:
     texts: list[str] = []
-    previous: object = None
-    for cell in row.cells:
-        element = cast(Any, cell)._tc
-        if previous is not None and element is previous:
-            continue
-        previous = element
+    for tc in cast(Any, row)._tr.tc_lst:
+        cell = _Cell(tc, row.table)
         parts = (line for line in _lines(cell.iter_inner_content(), depth + 1) if line)
         texts.append(" ".join(parts))
     return texts
