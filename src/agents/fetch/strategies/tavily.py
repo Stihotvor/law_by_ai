@@ -19,7 +19,6 @@ import re
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
-import requests
 from tavily import TavilyClient
 from tavily.errors import (
     BadRequestError,
@@ -28,7 +27,6 @@ from tavily.errors import (
     MissingAPIKeyError,
     UsageLimitExceededError,
 )
-from tavily.errors import TimeoutError as TavilyTimeoutError
 
 from agents.fetch.contracts import DocumentFilter, DocumentMeta, DocumentPage, DocumentRef
 from agents.fetch.errors import (
@@ -182,18 +180,7 @@ class TavilyCrawlStrategy:
         client, owned = self._open()
         try:
             return getattr(client, method)(**kwargs)
-        except (
-            FetchError,
-            InvalidAPIKeyError,
-            UsageLimitExceededError,
-            ForbiddenError,
-            BadRequestError,
-            TavilyTimeoutError,
-            requests.exceptions.RequestException,
-            ValueError,
-            TypeError,
-            KeyError,
-        ) as exc:
+        except Exception as exc:
             raise _translate(exc) from exc
         finally:
             if owned:

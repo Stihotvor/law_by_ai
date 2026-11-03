@@ -7,6 +7,7 @@ from tavily.errors import (
     BadRequestError,
     ForbiddenError,
     InvalidAPIKeyError,
+    KeylessUnsupportedEndpointError,
     MissingAPIKeyError,
     UsageLimitExceededError,
 )
@@ -360,11 +361,24 @@ def test_fetch_error_passes_through() -> None:
     assert got.value is err
 
 
-def test_unexpected_error_is_not_swallowed() -> None:
+@pytest.mark.parametrize(
+    ("exc", "kind"),
+    [
+        (MissingAPIKeyError(), SourceConfigError),
+        (KeylessUnsupportedEndpointError("map"), FetchTransportError),
+        (Exception("secret"), FetchTransportError),
+        (AttributeError("secret"), FetchTransportError),
+        (RuntimeError("secret"), FetchTransportError),
+    ],
+)
+def test_any_sdk_exception_becomes_typed(exc: Exception, kind: type[FetchError]) -> None:
     client = MagicMock()
-    client.map.side_effect = RuntimeError("boom")
-    with pytest.raises(RuntimeError):
+    client.map.side_effect = exc
+    with pytest.raises(kind) as err:
         _strategy(client).list_refs("s", DocumentFilter())
+    assert "secret" not in str(err.value)
+    if kind is FetchTransportError:
+        assert type(exc).__name__ in str(err.value)
 
 
 def test_injected_client_not_closed() -> None:
