@@ -12,18 +12,16 @@ into ``FetchedDocument.content_type``.
 """
 
 import json
-import re
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+import threading
+import time
+from collections.abc import Mapping
 from typing import Any
-from urllib.parse import quote, urlsplit
 
 import httpx
 
 from agents.fetch.contracts import DocumentFilter, DocumentMeta, DocumentPage, DocumentRef
 from agents.fetch.errors import (
     DocumentNotFoundError,
-    FetchError,
     FetchTransportError,
     InvalidReferenceError,
     PayloadError,
@@ -32,86 +30,21 @@ from agents.fetch.errors import (
     SourceConfigError,
 )
 from agents.fetch.registry import Registry, UnknownNameError
+from agents.fetch.strategies._hosts import HTTPS_PORT, check_public_host, parse_base_url
+from agents.fetch.strategies._rest_mapper import (
+    REST_MAPPERS,
+    RestListing,
+    RestMapper,
+    build_path,
+    call_mapper,
+    with_content_variant,
+)
 from agents.fetch.strategies.base import STRATEGIES
 from config.settings import get_settings
 
-_MAPPER_ERRORS = (KeyError, IndexError, TypeError, ValueError, AttributeError)
-_ID_PLACEHOLDER = "{external_id}"
-_HTTPS_PORT = 443
+__all__ = ["REST_MAPPERS", "RestApiStrategy", "RestListing", "RestMapper", "with_content_variant"]
 
-
-@dataclass(frozen=True, slots=True)
-class RestListing:
-    external_ids: tuple[str, ...]
-    next_cursor: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class RestMapper:
-    list_path: str
-    meta_path: str
-    content_path: str
-    list_params: Callable[[DocumentFilter], Mapping[str, str]]
-    parse_list: Callable[[Any], RestListing]
-    parse_meta: Callable[[Any, DocumentRef], DocumentMeta]
-    id_safe: str = ""
-    id_pattern: str | None = None
-    alt_content_paths: Mapping[str, str] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        if self.id_safe not in {"", "/"}:
-            raise SourceConfigError("id_safe must be '' or '/'")
-        if self.id_pattern is not None:
-            try:
-                re.compile(self.id_pattern)
-            except re.error as exc:
-                raise SourceConfigError("id_pattern is not a valid regex") from exc
-        if not self.list_path.startswith("/") or "{" in self.list_path:
-            raise SourceConfigError("list_path must start with '/' and have no '{'")
-        named = [("meta_path", self.meta_path), ("content_path", self.content_path)]
-        named += [(f"alt_content_paths[{k!r}]", v) for k, v in self.alt_content_paths.items()]
-        for name, path in named:
-            if not path.startswith("/") or _ID_PLACEHOLDER not in path:
-                raise SourceConfigError(f"{name} must start with '/' and have {_ID_PLACEHOLDER}")
-
-
-REST_MAPPERS: Registry[RestMapper] = Registry("rest_mappers")
-
-
-def _check_id(external_id: str, mapper: RestMapper) -> None:
-    if external_id in {"", ".", ".."} or any(ord(c) < 32 or ord(c) == 127 for c in external_id):
-        raise InvalidReferenceError("unsafe external_id")
-    if "/" in mapper.id_safe and (
-        "\\" in external_id or any(seg in {"", ".", ".."} for seg in external_id.split("/"))
-    ):
-        raise InvalidReferenceError("unsafe external_id")
-    if mapper.id_pattern is not None and not re.fullmatch(mapper.id_pattern, external_id):
-        raise InvalidReferenceError("unsafe external_id")
-
-
-def _build_path(template: str, external_id: str, mapper: RestMapper) -> str:
-    _check_id(external_id, mapper)
-    return template.format(external_id=quote(external_id, safe=mapper.id_safe))
-
-
-def with_content_variant(
-    base_url: str, mapper: RestMapper, ref: DocumentRef, variant: str
-) -> DocumentRef:
-    """Return ``ref`` pointing at the named alternative content path."""
-    template = mapper.alt_content_paths.get(variant)
-    if template is None:
-        raise SourceConfigError(f"unknown content variant {variant!r}")
-    path = _build_path(template, ref.external_id, mapper)
-    return ref.model_copy(update={"url": base_url.rstrip("/") + path})
-
-
-def _call[**P, R](fn: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
-    try:
-        return fn(*args, **kwargs)
-    except FetchError:
-        raise
-    except _MAPPER_ERRORS as exc:
-        raise PayloadError(f"mapper failed: {type(exc).__name__}") from exc
+_monotonic = time.monotonic  # patchable clock for deadline tests
 
 
 @STRATEGIES.register("rest_api")
@@ -122,31 +55,31 @@ class RestApiStrategy:
         *,
         mappers: Registry[RestMapper] | None = None,
         transport: httpx.BaseTransport | None = None,
+        allow_private_hosts: bool = False,
     ) -> None:
-        if not base_url.startswith("https://"):
-            raise SourceConfigError("base_url must start with https://")
+        parts = parse_base_url(base_url)
         self._base = base_url.rstrip("/")
-        try:
-            parts = urlsplit(self._base)
-            port = parts.port
-        except ValueError:
-            raise SourceConfigError("base_url is not a valid URL") from None
-        if parts.username is not None or parts.password is not None or "@" in parts.netloc:
-            raise SourceConfigError("base_url must not contain credentials")
-        if not parts.hostname:
-            raise SourceConfigError("base_url needs a host")
-        if parts.query or parts.fragment:
-            raise SourceConfigError("base_url must not have a query or fragment")
+        self._allow_private = allow_private_hosts
         self._host = httpx.URL(self._base).host
-        self._port = port or _HTTPS_PORT
+        self._port = parts.port or HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers
         self._transport = transport
+        self._http: httpx.Client | None = None
+        self._lock = threading.Lock()
+        self._closed = False
+
+    def close(self) -> None:
+        with self._lock:
+            self._closed = True
+            client, self._http = self._http, None
+        if client is not None:
+            client.close()
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
         mapper = self._mapper(source)
-        params = _call(mapper.list_params, flt)
+        params = call_mapper(mapper.list_params, flt)
         body = self._get_json("GET " + mapper.list_path, mapper.list_path, params)
-        listing = _call(mapper.parse_list, body)
+        listing = call_mapper(mapper.parse_list, body)
         if len(listing.external_ids) > flt.limit:
             raise PayloadError("mapper returned more ids than limit")
         try:
@@ -168,7 +101,7 @@ class RestApiStrategy:
         mapper = self._mapper(ref.source)
         path = self._path(mapper.meta_path, ref.external_id, mapper)
         body = self._get_json("GET " + path, path, None)
-        meta = _call(mapper.parse_meta, body, ref)
+        meta = call_mapper(mapper.parse_meta, body, ref)
         if meta.ref != ref:
             raise PayloadError("mapper returned a different ref")
         return meta
@@ -191,15 +124,24 @@ class RestApiStrategy:
 
     @staticmethod
     def _path(template: str, external_id: str, mapper: RestMapper) -> str:
-        return _build_path(template, external_id, mapper)
+        return build_path(template, external_id, mapper)
 
     def _guard(self, request: httpx.Request) -> None:
         url = request.url
-        port = url.port or (_HTTPS_PORT if url.scheme == "https" else 80)
+        port = url.port or (HTTPS_PORT if url.scheme == "https" else 80)
         if url.scheme != "https" or url.host != self._host or port != self._port:
             raise RedirectNotAllowedError("redirect outside the source host or not https")
+        check_public_host(url.host, allow_private=self._allow_private)
 
     def _client(self) -> httpx.Client:
+        with self._lock:
+            if self._closed:
+                raise FetchTransportError("closed")
+            if self._http is None:
+                self._http = self._new_client()
+            return self._http
+
+    def _new_client(self) -> httpx.Client:
         return httpx.Client(
             timeout=httpx.Timeout(get_settings().fetch_http_timeout),
             follow_redirects=True,
@@ -218,18 +160,19 @@ class RestApiStrategy:
 
     def _get_bytes(self, path: str, params: Mapping[str, str] | None, label: str = "") -> bytes:
         label = label or "GET " + path
-        limit = get_settings().fetch_max_bytes
+        settings = get_settings()
+        limit = settings.fetch_max_bytes
+        deadline = _monotonic() + settings.fetch_total_timeout
         try:
-            with (
-                self._client() as client,
-                client.stream("GET", self._base + path, params=params) as response,
-            ):
-                return self._consume(response, label, limit)
+            with self._client().stream("GET", self._base + path, params=params) as response:
+                return self._consume(response, label, limit, deadline)
         except (httpx.HTTPError, httpx.InvalidURL) as exc:
             raise FetchTransportError(f"{label}: {type(exc).__name__}") from exc
+        except RuntimeError as exc:  # httpx raises it for a client closed mid-request
+            raise FetchTransportError("closed") from exc
 
     @staticmethod
-    def _consume(response: httpx.Response, label: str, limit: int) -> bytes:
+    def _consume(response: httpx.Response, label: str, limit: int, deadline: float) -> bytes:
         status = response.status_code
         if status == 404:
             raise DocumentNotFoundError(f"{label}: not found")
@@ -241,6 +184,8 @@ class RestApiStrategy:
         chunks: list[bytes] = []
         size = 0
         for chunk in response.iter_bytes():
+            if _monotonic() > deadline:
+                raise FetchTransportError(f"{label}: total timeout")
             size += len(chunk)
             if size > limit:
                 raise ResponseTooLargeError(f"{label}: body larger than {limit} bytes")

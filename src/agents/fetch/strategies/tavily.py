@@ -1,9 +1,8 @@
 """Tavily based fetch strategy for sites without an API.
 
 The strategy discovers pages with Tavily ``map`` and reads one page with Tavily
-``extract``. It does not call ``crawl``. The agent builds a fresh strategy for
-every call, so a crawl result cannot be cached between ``list_refs`` and
-``read``. ``crawl`` would pay for page content in the list step and again in the
+``extract``. It does not call ``crawl``. A crawl result is not cached between
+``list_refs`` and ``read``. ``crawl`` would pay for page content in the list step and again in the
 read step. ``map`` (URLs only, 1 credit per 10 pages) plus ``extract`` (1 credit
 per 5 pages, only for pages that are read) costs less. The name keeps the
 "Tavily crawl" wording of the design.
@@ -22,6 +21,7 @@ original bytes of the page.
 """
 
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
@@ -46,10 +46,10 @@ from agents.fetch.errors import (
     ResponseTooLargeError,
     SourceConfigError,
 )
+from agents.fetch.strategies._hosts import HTTPS_PORT, parse_base_url
 from agents.fetch.strategies.base import STRATEGIES
 from config.settings import get_settings
 
-_HTTPS_PORT = 443
 _MAP_DEPTH = 2
 _MAP_BREADTH = 20
 _MAP_TIMEOUT = (10.0, 150.0)
@@ -102,30 +102,50 @@ def _check_id(external_id: str) -> None:
 @STRATEGIES.register("tavily")
 class TavilyCrawlStrategy:
     def __init__(self, base_url: str, *, client: TavilyClient | None = None) -> None:
-        if not base_url.startswith("https://"):
-            raise SourceConfigError("base_url must start with https://")
+        parts = parse_base_url(base_url)
         self._base = base_url.rstrip("/")
-        parts = urlsplit(self._base)
-        if parts.username is not None or parts.password is not None or "@" in parts.netloc:
-            raise SourceConfigError("base_url must not contain credentials")
-        if not parts.hostname:
-            raise SourceConfigError("base_url needs a host")
-        self._host = parts.hostname
-        self._port = parts.port or _HTTPS_PORT
+        self._host = str(parts.hostname)
+        self._port = parts.port or HTTPS_PORT
         self._path = parts.path
         self._client = client
+        self._owned = client is None
+        self._pool: ThreadPoolExecutor | None = None
+        self._lock = threading.Lock()
+        self._closed = False
         if client is None and not get_settings().tavily_api_key:
             raise SourceConfigError("Tavily API key is not set")
 
-    def _open(self) -> tuple[TavilyClient, bool]:
-        if self._client is not None:
-            return self._client, False
+    def close(self) -> None:
+        """Release the pool and a client this strategy created."""
+        with self._lock:
+            self._closed = True
+            pool, self._pool = self._pool, None
+            client = self._client if self._owned else None
+            if self._owned:
+                self._client = None
+        if pool is not None:
+            pool.shutdown(wait=False, cancel_futures=True)
+        if client is not None:
+            client.close()
+
+    def _resources(self) -> tuple[TavilyClient, ThreadPoolExecutor]:
+        with self._lock:
+            if self._closed:
+                raise FetchTransportError("closed")
+            if self._client is None:
+                self._client = self._new_client()
+            if self._pool is None:
+                self._pool = ThreadPoolExecutor(max_workers=1)
+            return self._client, self._pool
+
+    @staticmethod
+    def _new_client() -> TavilyClient:
         try:
             client = TavilyClient(api_key=get_settings().tavily_api_key)
         except Exception as exc:
             raise _translate(exc) from exc
         client.session.trust_env = False
-        return client, True
+        return client
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
         offset = self._offset(flt.cursor)
@@ -187,19 +207,15 @@ class TavilyCrawlStrategy:
         return int(cursor)
 
     def _call(self, method: str, **kwargs: Any) -> Any:
-        client, owned = self._open()
-        pool = ThreadPoolExecutor(max_workers=1)
+        client, pool = self._resources()
+        future = pool.submit(getattr(client, method), **kwargs)
         try:
-            future = pool.submit(getattr(client, method), **kwargs)
             return future.result(timeout=get_settings().tavily_timeout)
         except FuturesTimeoutError as exc:
+            future.cancel()  # a running worker ends on its own socket timeout
             raise FetchTransportError("tavily: total timeout") from exc
         except Exception as exc:
             raise _translate(exc) from exc
-        finally:
-            pool.shutdown(wait=False, cancel_futures=True)
-            if owned:
-                client.close()
 
     def _ids(self, body: Any) -> list[str]:
         if not isinstance(body, dict) or not isinstance(body.get("results"), list):
@@ -216,7 +232,7 @@ class TavilyCrawlStrategy:
             return None
         try:
             parts = urlsplit(url)
-            port = parts.port or _HTTPS_PORT
+            port = parts.port or HTTPS_PORT
         except ValueError:
             return None
         if (

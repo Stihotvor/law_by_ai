@@ -60,25 +60,35 @@ class MinioStrategy:
         self._prefix = _prefix_from(base_url)
         settings = get_settings()
         self._bucket = settings.minio_bucket
+        self._pool: urllib3.PoolManager | None = None
         if client is None:
-            client = self._build_client()
+            self._pool = self._new_pool()
+            client = self._build_client(self._pool)
         self._client = client
 
+    def close(self) -> None:
+        if self._pool is not None:
+            self._pool.clear()
+
     @staticmethod
-    def _build_client() -> Minio:
+    def _new_pool() -> urllib3.PoolManager:
+        timeout = get_settings().fetch_http_timeout
+        return urllib3.PoolManager(
+            timeout=urllib3.Timeout(connect=timeout, read=timeout),
+            retries=urllib3.Retry(total=0),
+        )
+
+    @staticmethod
+    def _build_client(pool: urllib3.PoolManager) -> Minio:
         settings = get_settings()
         if not settings.minio_access_key or not settings.minio_secret_key:
             raise SourceConfigError("MinIO credentials are not set")
-        timeout = settings.fetch_http_timeout
         return Minio(
             settings.minio_endpoint,
             access_key=settings.minio_access_key,
             secret_key=settings.minio_secret_key,
             secure=settings.minio_secure,
-            http_client=urllib3.PoolManager(
-                timeout=urllib3.Timeout(connect=timeout, read=timeout),
-                retries=urllib3.Retry(total=0),
-            ),
+            http_client=pool,
         )
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:

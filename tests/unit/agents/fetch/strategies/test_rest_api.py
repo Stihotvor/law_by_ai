@@ -355,6 +355,29 @@ def test_too_large_by_stream_without_header() -> None:
         _strategy(handler).read(_ref())
 
 
+class FakeClock:
+    now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_total_deadline_stops_slow_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = FakeClock()
+    monkeypatch.setattr("agents.fetch.strategies.rest_api._monotonic", clock)
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        def gen() -> Any:
+            yield b"x"
+            clock.now = 100.0  # the deadline passes while the body is streamed
+            yield b"x"
+
+        return httpx.Response(200, content=gen())
+
+    with pytest.raises(FetchTransportError, match="total timeout"):
+        _strategy(handler).read(_ref())
+
+
 def test_stream_exactly_max_ok() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         def gen() -> Any:
@@ -622,3 +645,30 @@ def test_invalid_url_maps_to_transport_error() -> None:
 
     with pytest.raises(FetchTransportError):
         _strategy(handler).read(_ref())
+
+
+def test_close_closes_client_and_is_idempotent() -> None:
+    s = _strategy(lambda r: httpx.Response(200, content=b"x"))
+    s.read(_ref())
+    client = s._http
+    assert client is not None
+    s.read(_ref())
+    assert s._http is client
+    s.close()
+    assert client.is_closed
+    s.close()
+
+
+def test_closed_strategy_does_not_rebuild_client() -> None:
+    s = _strategy(lambda r: httpx.Response(200, content=b"x"))
+    s.close()
+    with pytest.raises(FetchTransportError, match="closed"):
+        s.read(_ref())
+
+
+def test_client_closed_mid_request_is_typed() -> None:
+    s = _strategy(lambda r: httpx.Response(200, content=b"x"))
+    client = s._client()
+    client.close()
+    with pytest.raises(FetchTransportError, match="closed"):
+        s.read(_ref())

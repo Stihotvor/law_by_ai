@@ -467,3 +467,16 @@ def test_client_value_error_is_transport_error() -> None:
     c.stat_object.side_effect = ValueError("bad bucket")
     with pytest.raises(FetchTransportError):
         s.get_meta(_ref())
+
+
+def test_close_clears_own_pool_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    s, client = _make()
+    s.close()
+    assert not client._http.clear.called
+    monkeypatch.setattr("agents.fetch.strategies.minio.Minio", MagicMock())
+    own = MinioStrategy(BASE)
+    assert own._pool is not None
+    cleared: list[bool] = []
+    monkeypatch.setattr(own._pool, "clear", lambda: cleared.append(True))
+    own.close()
+    assert cleared == [True]
