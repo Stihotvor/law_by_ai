@@ -1,5 +1,6 @@
 """Smoke tests for the repo skeleton and Docker setup (issue #6)."""
 
+import re
 import tomllib
 from pathlib import Path
 
@@ -129,3 +130,20 @@ def test_every_workflow_job_has_timeout():
     for name, wf in _workflows().items():
         for job, spec in wf["jobs"].items():
             assert "timeout-minutes" in spec, f"{name}:{job} lacks timeout-minutes"
+
+
+def _uses(node: object) -> list[str]:
+    if isinstance(node, dict):
+        found = [v for k, v in node.items() if k == "uses" and isinstance(v, str)]
+        return found + [u for v in node.values() for u in _uses(v)]
+    if isinstance(node, list):
+        return [u for v in node for u in _uses(v)]
+    return []
+
+
+def test_every_action_is_pinned_to_a_full_sha():
+    for name, wf in _workflows().items():
+        for ref in _uses(wf):
+            if ref.startswith("./"):
+                continue
+            assert re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", ref), f"{name}: {ref}"
