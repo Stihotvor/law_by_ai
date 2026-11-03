@@ -35,6 +35,13 @@ Variable               Purpose                                Default
 ``RERANK_BASE_URL``       reranking provider base URL             ``https://api.cohere.com/v1``
 ``RERANK_API_KEY``        reranking API key                       ``(empty)``
 ``RERANK_MODEL``          reranking model name                    ``rerank-v3.5``
+``FETCH_HTTP_TIMEOUT``    total seconds per fetch HTTP request    ``10.0``
+``FETCH_MAX_BYTES``       max fetched body size in bytes          ``52428800``
+``MINIO_ENDPOINT``        MinIO ``host:port`` (no scheme)         ``localhost:9000``
+``MINIO_ACCESS_KEY``      MinIO access key                        *(empty)*
+``MINIO_SECRET_KEY``      MinIO secret key                        *(empty)*
+``MINIO_BUCKET``          MinIO bucket for legal documents        ``legal-documents``
+``MINIO_SECURE``          use TLS for MinIO                       ``true``
 =====================  =====================================  ================================
 
 Usage::
@@ -66,6 +73,18 @@ def load_env(env_file: str | Path | None = None, *, override: bool = False) -> N
     precedence unless ``override=True``.
     """
     load_dotenv(dotenv_path=env_file or ROOT_DIR / ".env", override=override)
+
+
+def _positive[N: (int, float)](name: str, default: str, kind: type[N]) -> N:
+    """Read env ``name`` as a positive, finite number or raise ``ValueError``."""
+    raw = os.getenv(name, default)
+    try:
+        value = kind(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be a number, got {raw!r}") from None
+    if not 0 < value < float("inf"):
+        raise ValueError(f"{name} must be positive and finite, got {raw!r}")
+    return value
 
 
 class Settings:
@@ -248,6 +267,42 @@ class Settings:
     def rerank_model(self) -> str:
         """Reranking model name (Cohere by default)."""
         return os.getenv("RERANK_MODEL", "rerank-v3.5")
+
+    # --- Document fetch ------------------------------------------------------
+    @property
+    def fetch_http_timeout(self) -> float:
+        """Total timeout in seconds for one fetch HTTP request."""
+        return _positive("FETCH_HTTP_TIMEOUT", "10.0", float)
+
+    @property
+    def fetch_max_bytes(self) -> int:
+        """Maximum size in bytes of one fetched document body."""
+        return _positive("FETCH_MAX_BYTES", "52428800", int)
+
+    @property
+    def minio_endpoint(self) -> str:
+        """MinIO endpoint as ``host:port`` without a scheme."""
+        return os.getenv("MINIO_ENDPOINT", "localhost:9000")
+
+    @property
+    def minio_access_key(self) -> str:
+        """MinIO access key (no default secret)."""
+        return os.getenv("MINIO_ACCESS_KEY", "")
+
+    @property
+    def minio_secret_key(self) -> str:
+        """MinIO secret key (no default secret)."""
+        return os.getenv("MINIO_SECRET_KEY", "")
+
+    @property
+    def minio_bucket(self) -> str:
+        """MinIO bucket that holds legal documents."""
+        return os.getenv("MINIO_BUCKET", "legal-documents")
+
+    @property
+    def minio_secure(self) -> bool:
+        """Whether to use TLS when talking to MinIO."""
+        return os.getenv("MINIO_SECURE", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 
 @lru_cache(maxsize=1)
