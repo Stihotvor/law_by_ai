@@ -178,7 +178,7 @@ def test_rejection_checker_receives_url() -> None:
 def test_error_messages() -> None:
     with pytest.raises(DocumentRejectedError) as rej:
         DocumentFetcherAgent(Rejecting()).fetch_document("fake", REF)
-    assert str(rej.value) == "document rejected: fake/1"
+    assert str(rej.value) == "document rejected: 'fake/1'"
     assert REF.url not in str(rej.value)
     with pytest.raises(ValueError) as mismatch:
         DocumentFetcherAgent().get_document_meta("other", REF)
@@ -296,3 +296,11 @@ def test_flag_not_passed_to_strategy_without_keyword(
     registries.register("priv")(PrivateSource)
     DocumentFetcherAgent().list_documents("priv", DocumentFilter())
     assert FakeStrategy.built_with == ["https://fake.example"]
+
+
+def test_rejection_message_escapes_and_cuts_id() -> None:
+    ref = REF.model_copy(update={"external_id": "a\nb" + "x" * 100})
+    with pytest.raises(DocumentRejectedError) as rej:
+        DocumentFetcherAgent(Rejecting()).fetch_document("fake", ref)
+    assert "\n" not in str(rej.value)
+    assert len(str(rej.value)) < 100

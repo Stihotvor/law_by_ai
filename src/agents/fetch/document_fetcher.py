@@ -136,7 +136,8 @@ class DocumentFetcherAgent:
         _check_tenant(tenant_id)
         _check_source(source, ref)
         if self._rejection.is_rejected(ref.url):
-            raise DocumentRejectedError(f"document rejected: {ref.source}/{ref.external_id}")
+            label = f"{ref.source}/{ref.external_id}"[:64]
+            raise DocumentRejectedError(f"document rejected: {label!r}")
         result = self._resolve(source).fetch_document(ref)
         return result.model_copy(update={"tenant_id": tenant_id})
 
