@@ -64,7 +64,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: lint
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -88,6 +87,9 @@ jobs:
       - name: Summarise results
         if: always() && steps.target.outputs.present == 'true'
         run: uv run mutmut results > mutation-summary.txt
+      - name: Enforce mutation score (threshold in scripts/mutation_score.py)
+        if: steps.target.outputs.present == 'true'
+        run: uv run python scripts/mutation_score.py
       - name: Upload mutation summary
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
