@@ -40,6 +40,7 @@ from agents.fetch.errors import (
     ResponseTooLargeError,
     SourceConfigError,
 )
+from agents.fetch.strategies._hosts import check_public_host
 from agents.fetch.strategies.base import STRATEGIES
 from config.settings import get_settings
 
@@ -93,7 +94,13 @@ def _check_id(external_id: str) -> None:
 
 @STRATEGIES.register("tavily")
 class TavilyCrawlStrategy:
-    def __init__(self, base_url: str, *, client: TavilyClient | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        client: TavilyClient | None = None,
+        allow_private_hosts: bool = False,
+    ) -> None:
         if not base_url.startswith("https://"):
             raise SourceConfigError("base_url must start with https://")
         self._base = base_url.rstrip("/")
@@ -102,6 +109,7 @@ class TavilyCrawlStrategy:
             raise SourceConfigError("base_url must not contain credentials")
         if not parts.hostname:
             raise SourceConfigError("base_url needs a host")
+        check_public_host(parts.hostname, allow_private=allow_private_hosts)
         self._host = parts.hostname
         self._port = parts.port or _HTTPS_PORT
         self._path = parts.path

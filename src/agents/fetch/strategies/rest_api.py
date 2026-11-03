@@ -33,6 +33,7 @@ from agents.fetch.errors import (
     SourceConfigError,
 )
 from agents.fetch.registry import Registry, UnknownNameError
+from agents.fetch.strategies._hosts import check_public_host
 from agents.fetch.strategies.base import STRATEGIES
 from config.settings import get_settings
 
@@ -124,6 +125,7 @@ class RestApiStrategy:
         *,
         mappers: Registry[RestMapper] | None = None,
         transport: httpx.BaseTransport | None = None,
+        allow_private_hosts: bool = False,
     ) -> None:
         if not base_url.startswith("https://"):
             raise SourceConfigError("base_url must start with https://")
@@ -133,6 +135,7 @@ class RestApiStrategy:
             raise SourceConfigError("base_url must not contain credentials")
         if not parts.hostname:
             raise SourceConfigError("base_url needs a host")
+        check_public_host(parts.hostname, allow_private=allow_private_hosts)
         self._host = parts.hostname
         self._port = parts.port or _HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers

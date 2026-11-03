@@ -96,7 +96,10 @@ class DocumentFetcherAgent:
             ) from exc
         strategy = self._strategies.get(source)
         if strategy is None:
-            strategy = self._strategies[source] = strategy_cls(source_cls.base_url)
+            extra: dict[str, bool] = (
+                {"allow_private_hosts": True} if source_cls.allow_private_hosts else {}
+            )
+            strategy = self._strategies[source] = strategy_cls(source_cls.base_url, **extra)
         return source_cls(strategy)
 
     def list_documents(self, source: str, flt: DocumentFilter) -> DocumentPage:

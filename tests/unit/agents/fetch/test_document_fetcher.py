@@ -235,3 +235,27 @@ def test_invalid_tenant_rejected(bad: object) -> None:
 def test_valid_tenant_boundary() -> None:
     doc = DocumentFetcherAgent().fetch_document("fake", REF, tenant_id="t" * 64)
     assert doc.tenant_id == "t" * 64
+
+
+class PrivateStrategy(FakeStrategy):
+    kwargs: ClassVar[list[dict[str, bool]]] = []
+
+    def __init__(self, base_url: str, **kwargs: bool) -> None:
+        super().__init__(base_url)
+        self.kwargs.append(kwargs)
+
+
+class PrivateSource(FakeSource):
+    name: ClassVar[str] = "priv"
+    allow_private_hosts: ClassVar[bool] = True
+
+
+def test_private_host_opt_in_forwarded(
+    monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
+) -> None:
+    strategies: Registry[type[FetchStrategy]] = Registry("strategies")
+    strategies.register("fake_strategy")(PrivateStrategy)
+    monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
+    registries.register("priv")(PrivateSource)
+    DocumentFetcherAgent().list_documents("priv", DocumentFilter())
+    assert PrivateStrategy.kwargs == [{"allow_private_hosts": True}]
