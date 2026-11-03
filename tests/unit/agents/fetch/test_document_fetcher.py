@@ -225,7 +225,7 @@ def test_close_skips_strategy_without_close() -> None:
     agent.close()
 
 
-@pytest.mark.parametrize("bad", ["", "x" * 65, "a\nb", "a\x7f", 5, b"t"])
+@pytest.mark.parametrize("bad", ["", "x" * 65, "a\nb", "a\x7f", "a b", "t\n", 5, b"t"])
 def test_invalid_tenant_rejected(bad: object) -> None:
     with pytest.raises(InvalidTenantError) as info:
         DocumentFetcherAgent().fetch_document("fake", REF, tenant_id=bad)  # type: ignore[arg-type]

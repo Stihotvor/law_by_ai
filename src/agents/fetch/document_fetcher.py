@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+import re
 import threading
 from types import TracebackType
 from typing import Protocol, Self
@@ -33,6 +34,8 @@ from agents.fetch.strategies.base import STRATEGIES, FetchStrategy
 _log = logging.getLogger(__name__)
 _warned_never_rejected = False
 
+_TENANT_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
 PARSE_ERRORS = (FormatError, OcrError)
 
 
@@ -51,18 +54,11 @@ def _check_source(source: str, ref: DocumentRef) -> None:
         raise ValueError(f"ref.source {ref.source!r} does not match source {source!r}")
 
 
-_MAX_TENANT_LEN = 64
-
-
 def _check_tenant(tenant_id: object) -> None:
     if tenant_id is None:
         return
-    if not isinstance(tenant_id, str):
-        raise InvalidTenantError("tenant_id must be a string")
-    if not tenant_id or len(tenant_id) > _MAX_TENANT_LEN:
-        raise InvalidTenantError(f"tenant_id must be 1 to {_MAX_TENANT_LEN} characters")
-    if any(ord(c) < 32 or ord(c) == 127 for c in tenant_id):
-        raise InvalidTenantError("tenant_id has control characters")
+    if not isinstance(tenant_id, str) or not _TENANT_RE.fullmatch(tenant_id):
+        raise InvalidTenantError("tenant_id must match [A-Za-z0-9_-]{1,64}")
 
 
 def _build(strategy_cls: type[FetchStrategy], source_cls: type[LegalSource]) -> FetchStrategy:
