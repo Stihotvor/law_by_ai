@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 from collections.abc import Callable, Iterator
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -92,7 +92,7 @@ def test_pages_sorted_and_joined() -> None:
 
 @pytest.mark.parametrize("index", [True, False])
 def test_bool_page_index_rejected(index: bool) -> None:
-    rec = Recorder(_ok(_page(index, "a")))  # type: ignore[arg-type]
+    rec = Recorder(_ok(_page(cast(Any, index), "a")))
     with pytest.raises(OcrProviderError):
         _provider(rec).ocr_pdf(b"x")
 
@@ -318,3 +318,10 @@ def test_no_leaks(caplog: pytest.LogCaptureFixture) -> None:
     for text in [*messages, logged, repr(_provider(Recorder(_ok())))]:
         for leaked in (KEY, b64, MARKER, "response body"):
             assert leaked not in text
+
+
+def test_deeply_nested_json_is_a_typed_error() -> None:
+    body = b"[" * 100000 + b"]" * 100000
+    rec = Recorder(httpx.Response(200, content=body))
+    with pytest.raises(OcrProviderError):
+        _provider(rec).ocr_pdf(b"x")

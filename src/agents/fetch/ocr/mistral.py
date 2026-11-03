@@ -31,7 +31,7 @@ def _data_url(media_type: str, data: bytes) -> str:
 def _extract_text(raw: bytes) -> str:
     try:
         payload = json.loads(raw)
-    except ValueError as exc:
+    except (ValueError, RecursionError) as exc:
         raise OcrProviderError("unexpected response shape") from exc
     pages = payload.get("pages") if isinstance(payload, dict) else None
     if not isinstance(pages, list):
