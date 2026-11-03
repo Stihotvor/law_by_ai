@@ -20,14 +20,16 @@ def _parse_meta(payload: Any, ref: DocumentRef) -> DocumentMeta:
     return DocumentMeta(ref=ref, title="t")
 
 
-def _make(**over: str) -> RestMapper:
-    args: dict[str, str] = {
-        "list_path": "/documents",
-        "meta_path": "/documents/{external_id}",
-        "content_path": "/documents/{external_id}/file",
-    }
-    args.update(over)
-    return RestMapper(**args, list_params=_params, parse_list=_parse_list, parse_meta=_parse_meta)
+def _make(over: dict[str, str] | None = None) -> RestMapper:
+    over = over or {}
+    return RestMapper(
+        list_path=over.get("list_path", "/documents"),
+        meta_path=over.get("meta_path", "/documents/{external_id}"),
+        content_path=over.get("content_path", "/documents/{external_id}/file"),
+        list_params=_params,
+        parse_list=_parse_list,
+        parse_meta=_parse_meta,
+    )
 
 
 def test_valid_mapper_builds() -> None:
@@ -47,7 +49,7 @@ def test_valid_mapper_builds() -> None:
 )
 def test_invalid_paths_rejected(over: dict[str, str]) -> None:
     with pytest.raises(SourceConfigError):
-        _make(**over)
+        _make(over)
 
 
 def _assign(obj: object, name: str, value: object) -> None:

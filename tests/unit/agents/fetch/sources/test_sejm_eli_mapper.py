@@ -68,16 +68,22 @@ def test_bad_cursor(cursor: str) -> None:
         _list_params(DocumentFilter(cursor=cursor))
 
 
+def _text_filter(field: str, value: str) -> DocumentFilter:
+    if field == "keyword":
+        return DocumentFilter(keyword=value)
+    return DocumentFilter(doc_type=value)
+
+
 @pytest.mark.parametrize("field", ["keyword", "doc_type"])
 @pytest.mark.parametrize("value", ["x" * 201, "a\nb", "a\x7fb"])
 def test_bad_text_filter(field: str, value: str) -> None:
     with pytest.raises(InvalidReferenceError):
-        _list_params(DocumentFilter(**{field: value}))
+        _list_params(_text_filter(field, value))
 
 
 @pytest.mark.parametrize("field", ["keyword", "doc_type"])
 def test_text_filter_boundary(field: str) -> None:
-    flt = DocumentFilter(**{field: "x" * 200})
+    flt = _text_filter(field, "x" * 200)
     assert "x" * 200 in _list_params(flt).values()
 
 

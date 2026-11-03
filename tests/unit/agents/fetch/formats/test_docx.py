@@ -420,8 +420,11 @@ def test_unsupported_zip_compression_is_corrupt(
         raise NotImplementedError("compression type 99")
 
     monkeypatch.setattr(zipfile.ZipFile, "infolist", boom)
+    def build(d: DocumentType) -> None:
+        d.add_paragraph("x")
+
     with pytest.raises(CorruptDocumentError):
-        DocxParser().parse(_docx(lambda d: d.add_paragraph("x")))
+        DocxParser().parse(_docx(build))
 
 
 def test_huge_grid_span_is_not_expanded() -> None:
