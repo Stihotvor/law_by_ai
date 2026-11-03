@@ -66,7 +66,9 @@ def _check_tenant(tenant_id: object) -> None:
 
 def _build(strategy_cls: type[FetchStrategy], source_cls: type[LegalSource]) -> FetchStrategy:
     accepts = "allow_private_hosts" in inspect.signature(strategy_cls).parameters
-    if source_cls.allow_private_hosts and accepts:
+    if source_cls.allow_private_hosts:
+        if not accepts:
+            raise SourceConfigError("strategy does not support allow_private_hosts")
         return cast(Any, strategy_cls)(source_cls.base_url, allow_private_hosts=True)
     return strategy_cls(source_cls.base_url)
 

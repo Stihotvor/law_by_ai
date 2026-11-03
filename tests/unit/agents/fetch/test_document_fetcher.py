@@ -291,12 +291,13 @@ def test_close_closes_all_then_raises_first_error(
     assert ClosableStrategy.closed == 1
 
 
-def test_flag_not_passed_to_strategy_without_keyword(
+def test_flag_without_strategy_keyword_is_a_config_error(
     registries: Registry[type[LegalSource]],
 ) -> None:
     registries.register("priv")(PrivateSource)
-    DocumentFetcherAgent().list_documents("priv", DocumentFilter())
-    assert FakeStrategy.built_with == ["https://fake.example"]
+    with pytest.raises(SourceConfigError, match="allow_private_hosts"):
+        DocumentFetcherAgent().list_documents("priv", DocumentFilter())
+    assert FakeStrategy.built_with == []
 
 
 def test_rejection_message_escapes_and_cuts_id() -> None:
