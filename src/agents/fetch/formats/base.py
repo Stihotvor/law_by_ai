@@ -21,7 +21,7 @@ class UnsupportedFormatError(FormatError):
 
 
 class TextLimitError(FormatError):
-    """Extracted text exceeds MAX_TEXT_CHARS."""
+    """A text or structural limit (size, pages, entries, ratio, depth) was exceeded."""
 
 
 @runtime_checkable
