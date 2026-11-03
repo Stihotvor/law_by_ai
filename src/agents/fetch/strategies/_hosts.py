@@ -10,14 +10,24 @@ _getaddrinfo = socket.getaddrinfo  # patchable resolver for tests
 
 
 def parse_base_url(base_url: str) -> SplitResult:
-    """Return the parsed URL, or raise if it is not https, has credentials or no host."""
+    """Return the parsed URL, or raise if it is not a plain https URL with a host.
+
+    Rejects other schemes, malformed ports, credentials, a missing host, and a
+    query or fragment.
+    """
     if not base_url.startswith("https://"):
         raise SourceConfigError("base_url must start with https://")
-    parts = urlsplit(base_url.rstrip("/"))
+    try:
+        parts = urlsplit(base_url.rstrip("/"))
+        _ = parts.port
+    except ValueError:
+        raise SourceConfigError("base_url is not a valid URL") from None
     if parts.username is not None or parts.password is not None or "@" in parts.netloc:
         raise SourceConfigError("base_url must not contain credentials")
     if not parts.hostname:
         raise SourceConfigError("base_url needs a host")
+    if parts.query or parts.fragment:
+        raise SourceConfigError("base_url must not have a query or fragment")
     return parts
 
 

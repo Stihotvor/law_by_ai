@@ -61,7 +61,7 @@ class RestApiStrategy:
         parts = parse_base_url(base_url)
         self._base = base_url.rstrip("/")
         self._allow_private = allow_private_hosts
-        self._host = str(parts.hostname)
+        self._host = httpx.URL(self._base).host
         self._port = parts.port or _HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers
         self._transport = transport
@@ -163,7 +163,7 @@ class RestApiStrategy:
         try:
             with self._client().stream("GET", self._base + path, params=params) as response:
                 return self._consume(response, label, limit, deadline)
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, httpx.InvalidURL) as exc:
             raise FetchTransportError(f"{label}: {type(exc).__name__}") from exc
 
     @staticmethod

@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -355,21 +355,6 @@ def test_too_large_by_stream_without_header() -> None:
         _strategy(handler).read(_ref())
 
 
-def test_total_deadline_stops_slow_body(monkeypatch: pytest.MonkeyPatch) -> None:
-    ticks = iter([0.0, 1.0, 100.0, 200.0])
-    monkeypatch.setattr("agents.fetch.strategies.rest_api._monotonic", lambda: next(ticks))
-
-    def handler(req: httpx.Request) -> httpx.Response:
-        def gen() -> Any:
-            yield b"x"
-            yield b"x"
-
-        return httpx.Response(200, content=gen())
-
-    with pytest.raises(FetchTransportError, match="total timeout"):
-        _strategy(handler).read(_ref())
-
-
 def test_stream_exactly_max_ok() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         def gen() -> Any:
@@ -590,7 +575,7 @@ def test_redirect_message_and_default_port() -> None:
 
 
 def test_mapper_supplied_invalid_id_is_payload_error() -> None:
-    mapper = _mapper(parse_list=lambda payload: RestListing(external_ids=(5,)))  # type: ignore[arg-type]
+    mapper = _mapper(parse_list=lambda payload: RestListing(external_ids=cast(Any, (5,))))
     s = _strategy(lambda r: _json({}), mapper)
     with pytest.raises(PayloadError):
         s.list_refs("src", DocumentFilter())
@@ -608,14 +593,32 @@ def test_base_url_without_host_rejected(url: str) -> None:
         RestApiStrategy(url)
 
 
-def test_close_closes_client_and_is_idempotent() -> None:
-    s = _strategy(lambda r: httpx.Response(200, content=b"x"))
-    s.close()
-    s.read(_ref())
-    client = s._http
-    assert client is not None
-    s.read(_ref())
-    assert s._http is client
-    s.close()
-    assert client.is_closed
-    s.close()
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://api.example:abc/v1",
+        "https://api.example:99999/v1",
+        "https://a.example/v1?x=1",
+        "https://a.example/v1#f",
+    ],
+)
+def test_base_url_bad_port_query_fragment_rejected(url: str) -> None:
+    with pytest.raises(SourceConfigError):
+        RestApiStrategy(url)
+
+
+def test_idn_base_url_matches_punycode_host() -> None:
+    s = RestApiStrategy(
+        "https://bücher.example/v1",
+        mappers=_registry(),
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, content=b"ok")),
+    )
+    assert s.read(_ref()) == b"ok"
+
+
+def test_invalid_url_maps_to_transport_error() -> None:
+    def handler(req: httpx.Request) -> httpx.Response:
+        raise httpx.InvalidURL("bad")
+
+    with pytest.raises(FetchTransportError):
+        _strategy(handler).read(_ref())

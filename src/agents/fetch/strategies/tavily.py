@@ -2,23 +2,30 @@
 
 The strategy discovers pages with Tavily ``map`` and reads one page with Tavily
 ``extract``. It does not call ``crawl``. A crawl result is not cached between
-``list_refs`` and ``read``. ``crawl`` would pay for page content in the list step
-and again in the read step. ``map`` (URLs only, 1 credit per 10 pages) plus ``extract`` (1 credit
+``list_refs`` and ``read``. ``crawl`` would pay for page content in the list step and again in the
+read step. ``map`` (URLs only, 1 credit per 10 pages) plus ``extract`` (1 credit
 per 5 pages, only for pages that are read) costs less. The name keeps the
 "Tavily crawl" wording of the design.
 
 Every ``list_refs`` call runs ``map`` again and costs credits, also for later
-pages of the same listing. ``TAVILY_MAX_PAGES`` caps what one call can see.
+pages of the same listing. ``TAVILY_MAX_PAGES`` caps what one call
+can see. The order of the pages is not stable between calls, so paging can skip
+or repeat a page, and the cursor offset never exceeds ``TAVILY_MAX_PAGES``.
+
+Each SDK call runs in a worker thread so the whole call is bounded by
+``TAVILY_TIMEOUT``. The SDK only has a per-socket timeout, and the worker thread
+ends when that socket times out.
 
 ``read`` returns Tavily's plain text extraction of a web page. It is not the
 original bytes of the page.
 """
 
 import re
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
-import requests
 from tavily import TavilyClient
 from tavily.errors import (
     BadRequestError,
@@ -27,7 +34,6 @@ from tavily.errors import (
     MissingAPIKeyError,
     UsageLimitExceededError,
 )
-from tavily.errors import TimeoutError as TavilyTimeoutError
 
 from agents.fetch.contracts import DocumentFilter, DocumentMeta, DocumentPage, DocumentRef
 from agents.fetch.errors import (
@@ -49,6 +55,7 @@ _MAP_BREADTH = 20
 _MAP_TIMEOUT = (10.0, 150.0)
 _EXTRACT_TIMEOUT = (1.0, 60.0)
 _CURSOR = re.compile(r"[0-9]{1,9}")
+_ENCODED = re.compile(r"%(2e|2f|5c)", re.IGNORECASE)
 _STATUS_ERRORS: tuple[tuple[type[Exception], int], ...] = (
     (UsageLimitExceededError, 429),
     (ForbiddenError, 403),
@@ -81,7 +88,8 @@ def _bad_id(external_id: str) -> bool:
         not external_id
         or external_id.startswith("/")
         or any(seg in {"", ".", ".."} for seg in segments)
-        or any(c in external_id for c in ("\\", "#"))
+        or any(c in external_id for c in ("\\", "#", "?"))
+        or _ENCODED.search(external_id) is not None
         or "://" in external_id
     )
 
@@ -93,12 +101,7 @@ def _check_id(external_id: str) -> None:
 
 @STRATEGIES.register("tavily")
 class TavilyCrawlStrategy:
-    def __init__(
-        self,
-        base_url: str,
-        *,
-        client: TavilyClient | None = None,
-    ) -> None:
+    def __init__(self, base_url: str, *, client: TavilyClient | None = None) -> None:
         parts = parse_base_url(base_url)
         self._base = base_url.rstrip("/")
         self._host = str(parts.hostname)
@@ -143,7 +146,7 @@ class TavilyCrawlStrategy:
 
     def get_meta(self, ref: DocumentRef) -> DocumentMeta:
         _check_id(ref.external_id)
-        segments = [s for s in ref.external_id.split("?")[0].split("/") if s]
+        segments = [s for s in ref.external_id.split("/") if s]
         title = unquote(segments[-1]) if segments else ref.external_id
         return DocumentMeta(
             ref=ref,
@@ -164,7 +167,7 @@ class TavilyCrawlStrategy:
             format="text",
             timeout=_clamp(get_settings().tavily_timeout, _EXTRACT_TIMEOUT),
         )
-        data = self._content(body)
+        data = self._content(body, ref.external_id)
         if len(data) > get_settings().fetch_max_bytes:
             raise ResponseTooLargeError("extracted text is larger than the size limit")
         return data
@@ -173,25 +176,22 @@ class TavilyCrawlStrategy:
     def _offset(cursor: str | None) -> int:
         if cursor is None:
             return 0
-        if not _CURSOR.fullmatch(cursor):
+        if not _CURSOR.fullmatch(cursor) or int(cursor) > get_settings().tavily_max_pages:
             raise InvalidReferenceError("invalid cursor")
         return int(cursor)
 
     def _call(self, method: str, **kwargs: Any) -> Any:
         client, owned = self._open()
+        pool = ThreadPoolExecutor(max_workers=1)
         try:
-            return getattr(client, method)(**kwargs)
-        except (
-            FetchError,
-            InvalidAPIKeyError,
-            UsageLimitExceededError,
-            ForbiddenError,
-            BadRequestError,
-            TavilyTimeoutError,
-            requests.exceptions.RequestException,
-        ) as exc:
+            future = pool.submit(getattr(client, method), **kwargs)
+            return future.result(timeout=get_settings().tavily_timeout)
+        except FuturesTimeoutError as exc:
+            raise FetchTransportError("tavily: total timeout") from exc
+        except Exception as exc:
             raise _translate(exc) from exc
         finally:
+            pool.shutdown(wait=False, cancel_futures=True)
             if owned:
                 client.close()
 
@@ -199,7 +199,7 @@ class TavilyCrawlStrategy:
         if not isinstance(body, dict) or not isinstance(body.get("results"), list):
             raise PayloadError("tavily map: unexpected response")
         found: set[str] = set()
-        for item in body["results"]:
+        for item in body["results"][: get_settings().tavily_max_pages]:
             eid = self._relative(item) if isinstance(item, str) else None
             if eid is not None:
                 found.add(eid)
@@ -226,8 +226,7 @@ class TavilyCrawlStrategy:
         eid = url[len(self._base) + 1 :]
         return None if _bad_id(eid) else eid
 
-    @staticmethod
-    def _content(body: Any) -> bytes:
+    def _content(self, body: Any, eid: str) -> bytes:
         if not isinstance(body, dict):
             raise PayloadError("tavily extract: unexpected response")
         results = body.get("results")
@@ -241,4 +240,8 @@ class TavilyCrawlStrategy:
         text = first.get("raw_content") if len(results) == 1 and isinstance(first, dict) else None
         if not isinstance(text, str) or not text:
             raise PayloadError("tavily extract: unexpected result")
+        if "url" in first and (
+            not isinstance(first["url"], str) or self._relative(first["url"]) != eid
+        ):
+            raise PayloadError("tavily extract: result is for another url")
         return text.encode("utf-8")

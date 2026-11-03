@@ -1,15 +1,13 @@
 """Document fetcher agent: resolves a source and fetches raw documents."""
 
+import importlib
 import inspect
 import logging
 import re
 import threading
 from types import TracebackType
-from typing import Protocol, Self
+from typing import Any, Protocol, Self, cast
 
-import agents.fetch.formats
-import agents.fetch.sources
-import agents.fetch.strategies  # noqa: F401  (triggers autoload)
 from agents.fetch.contracts import (
     DocumentFilter,
     DocumentMeta,
@@ -25,6 +23,7 @@ from agents.fetch.errors import (
 )
 from agents.fetch.formats.base import FormatError, charset_of, find_parser
 from agents.fetch.formats.pdf import NoTextLayerError, PdfParser
+from agents.fetch.formats.text import finish_ocr_text
 from agents.fetch.ocr.errors import OcrError
 from agents.fetch.ocr.manager import get_ocr_manager
 from agents.fetch.registry import UnknownNameError
@@ -37,6 +36,9 @@ _warned_never_rejected = False
 _TENANT_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
 PARSE_ERRORS = (FormatError, OcrError)
+
+for _package in ("agents.fetch.sources", "agents.fetch.strategies", "agents.fetch.formats"):
+    importlib.import_module(_package)  # triggers autoload
 
 
 class RejectionChecker(Protocol):
@@ -64,7 +66,7 @@ def _check_tenant(tenant_id: object) -> None:
 def _build(strategy_cls: type[FetchStrategy], source_cls: type[LegalSource]) -> FetchStrategy:
     accepts = "allow_private_hosts" in inspect.signature(strategy_cls).parameters
     if source_cls.allow_private_hosts and accepts:
-        return strategy_cls(source_cls.base_url, allow_private_hosts=True)  # type: ignore[call-arg]
+        return cast(Any, strategy_cls)(source_cls.base_url, allow_private_hosts=True)
     return strategy_cls(source_cls.base_url)
 
 
@@ -150,4 +152,4 @@ class DocumentFetcherAgent:
         except NoTextLayerError:
             if not isinstance(parser, PdfParser):
                 raise
-            return get_ocr_manager().read_pdf(doc_bytes)
+            return finish_ocr_text(get_ocr_manager().read_pdf(doc_bytes))

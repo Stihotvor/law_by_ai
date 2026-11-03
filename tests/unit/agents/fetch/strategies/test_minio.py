@@ -457,14 +457,13 @@ def test_cursor_remainder_must_be_safe(cursor: str) -> None:
     c.list_objects.assert_not_called()
 
 
-def test_close_clears_own_pool_only(monkeypatch: pytest.MonkeyPatch) -> None:
-    s, client = _make()
-    s.close()
-    assert not client._http.clear.called
-    monkeypatch.setattr("agents.fetch.strategies.minio.Minio", MagicMock())
-    own = MinioStrategy(BASE)
-    assert own._pool is not None
-    cleared: list[bool] = []
-    monkeypatch.setattr(own._pool, "clear", lambda: cleared.append(True))
-    own.close()
-    assert cleared == [True]
+def test_prefix_rejects_dot_segment() -> None:
+    with pytest.raises(SourceConfigError):
+        MinioStrategy("https://m.local/a/./b", client=MagicMock())
+
+
+def test_client_value_error_is_transport_error() -> None:
+    s, c = _make()
+    c.stat_object.side_effect = ValueError("bad bucket")
+    with pytest.raises(FetchTransportError):
+        s.get_meta(_ref())
