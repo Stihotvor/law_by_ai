@@ -1,7 +1,7 @@
 {
   "checks": [
-    { "name": "lint", "tool": "ruff", "cmd": ["ruff", "check", "src", "tests", "migrations"] },
-    { "name": "format", "tool": "ruff", "cmd": ["ruff", "format", "--check", "src", "tests", "migrations"] },
+    { "name": "lint", "tool": "ruff", "cmd": ["ruff", "check", "src", "tests", "migrations", "scripts"] },
+    { "name": "format", "tool": "ruff", "cmd": ["ruff", "format", "--check", "src", "tests", "migrations", "scripts"] },
     { "name": "types", "tool": "pyright", "cmd": ["pyright", "--pythonpath", ".venv/bin/python"] },
     { "name": "security", "tool": "bandit", "cmd": ["bandit", "-q", "-r", "src/", "-c", "pyproject.toml"] },
     { "name": "tests", "tool": "pytest", "module": "pytest_cov",
