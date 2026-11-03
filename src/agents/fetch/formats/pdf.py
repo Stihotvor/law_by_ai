@@ -6,19 +6,17 @@ from typing import ClassVar
 
 from pypdf import PasswordType, PdfReader
 
+from agents.fetch.formats import base
 from agents.fetch.formats._safety import (
     MAX_PDF_PAGES,
-    MAX_TEXT_CHARS,
     CorruptDocumentError,
-    DocumentLimitError,
     EncryptedDocumentError,
     NoTextLayerError,
 )
-from agents.fetch.formats.base import FORMATS, FormatError
+from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError
 
 __all__ = [
     "CorruptDocumentError",
-    "DocumentLimitError",
     "EncryptedDocumentError",
     "NoTextLayerError",
     "PdfParser",
@@ -51,14 +49,14 @@ def _decrypt(reader: PdfReader) -> None:
 
 def _page_texts(reader: PdfReader) -> list[str]:
     if len(reader.pages) > MAX_PDF_PAGES:
-        raise DocumentLimitError("pdf has too many pages")
+        raise TextLimitError("pdf has too many pages")
     total = 0
     texts: list[str] = []
     for page in reader.pages:
         raw = page.extract_text()
         total += len(raw)
-        if total > MAX_TEXT_CHARS:
-            raise DocumentLimitError("pdf text is too large")
+        if total > base.MAX_TEXT_CHARS:
+            raise TextLimitError("pdf text is too large")
         texts.append(raw)
     return texts
 

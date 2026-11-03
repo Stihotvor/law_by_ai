@@ -14,11 +14,11 @@ from pypdf.generic import (
     NameObject,
 )
 
+from agents.fetch.formats import base as base_module
 from agents.fetch.formats import pdf as pdf_module
-from agents.fetch.formats.base import FormatError, find_parser, parse_bytes
+from agents.fetch.formats.base import FormatError, TextLimitError, find_parser, parse_bytes
 from agents.fetch.formats.pdf import (
     CorruptDocumentError,
-    DocumentLimitError,
     EncryptedDocumentError,
     NoTextLayerError,
     PdfParser,
@@ -122,7 +122,7 @@ def test_decrypt_exception_is_encrypted_error(monkeypatch: pytest.MonkeyPatch) -
 
 def test_page_limit(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pdf_module, "MAX_PDF_PAGES", 2)
-    with pytest.raises(DocumentLimitError) as info:
+    with pytest.raises(TextLimitError) as info:
         PdfParser().parse(_pdf(["a", "b", "c"]))
     assert str(info.value) == "pdf has too many pages"
     assert PdfParser().parse(_pdf(["a", "b"])) == "a\n\nb"
@@ -135,21 +135,21 @@ def test_page_limit_checked_before_extraction(monkeypatch: pytest.MonkeyPatch) -
     data = _pdf(["a", "b", "c"])
     monkeypatch.setattr(pdf_module, "MAX_PDF_PAGES", 2)
     monkeypatch.setattr(pypdf.PageObject, "extract_text", fail)
-    with pytest.raises(DocumentLimitError):
+    with pytest.raises(TextLimitError):
         PdfParser().parse(data)
 
 
 def test_text_limit(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(pdf_module, "MAX_TEXT_CHARS", 10)
-    with pytest.raises(DocumentLimitError) as info:
+    monkeypatch.setattr(base_module, "MAX_TEXT_CHARS", 10)
+    with pytest.raises(TextLimitError) as info:
         PdfParser().parse(_pdf(["x" * 20]))
     assert str(info.value) == "pdf text is too large"
     assert PdfParser().parse(_pdf(["x" * 10])) == "x" * 10
 
 
 def test_text_limit_is_cumulative(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(pdf_module, "MAX_TEXT_CHARS", 10)
-    with pytest.raises(DocumentLimitError):
+    monkeypatch.setattr(base_module, "MAX_TEXT_CHARS", 10)
+    with pytest.raises(TextLimitError):
         PdfParser().parse(_pdf(["x" * 6, "y" * 6]))
 
 

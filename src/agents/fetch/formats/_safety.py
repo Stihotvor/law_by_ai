@@ -3,7 +3,6 @@
 from agents.fetch.formats.base import FormatError
 
 MAX_PDF_PAGES = 1000
-MAX_TEXT_CHARS = 5_000_000  # output cap, pdf and docx
 MAX_ZIP_ENTRIES = 1000
 MAX_UNCOMPRESSED_BYTES = 64 * 1024 * 1024  # sum of declared entry sizes
 MAX_COMPRESSION_RATIO = 200  # per entry, only when entry size > RATIO_MIN_BYTES
@@ -17,10 +16,6 @@ class CorruptDocumentError(FormatError):
 
 class EncryptedDocumentError(FormatError):
     """Document is encrypted and cannot be opened."""
-
-
-class DocumentLimitError(FormatError):
-    """Document exceeds a safety limit."""
 
 
 class NoTextLayerError(FormatError):
