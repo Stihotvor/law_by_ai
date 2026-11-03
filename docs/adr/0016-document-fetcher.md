@@ -16,19 +16,24 @@ a format. ADR-0014 deprecated the plugin system, so the design must not bring
 it back. The project has one maintainer. The design must stay small, typed, and
 easy to review.
 
-OCR raises a privacy question. A scanned document has no text layer. A
-hosted OCR service reads the document content. That content then leaves the
+The fetcher downloads data from remote hosts. A source URL can point to an
+internal host. A remote host can send a very large or very slow body. The
+design must limit these risks.
+
+OCR raises a privacy question. A scanned document has no text layer. A hosted
+OCR service reads the document content. That content then leaves the
 self-hosted deployment.
 
 ## Decision
 
 1. **Strategy pattern for transport.** A `FetchStrategy` Protocol defines the
    transport: list references, read metadata, read bytes. Three strategies
-   implement it: REST API, Tavily, and MinIO bucket. A Protocol fits
-   because the strategies share no state.
+   implement it: REST API, Tavily, and MinIO bucket. A Protocol fits because
+   the strategies share no state.
 2. **One hardcoded class per legal source.** Each source class declares its
-   `name`, its `base_url` (HTTPS only), and its `strategy_name` in code. The
-   class returns raw bytes. It does not parse them.
+   `name`, its `base_url`, and its `strategy_name` in code. The `base_url` must
+   use HTTPS and must not contain credentials. The class returns raw bytes. It
+   does not parse them.
 3. **Decorator registry.** A generic `Registry[T]` lives in a module that
    imports nothing from the project. A source registers itself with
    `@SOURCES.register("name")`. A strategy does the same with `STRATEGIES`. A
@@ -43,15 +48,15 @@ self-hosted deployment.
    decorators run. The loader skips `base` and names that start with `_`. It
    fails if a module does not register its own file name.
 6. **Format parsers.** Parsers for each file format register in the same way.
-   They follow in a later change. They turn raw bytes into text.
+   They turn raw bytes into text. They enforce limits on page count, archive
+   size, compression ratio, nesting depth, and text length.
 7. **OCR through `OcrManager`.** All OCR goes through one `OcrManager`. It has
    one provider: Mistral Document AI. OCR is **off by default**. When OCR is
    off, an image or a scanned input raises a typed `OcrDisabledError`. It is an
    error, not a result. The system parses nothing locally, and nothing leaves
-   the host. The `ocr/` package is a leaf package: it imports nothing from the
-   other fetcher packages. A later ADR may add
-   another provider (a local model or a gateway) without a change in the
-   callers.
+   the host. The `ocr/` package is a leaf package. It imports nothing from the
+   other fetcher packages. A later ADR may add another provider (a local model
+   or a gateway) without a change in the callers.
 8. **No local folder strategy.** The fetcher does not read paths from the local
    file system.
 9. **REST mapping.** A source registers a small mapper in a `REST_MAPPERS`
@@ -63,6 +68,21 @@ self-hosted deployment.
 11. **MinIO and `base_url`.** MinIO ignores the `https://` rule on `base_url`.
     The endpoint, the bucket, and the credentials come from `Settings`. Only the
     path of `base_url` is the key prefix.
+12. **Agent lifecycle.** The agent keeps one strategy for each source. It has a
+    `close()` method, and it works as a context manager. The caller uses
+    `close()` to release the strategies.
+13. **Tenant id.** The agent validates `tenant_id` against
+    `[A-Za-z0-9_-]{1,64}`. It rejects any other value.
+14. **Network safety.** The REST strategy resolves the host at request time.
+    This applies to the first URL and to every redirect. It rejects the request
+    unless all resolved addresses are global. Loopback, link-local, and private
+    addresses fail this check. A source can opt out with `allow_private_hosts`.
+    The connection is not pinned to the checked address. A DNS rebinding window
+    remains. The project accepts this risk.
+15. **Size and time limits.** `FETCH_MAX_BYTES` limits the size of a fetched
+    body for every strategy. A larger body raises `ResponseTooLargeError`.
+    `FETCH_TOTAL_TIMEOUT` is a total deadline for reading a body. A slow body
+    stops when the deadline ends. `OCR_MAX_BYTES` limits the input size for OCR.
 
 ## Privacy consequence
 
@@ -102,6 +122,10 @@ plugin system that ADR-0014 deprecated.
 - OCR is limited to one provider at first. Users who turn it off cannot read
   scanned documents.
 - Tavily has a cost and a rate limit. The page cap limits the cost per call.
+- The DNS rebinding window stays open until the connection is pinned to the
+  checked address.
+- A source that opts out of the address check removes the protection for that
+  source. A reviewer must approve each opt-out.
 - Open point: the Tavily daily credit budget.
 - Open point: the retention rule for rejected documents.
 - Open point: the review of the Mistral data-retention terms.
@@ -120,3 +144,6 @@ plugin system that ADR-0014 deprecated.
   are simple, and tests can use a private `Registry`.
 - **Inheritance for strategies** - rejected. The strategies share no state, so
   a Protocol is enough.
+- **Pin the connection to the checked address** - not done now. It closes the
+  DNS rebinding window, but it adds transport code that the project must
+  maintain.
