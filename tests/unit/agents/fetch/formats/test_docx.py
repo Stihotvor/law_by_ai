@@ -420,6 +420,7 @@ def test_unsupported_zip_compression_is_corrupt(
         raise NotImplementedError("compression type 99")
 
     monkeypatch.setattr(zipfile.ZipFile, "infolist", boom)
+
     def build(d: DocumentType) -> None:
         d.add_paragraph("x")
 
