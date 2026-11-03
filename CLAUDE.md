@@ -48,3 +48,5 @@ The MVP planning date is 2027-02-28. Rerank is local (Cohere dropped), and an ev
 ## Working rules for this repo
 - Git remote operations (clone, push, `gh`) go through the `git-agent` subagent. A hook blocks `.env` access and pipes in Bash.
 - Quality gate before a task is done: ruff check, ruff format --check, pyright, pytest.
+- Coverage commands and gates: see the "Coverage and mutation gates" section of CONTRIBUTING.md.
+- Mutation testing (non-blocking, runs in CI only, not in pre-commit): see the same CONTRIBUTING.md section.

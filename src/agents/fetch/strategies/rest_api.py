@@ -126,13 +126,19 @@ class RestApiStrategy:
         if not base_url.startswith("https://"):
             raise SourceConfigError("base_url must start with https://")
         self._base = base_url.rstrip("/")
-        parts = urlsplit(self._base)
+        try:
+            parts = urlsplit(self._base)
+            port = parts.port
+        except ValueError:
+            raise SourceConfigError("base_url is not a valid URL") from None
         if parts.username is not None or parts.password is not None or "@" in parts.netloc:
             raise SourceConfigError("base_url must not contain credentials")
         if not parts.hostname:
             raise SourceConfigError("base_url needs a host")
-        self._host = parts.hostname
-        self._port = parts.port or _HTTPS_PORT
+        if parts.query or parts.fragment:
+            raise SourceConfigError("base_url must not have a query or fragment")
+        self._host = httpx.URL(self._base).host
+        self._port = port or _HTTPS_PORT
         self._mappers = REST_MAPPERS if mappers is None else mappers
         self._transport = transport
 
@@ -219,7 +225,7 @@ class RestApiStrategy:
                 client.stream("GET", self._base + path, params=params) as response,
             ):
                 return self._consume(response, label, limit)
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, httpx.InvalidURL) as exc:
             raise FetchTransportError(f"{label}: {type(exc).__name__}") from exc
 
     @staticmethod

@@ -3,11 +3,12 @@ import socket
 import time
 import zlib
 from io import BytesIO
-from typing import Any
+from typing import Any, cast
 
 import pypdf
 import pytest
 from pypdf import PasswordType, PdfWriter
+from pypdf.errors import DependencyError
 from pypdf.generic import (
     DecodedStreamObject,
     DictionaryObject,
@@ -39,7 +40,7 @@ def _pdf(texts: list[str], **encrypt_kw: Any) -> bytes:
             NameObject("/Encoding"): NameObject("/WinAnsiEncoding"),
         }
     )
-    font_ref = writer._add_object(font)  # pyright: ignore[reportPrivateUsage]
+    font_ref = cast(Any, writer)._add_object(font)
     for text in texts:
         page = writer.add_blank_page(width=612, height=792)
         page[NameObject("/Resources")] = DictionaryObject(
@@ -48,7 +49,7 @@ def _pdf(texts: list[str], **encrypt_kw: Any) -> bytes:
         stream = DecodedStreamObject()
         if text:
             stream.set_data(f"BT /F1 12 Tf 72 700 Td ({_escape(text)}) Tj ET".encode())
-        page[NameObject("/Contents")] = writer._add_object(stream)  # pyright: ignore[reportPrivateUsage]
+        page[NameObject("/Contents")] = cast(Any, writer)._add_object(stream)
     if encrypt_kw:
         writer.encrypt(**encrypt_kw)
     out = BytesIO()
@@ -120,6 +121,20 @@ def test_decrypt_exception_is_encrypted_error(monkeypatch: pytest.MonkeyPatch) -
     assert str(info.value) == "pdf is encrypted"
 
 
+def test_missing_crypto_dependency_has_accurate_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def boom(self: object, password: str) -> None:
+        raise DependencyError("cryptography missing")
+
+    monkeypatch.setattr(pypdf.PdfReader, "decrypt", boom)
+    data = _pdf(["x"], user_password="pw", algorithm="RC4-128")
+    with pytest.raises(EncryptedDocumentError) as info:
+        PdfParser().parse(data)
+    assert isinstance(info.value.__cause__, DependencyError)
+    assert str(info.value) == "pdf is encrypted and decryption support is missing"
+
+
 def test_page_limit(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pdf_module, "MAX_PDF_PAGES", 2)
     with pytest.raises(TextLimitError) as info:
@@ -158,9 +173,9 @@ def test_flate_bomb() -> None:
     page = writer.add_blank_page(width=612, height=792)
     stream = DecodedStreamObject()
     stream.set_data(b"")
-    stream._data = zlib.compress(bytes(100 * 1024 * 1024))  # pyright: ignore[reportPrivateUsage]
+    cast(Any, stream)._data = zlib.compress(bytes(100 * 1024 * 1024))
     stream[NameObject("/Filter")] = NameObject("/FlateDecode")
-    page[NameObject("/Contents")] = writer._add_object(stream)  # pyright: ignore[reportPrivateUsage]
+    page[NameObject("/Contents")] = cast(Any, writer)._add_object(stream)
     out = BytesIO()
     writer.write(out)
     with pytest.raises(FormatError):
@@ -170,15 +185,15 @@ def test_flate_bomb() -> None:
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
-        ("a\x00b\x07c\x7f", "abc"),
+        ("a\x00b\x07c\x7f", "ab c\x7f"),
         ("a\r\nb\rc", "a\nb\nc"),
         ("a  \nb \t\n", "a\nb"),
         ("  x  ", "x"),
-        ("a\tb\x0bc\x1fd", "a\tbcd"),
+        ("a\tb\x0bc\x1fd", "a\tb c d"),
     ],
 )
 def test_clean(raw: str, expected: str) -> None:
-    assert pdf_module._clean(raw) == expected  # pyright: ignore[reportPrivateUsage]
+    assert cast(Any, pdf_module)._clean(raw) == expected
 
 
 def test_control_characters_removed_end_to_end(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -225,10 +240,15 @@ def test_damaged_but_recoverable_pdf_is_read_leniently() -> None:
 
 def test_clean_long_space_run_is_linear() -> None:
     start = time.monotonic()
-    assert pdf_module._clean(" " * 300_000 + "x") == "x"  # pyright: ignore[reportPrivateUsage]
+    assert cast(Any, pdf_module)._clean(" " * 300_000 + "x") == "x"
     assert time.monotonic() - start < 2
 
 
 def test_clean_strips_trailing_spaces_only() -> None:
-    cleaned = pdf_module._clean("a  \nb\t \nc \t\n d   ")  # pyright: ignore[reportPrivateUsage]
+    cleaned = cast(Any, pdf_module)._clean("a  \nb\t \nc \t\n d   ")
     assert cleaned == "a\nb\t\nc \t\n d"
+
+
+def test_nul_and_controls_become_clean_text(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(pypdf.PageObject, "extract_text", lambda self, *a, **k: "a\x00b\x01c\x1fd")
+    assert PdfParser().parse(_pdf(["x"])) == "ab c d"

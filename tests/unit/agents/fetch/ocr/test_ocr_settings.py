@@ -58,3 +58,14 @@ def test_enabled_truthy(clean: pytest.MonkeyPatch, value: str) -> None:
 def test_enabled_falsy(clean: pytest.MonkeyPatch, value: str) -> None:
     clean.setenv("OCR_ENABLED", value)
     assert Settings().ocr_enabled is False
+
+
+@pytest.mark.parametrize("name", ["OCR_TIMEOUT", "OCR_MAX_BYTES"])
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "inf", "abc"])
+def test_numeric_settings_reject_bad_values(
+    clean: pytest.MonkeyPatch, name: str, value: str
+) -> None:
+    clean.setenv(name, value)
+    attr = name.lower()
+    with pytest.raises(ValueError, match=name):
+        getattr(Settings(), attr)

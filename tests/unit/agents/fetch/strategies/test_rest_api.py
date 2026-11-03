@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -575,7 +575,7 @@ def test_redirect_message_and_default_port() -> None:
 
 
 def test_mapper_supplied_invalid_id_is_payload_error() -> None:
-    mapper = _mapper(parse_list=lambda payload: RestListing(external_ids=(5,)))  # type: ignore[arg-type]
+    mapper = _mapper(parse_list=lambda payload: RestListing(external_ids=cast(Any, (5,))))
     s = _strategy(lambda r: _json({}), mapper)
     with pytest.raises(PayloadError):
         s.list_refs("src", DocumentFilter())
@@ -591,3 +591,34 @@ def test_base_url_userinfo_rejected(url: str) -> None:
 def test_base_url_without_host_rejected(url: str) -> None:
     with pytest.raises(SourceConfigError):
         RestApiStrategy(url)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://api.example:abc/v1",
+        "https://api.example:99999/v1",
+        "https://a.example/v1?x=1",
+        "https://a.example/v1#f",
+    ],
+)
+def test_base_url_bad_port_query_fragment_rejected(url: str) -> None:
+    with pytest.raises(SourceConfigError):
+        RestApiStrategy(url)
+
+
+def test_idn_base_url_matches_punycode_host() -> None:
+    s = RestApiStrategy(
+        "https://bücher.example/v1",
+        mappers=_registry(),
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, content=b"ok")),
+    )
+    assert s.read(_ref()) == b"ok"
+
+
+def test_invalid_url_maps_to_transport_error() -> None:
+    def handler(req: httpx.Request) -> httpx.Response:
+        raise httpx.InvalidURL("bad")
+
+    with pytest.raises(FetchTransportError):
+        _strategy(handler).read(_ref())

@@ -1,18 +1,18 @@
 """DOCX parser (body paragraphs and tables, in document order)."""
 
-import re
 import zipfile
 from collections.abc import Iterable, Iterator
 from io import BytesIO
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 from docx import Document
 from docx.document import Document as DocumentType
-from docx.table import Table, _Row
+from docx.table import Table, _Cell, _Row
 from docx.text.paragraph import Paragraph
 
 from agents.fetch.formats import base
 from agents.fetch.formats._safety import (
+    MAX_BODY_BYTES,
     MAX_COMPRESSION_RATIO,
     MAX_NESTING_DEPTH,
     MAX_UNCOMPRESSED_BYTES,
@@ -22,7 +22,8 @@ from agents.fetch.formats._safety import (
     EncryptedDocumentError,
     NoTextLayerError,
 )
-from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError
+from agents.fetch.formats.base import FORMATS, FormatError, TextLimitError, UnsupportedFormatError
+from agents.fetch.formats.text import clean_text
 
 __all__ = [
     "CorruptDocumentError",
@@ -33,7 +34,6 @@ __all__ = [
 
 _OLE_SIGNATURE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 _BODY_MEMBER = "word/document.xml"
-_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
 
 def _check_infos(infos: list[zipfile.ZipInfo]) -> None:
@@ -42,6 +42,8 @@ def _check_infos(infos: list[zipfile.ZipInfo]) -> None:
     if sum(i.file_size for i in infos) > MAX_UNCOMPRESSED_BYTES:
         raise TextLimitError("docx is too large when unpacked")
     for info in infos:
+        if info.filename == _BODY_MEMBER and info.file_size > MAX_BODY_BYTES:
+            raise TextLimitError("docx body is too large when unpacked")
         ratio = info.file_size / max(info.compress_size, 1)
         if info.file_size > RATIO_MIN_BYTES and ratio > MAX_COMPRESSION_RATIO:
             raise TextLimitError("docx compression ratio is too high")
@@ -53,7 +55,7 @@ def _check_infos(infos: list[zipfile.ZipInfo]) -> None:
 
 def _check_zip(data: bytes) -> None:
     if data.startswith(_OLE_SIGNATURE):
-        raise CorruptDocumentError("docx is not a zip (encrypted or legacy doc)")
+        raise UnsupportedFormatError("docx is an OLE container (encrypted docx or legacy doc)")
     try:
         with zipfile.ZipFile(BytesIO(data)) as archive:
             infos = archive.infolist()
@@ -64,11 +66,8 @@ def _check_zip(data: bytes) -> None:
 
 def _row_texts(row: _Row, depth: int) -> list[str]:
     texts: list[str] = []
-    previous: object = None
-    for cell in row.cells:
-        if previous is not None and cell._tc is previous:  # pyright: ignore[reportPrivateUsage]
-            continue
-        previous = cell._tc  # pyright: ignore[reportPrivateUsage]
+    for tc in cast(Any, row)._tr.tc_lst:
+        cell = _Cell(tc, row.table)
         parts = (line for line in _lines(cell.iter_inner_content(), depth + 1) if line)
         texts.append(" ".join(parts))
     return texts
@@ -92,7 +91,7 @@ def _collect(document: DocumentType) -> list[str]:
     total = 0
     for line in _lines(document.iter_inner_content(), 0):
         line = line.replace("\r\n", "\n").replace("\r", "\n").replace("\xa0", " ")
-        line = _CONTROL_RE.sub("", line).strip()
+        line = clean_text(line.replace("\x00", "")).strip()
         if not line:
             continue
         total += len(line)

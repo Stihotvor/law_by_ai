@@ -1,10 +1,8 @@
 """Document fetcher agent: resolves a source and fetches raw documents."""
 
+import importlib
 from typing import Protocol
 
-import agents.fetch.formats
-import agents.fetch.sources
-import agents.fetch.strategies  # noqa: F401  (triggers autoload)
 from agents.fetch.contracts import (
     DocumentFilter,
     DocumentMeta,
@@ -15,6 +13,7 @@ from agents.fetch.contracts import (
 from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
 from agents.fetch.formats.base import FormatError, charset_of, find_parser
 from agents.fetch.formats.pdf import NoTextLayerError, PdfParser
+from agents.fetch.formats.text import finish_ocr_text
 from agents.fetch.ocr.errors import OcrError
 from agents.fetch.ocr.manager import get_ocr_manager
 from agents.fetch.registry import UnknownNameError
@@ -22,6 +21,9 @@ from agents.fetch.sources.base import SOURCES, LegalSource
 from agents.fetch.strategies.base import STRATEGIES
 
 PARSE_ERRORS = (FormatError, OcrError)
+
+for _package in ("agents.fetch.sources", "agents.fetch.strategies", "agents.fetch.formats"):
+    importlib.import_module(_package)  # triggers autoload
 
 
 class RejectionChecker(Protocol):
@@ -84,4 +86,4 @@ class DocumentFetcherAgent:
         except NoTextLayerError:
             if not isinstance(parser, PdfParser):
                 raise
-            return get_ocr_manager().read_pdf(doc_bytes)
+            return finish_ocr_text(get_ocr_manager().read_pdf(doc_bytes))
