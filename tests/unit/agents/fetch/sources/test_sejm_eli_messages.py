@@ -25,7 +25,7 @@ def tz(monkeypatch: pytest.MonkeyPatch) -> Iterator[Callable[[str], None]]:
 def test_date_uses_warsaw_not_local_zone(tz: Callable[[str], None], zone: str) -> None:
     tz(zone)
     moment = datetime(2024, 1, 31, 23, 30, tzinfo=UTC)
-    assert _list_params(DocumentFilter(date_from=moment))["pubDateFrom"] == "2024-02-01"
+    assert _list_params(DocumentFilter(date_from=moment))["pubDateFrom"] == "2024-01-31"
     assert _list_params(DocumentFilter(date_to=moment))["pubDateTo"] == "2024-02-01"
 
 

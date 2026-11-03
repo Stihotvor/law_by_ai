@@ -14,10 +14,15 @@ a process-wide minimum gap of ``SEJM_MIN_INTERVAL`` seconds before every
 outbound request, no retries, no parallel fan-out. A fetch costs two requests
 (meta, content). Status 429 or 5xx surfaces as ``FetchTransportError`` with the
 status code. ``Retry-After`` is not honoured.
+
+The live API filters ``pubDateFrom`` (exclusive) and ``pubDateTo`` (inclusive) by
+the promulgation date, so the source sends the day before ``date_from`` and
+reports ``promulgation`` as ``published_at``. Only the main text (text.html or
+text.pdf) is fetched, not consolidated texts or attachments.
 """
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -52,6 +57,11 @@ def _warsaw_day(value: datetime) -> str:
     return value.astimezone(_WARSAW).strftime("%Y-%m-%d")
 
 
+def _day_before(value: datetime) -> str:
+    day = value.astimezone(_WARSAW).date() - timedelta(days=1)
+    return day.isoformat()
+
+
 def _text_param(value: str) -> str:
     if len(value) > _MAX_TEXT or any(ord(c) < 32 or ord(c) == 127 for c in value):
         raise InvalidReferenceError("invalid filter value")
@@ -75,7 +85,7 @@ def _list_params(flt: DocumentFilter) -> dict[str, str]:
         "offset": _offset(flt.cursor),
     }
     if flt.date_from is not None:
-        params["pubDateFrom"] = _warsaw_day(flt.date_from)
+        params["pubDateFrom"] = _day_before(flt.date_from)
     if flt.date_to is not None:
         params["pubDateTo"] = _warsaw_day(flt.date_to)
     if flt.doc_type is not None:
@@ -102,7 +112,7 @@ def _content_type(payload: Any) -> str | None:
 
 
 def _published(payload: Any) -> datetime | None:
-    day = payload.get("announcementDate")
+    day = payload.get("promulgation")
     if not day:
         return None
     return datetime.fromisoformat(day).replace(tzinfo=_WARSAW)
