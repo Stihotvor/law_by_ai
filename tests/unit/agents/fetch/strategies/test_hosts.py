@@ -69,7 +69,18 @@ def test_real_resolver_reads_legacy_literal(monkeypatch: pytest.MonkeyPatch) -> 
             check_public_host(host, allow_private=False)
 
 
-@pytest.mark.parametrize("url", ["http://x", "https://u:p@x", "https://u@x", "https://"])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://x",
+        "https://u:p@x",
+        "https://u@x",
+        "https://",
+        "https://x?q=1",
+        "https://x#f",
+        "https://x:99999",
+    ],
+)
 def test_parse_base_url_rejects(url: str) -> None:
     with pytest.raises(SourceConfigError):
         parse_base_url(url)

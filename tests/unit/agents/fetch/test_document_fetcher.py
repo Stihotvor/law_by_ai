@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 import pytest
 
@@ -11,7 +11,12 @@ from agents.fetch.contracts import (
     FetchedDocument,
 )
 from agents.fetch.document_fetcher import DocumentFetcherAgent
-from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
+from agents.fetch.errors import (
+    DocumentRejectedError,
+    InvalidTenantError,
+    SourceConfigError,
+    UnknownSourceError,
+)
 from agents.fetch.registry import Registry, UnknownNameError
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
@@ -189,3 +194,105 @@ def test_unknown_strategy_message(registries: Registry[type[LegalSource]]) -> No
     with pytest.raises(SourceConfigError) as info:
         DocumentFetcherAgent().list_documents("bad", DocumentFilter())
     assert str(info.value) == "source 'bad' uses unknown strategy 'missing'"
+
+
+class ClosableStrategy(FakeStrategy):
+    closed: ClassVar[int] = 0
+
+    def close(self) -> None:
+        type(self).closed += 1
+
+
+def test_strategy_cached_per_source_and_closed(
+    monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
+) -> None:
+    strategies: Registry[type[FetchStrategy]] = Registry("strategies")
+    strategies.register("fake_strategy")(ClosableStrategy)
+    monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
+    ClosableStrategy.closed = 0
+    with DocumentFetcherAgent() as agent:
+        agent.list_documents("fake", DocumentFilter())
+        agent.list_documents("fake", DocumentFilter())
+        assert FakeStrategy.built_with == ["https://fake.example"]
+    assert ClosableStrategy.closed == 1
+    agent.close()
+    assert ClosableStrategy.closed == 1
+
+
+def test_close_skips_strategy_without_close() -> None:
+    agent = DocumentFetcherAgent()
+    agent.list_documents("fake", DocumentFilter())
+    agent.close()
+
+
+@pytest.mark.parametrize("bad", ["", "x" * 65, "a\nb", "a\x7f", "a b", "t\n", 5, b"t"])
+def test_invalid_tenant_rejected(bad: object) -> None:
+    with pytest.raises(InvalidTenantError) as info:
+        DocumentFetcherAgent().fetch_document("fake", REF, tenant_id=cast(Any, bad))
+    assert "x" * 65 not in str(info.value)
+
+
+def test_valid_tenant_boundary() -> None:
+    doc = DocumentFetcherAgent().fetch_document("fake", REF, tenant_id="t" * 64)
+    assert doc.tenant_id == "t" * 64
+
+
+class PrivateStrategy(FakeStrategy):
+    kwargs: ClassVar[list[dict[str, bool]]] = []
+
+    def __init__(self, base_url: str, allow_private_hosts: bool = False) -> None:
+        super().__init__(base_url)
+        self.kwargs.append(
+            {"allow_private_hosts": allow_private_hosts} if allow_private_hosts else {}
+        )
+
+
+class PrivateSource(FakeSource):
+    name: ClassVar[str] = "priv"
+    allow_private_hosts: ClassVar[bool] = True
+
+
+def test_private_host_opt_in_forwarded(
+    monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
+) -> None:
+    strategies: Registry[type[FetchStrategy]] = Registry("strategies")
+    strategies.register("fake_strategy")(PrivateStrategy)
+    monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
+    registries.register("priv")(PrivateSource)
+    DocumentFetcherAgent().list_documents("priv", DocumentFilter())
+    assert PrivateStrategy.kwargs == [{"allow_private_hosts": True}]
+
+
+def test_never_rejected_warns_once(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr("agents.fetch.document_fetcher._warned_never_rejected", False)
+    with caplog.at_level("WARNING"):
+        DocumentFetcherAgent()
+        DocumentFetcherAgent()
+        DocumentFetcherAgent(Rejecting())
+    assert len(caplog.records) == 1
+
+
+def test_close_closes_all_then_raises_first_error(
+    monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
+) -> None:
+    class Boom(FakeStrategy):
+        def close(self) -> None:
+            raise RuntimeError("first")
+
+    agent = DocumentFetcherAgent()
+    good = ClosableStrategy("x")
+    ClosableStrategy.closed = 0
+    agent._strategies = {"a": Boom("x"), "b": good, "c": Boom("x")}
+    with pytest.raises(RuntimeError, match="first"):
+        agent.close()
+    assert ClosableStrategy.closed == 1
+
+
+def test_flag_not_passed_to_strategy_without_keyword(
+    registries: Registry[type[LegalSource]],
+) -> None:
+    registries.register("priv")(PrivateSource)
+    DocumentFetcherAgent().list_documents("priv", DocumentFilter())
+    assert FakeStrategy.built_with == ["https://fake.example"]

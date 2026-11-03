@@ -4,6 +4,7 @@ from config.settings import Settings
 
 VARS = (
     "FETCH_HTTP_TIMEOUT",
+    "FETCH_TOTAL_TIMEOUT",
     "FETCH_MAX_BYTES",
     "MINIO_ENDPOINT",
     "MINIO_ACCESS_KEY",
@@ -31,6 +32,7 @@ def test_defaults(clean: pytest.MonkeyPatch) -> None:
     s = _fresh(clean)
     assert s.fetch_http_timeout == 10.0
     assert isinstance(s.fetch_http_timeout, float)
+    assert s.fetch_total_timeout == 60.0
     assert s.fetch_max_bytes == 52428800
     assert s.minio_endpoint == "localhost:9000"
     assert s.minio_bucket == "legal-documents"
@@ -40,6 +42,7 @@ def test_defaults(clean: pytest.MonkeyPatch) -> None:
 def test_overrides(clean: pytest.MonkeyPatch) -> None:
     clean.setenv("FETCH_HTTP_TIMEOUT", "2.5")
     clean.setenv("FETCH_MAX_BYTES", "7")
+    clean.setenv("FETCH_TOTAL_TIMEOUT", "9")
     clean.setenv("MINIO_ENDPOINT", "h:1")
     clean.setenv("MINIO_ACCESS_KEY", "a")
     clean.setenv("MINIO_SECRET_KEY", "s")
@@ -48,6 +51,7 @@ def test_overrides(clean: pytest.MonkeyPatch) -> None:
     s = Settings()
     assert s.fetch_http_timeout == 2.5
     assert s.fetch_max_bytes == 7
+    assert s.fetch_total_timeout == 9.0
     assert s.minio_endpoint == "h:1"
     assert s.minio_access_key == "a"
     assert s.minio_secret_key == "s"
@@ -73,7 +77,7 @@ def test_keys_default_empty(clean: pytest.MonkeyPatch) -> None:
     assert s.minio_secret_key == ""
 
 
-@pytest.mark.parametrize("name", ["FETCH_HTTP_TIMEOUT", "FETCH_MAX_BYTES"])
+@pytest.mark.parametrize("name", ["FETCH_HTTP_TIMEOUT", "FETCH_TOTAL_TIMEOUT", "FETCH_MAX_BYTES"])
 @pytest.mark.parametrize("value", ["0", "-1", "abc", "nan", "inf"])
 def test_fetch_limits_must_be_positive_finite(
     clean: pytest.MonkeyPatch, name: str, value: str
@@ -81,4 +85,4 @@ def test_fetch_limits_must_be_positive_finite(
     clean.setenv(name, value)
     s = Settings()
     with pytest.raises(ValueError, match=name):
-        _ = s.fetch_http_timeout if name == "FETCH_HTTP_TIMEOUT" else s.fetch_max_bytes
+        _ = getattr(s, name.lower())
