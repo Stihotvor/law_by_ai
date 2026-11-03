@@ -2,6 +2,7 @@
 
 from typing import Protocol
 
+import agents.fetch.formats
 import agents.fetch.sources
 import agents.fetch.strategies  # noqa: F401  (triggers autoload)
 from agents.fetch.contracts import (
@@ -12,9 +13,15 @@ from agents.fetch.contracts import (
     FetchedDocument,
 )
 from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
+from agents.fetch.formats.base import FormatError, charset_of, find_parser
+from agents.fetch.formats.pdf import NoTextLayerError, PdfParser
+from agents.fetch.ocr.errors import OcrError
+from agents.fetch.ocr.manager import get_ocr_manager
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
 from agents.fetch.strategies.base import STRATEGIES
+
+PARSE_ERRORS = (FormatError, OcrError)
 
 
 class RejectionChecker(Protocol):
@@ -64,3 +71,17 @@ class DocumentFetcherAgent:
             raise DocumentRejectedError(f"document rejected: {ref.source}/{ref.external_id}")
         result = self._resolve(source).fetch_document(ref)
         return result.model_copy(update={"tenant_id": tenant_id})
+
+    def parse(self, doc_bytes: bytes, name: str, mime: str | None = None) -> str:
+        """Turn raw bytes into plain text. Raises FormatError subclasses or OcrError (PARSE_ERRORS).
+
+        UnsupportedFormatError: no parser matches the name or MIME type.
+        TextLimitError: extracted text is over the character cap.
+        """
+        parser = find_parser(name, mime)
+        try:
+            return parser.parse(doc_bytes, charset=charset_of(mime))
+        except NoTextLayerError:
+            if not isinstance(parser, PdfParser):
+                raise
+            return get_ocr_manager().read_pdf(doc_bytes)

@@ -35,6 +35,12 @@ Variable               Purpose                                Default
 ``RERANK_BASE_URL``       reranking provider base URL             ``https://api.cohere.com/v1``
 ``RERANK_API_KEY``        reranking API key                       ``(empty)``
 ``RERANK_MODEL``          reranking model name                    ``rerank-v3.5``
+``OCR_ENABLED``           send documents to the OCR provider      ``false``
+``MISTRAL_API_KEY``       Mistral API key (OCR)                   ``(empty)``
+``MISTRAL_BASE_URL``      Mistral API base URL                    ``https://api.mistral.ai/v1``
+``MISTRAL_OCR_MODEL``     Mistral OCR model name                  ``mistral-ocr-latest``
+``OCR_TIMEOUT``           total seconds per OCR request           ``120.0``
+``OCR_MAX_BYTES``         max OCR input size in bytes             ``20971520``
 ``FETCH_HTTP_TIMEOUT``    total seconds per fetch HTTP request    ``10.0``
 ``FETCH_MAX_BYTES``       max fetched body size in bytes          ``52428800``
 ``MINIO_ENDPOINT``        MinIO ``host:port`` (no scheme)         ``localhost:9000``
@@ -259,6 +265,37 @@ class Settings:
     def rerank_model(self) -> str:
         """Reranking model name (Cohere by default)."""
         return os.getenv("RERANK_MODEL", "rerank-v3.5")
+
+    # --- OCR ---------------------------------------------------------------
+    @property
+    def ocr_enabled(self) -> bool:
+        """Whether document content may be sent to the OCR provider."""
+        return os.getenv("OCR_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+    @property
+    def mistral_api_key(self) -> str:
+        """API key for the Mistral OCR provider."""
+        return os.getenv("MISTRAL_API_KEY", "")
+
+    @property
+    def mistral_base_url(self) -> str:
+        """Base URL of the Mistral API."""
+        return os.getenv("MISTRAL_BASE_URL", "https://api.mistral.ai/v1")
+
+    @property
+    def mistral_ocr_model(self) -> str:
+        """Mistral OCR model name."""
+        return os.getenv("MISTRAL_OCR_MODEL", "mistral-ocr-latest")
+
+    @property
+    def ocr_timeout(self) -> float:
+        """Total timeout in seconds for one OCR request."""
+        return float(os.getenv("OCR_TIMEOUT", "120.0"))
+
+    @property
+    def ocr_max_bytes(self) -> int:
+        """Maximum size in bytes of one OCR input before base64."""
+        return int(os.getenv("OCR_MAX_BYTES", "20971520"))
 
     # --- Document fetch ------------------------------------------------------
     @property
