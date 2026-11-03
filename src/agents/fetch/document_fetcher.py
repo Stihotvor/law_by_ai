@@ -1,6 +1,8 @@
 """Document fetcher agent: resolves a source and fetches raw documents."""
 
+import inspect
 import logging
+import threading
 from types import TracebackType
 from typing import Protocol, Self
 
@@ -63,6 +65,13 @@ def _check_tenant(tenant_id: object) -> None:
         raise InvalidTenantError("tenant_id has control characters")
 
 
+def _build(strategy_cls: type[FetchStrategy], source_cls: type[LegalSource]) -> FetchStrategy:
+    accepts = "allow_private_hosts" in inspect.signature(strategy_cls).parameters
+    if source_cls.allow_private_hosts and accepts:
+        return strategy_cls(source_cls.base_url, allow_private_hosts=True)  # type: ignore[call-arg]
+    return strategy_cls(source_cls.base_url)
+
+
 class DocumentFetcherAgent:
     def __init__(self, rejection: RejectionChecker | None = None) -> None:
         global _warned_never_rejected
@@ -71,14 +80,22 @@ class DocumentFetcherAgent:
             _log.warning("no rejection checker given: rejected documents are not blocked")
         self._rejection: RejectionChecker = rejection or NeverRejected()
         self._strategies: dict[str, FetchStrategy] = {}
+        self._lock = threading.Lock()
 
     def close(self) -> None:
         """Close cached strategies that have a ``close`` method."""
-        strategies, self._strategies = list(self._strategies.values()), {}
+        with self._lock:
+            strategies, self._strategies = list(self._strategies.values()), {}
+        first: Exception | None = None
         for strategy in strategies:
             closer = getattr(strategy, "close", None)
-            if callable(closer):
-                closer()
+            try:
+                if callable(closer):
+                    closer()
+            except Exception as exc:
+                first = first or exc
+        if first is not None:
+            raise first
 
     def __enter__(self) -> Self:
         return self
@@ -102,12 +119,10 @@ class DocumentFetcherAgent:
             raise SourceConfigError(
                 f"source {source!r} uses unknown strategy {source_cls.strategy_name!r}"
             ) from exc
-        strategy = self._strategies.get(source)
-        if strategy is None:
-            extra: dict[str, bool] = (
-                {"allow_private_hosts": True} if source_cls.allow_private_hosts else {}
-            )
-            strategy = self._strategies[source] = strategy_cls(source_cls.base_url, **extra)
+        with self._lock:
+            strategy = self._strategies.get(source)
+            if strategy is None:
+                strategy = self._strategies[source] = _build(strategy_cls, source_cls)
         return source_cls(strategy)
 
     def list_documents(self, source: str, flt: DocumentFilter) -> DocumentPage:

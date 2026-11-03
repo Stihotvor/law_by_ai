@@ -240,9 +240,11 @@ def test_valid_tenant_boundary() -> None:
 class PrivateStrategy(FakeStrategy):
     kwargs: ClassVar[list[dict[str, bool]]] = []
 
-    def __init__(self, base_url: str, **kwargs: bool) -> None:
+    def __init__(self, base_url: str, allow_private_hosts: bool = False) -> None:
         super().__init__(base_url)
-        self.kwargs.append(kwargs)
+        self.kwargs.append(
+            {"allow_private_hosts": allow_private_hosts} if allow_private_hosts else {}
+        )
 
 
 class PrivateSource(FakeSource):
@@ -270,3 +272,27 @@ def test_never_rejected_warns_once(
         DocumentFetcherAgent()
         DocumentFetcherAgent(Rejecting())
     assert len(caplog.records) == 1
+
+
+def test_close_closes_all_then_raises_first_error(
+    monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
+) -> None:
+    class Boom(FakeStrategy):
+        def close(self) -> None:
+            raise RuntimeError("first")
+
+    agent = DocumentFetcherAgent()
+    good = ClosableStrategy("x")
+    ClosableStrategy.closed = 0
+    agent._strategies = {"a": Boom("x"), "b": good, "c": Boom("x")}
+    with pytest.raises(RuntimeError, match="first"):
+        agent.close()
+    assert ClosableStrategy.closed == 1
+
+
+def test_flag_not_passed_to_strategy_without_keyword(
+    registries: Registry[type[LegalSource]],
+) -> None:
+    registries.register("priv")(PrivateSource)
+    DocumentFetcherAgent().list_documents("priv", DocumentFilter())
+    assert FakeStrategy.built_with == ["https://fake.example"]

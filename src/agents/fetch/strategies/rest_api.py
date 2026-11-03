@@ -12,6 +12,7 @@ into ``FetchedDocument.content_type``.
 """
 
 import json
+import threading
 import time
 from collections.abc import Mapping
 from typing import Any
@@ -65,11 +66,13 @@ class RestApiStrategy:
         self._mappers = REST_MAPPERS if mappers is None else mappers
         self._transport = transport
         self._http: httpx.Client | None = None
+        self._lock = threading.Lock()
 
     def close(self) -> None:
-        if self._http is not None:
-            self._http.close()
-            self._http = None
+        with self._lock:
+            client, self._http = self._http, None
+        if client is not None:
+            client.close()
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
         mapper = self._mapper(source)
@@ -130,9 +133,10 @@ class RestApiStrategy:
             raise RedirectNotAllowedError("redirect outside the source host or not https")
 
     def _client(self) -> httpx.Client:
-        if self._http is None:
-            self._http = self._new_client()
-        return self._http
+        with self._lock:
+            if self._http is None:
+                self._http = self._new_client()
+            return self._http
 
     def _new_client(self) -> httpx.Client:
         return httpx.Client(
