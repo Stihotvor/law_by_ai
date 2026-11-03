@@ -440,6 +440,17 @@ def test_huge_grid_span_is_not_expanded() -> None:
     assert time.monotonic() - started < 2
 
 
+def test_body_part_cap_boundary(monkeypatch: pytest.MonkeyPatch) -> None:
+    data = _simple("x")
+    size = len(_member(data, "word/document.xml"))
+    monkeypatch.setattr(docx_module, "MAX_BODY_BYTES", size)
+    assert _parse(data) == "x"
+    monkeypatch.setattr(docx_module, "MAX_BODY_BYTES", size - 1)
+    with pytest.raises(TextLimitError) as info:
+        _parse(data)
+    assert str(info.value) == "docx body is too large when unpacked"
+
+
 def test_nul_and_controls_are_cleaned(monkeypatch: pytest.MonkeyPatch) -> None:
     # XML cannot carry control characters, so inject them at the paragraph text level.
     monkeypatch.setattr(Paragraph, "text", property(lambda self: "a\x00b\x01c\x1fd"))

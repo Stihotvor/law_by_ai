@@ -12,6 +12,7 @@ from docx.text.paragraph import Paragraph
 
 from agents.fetch.formats import base
 from agents.fetch.formats._safety import (
+    MAX_BODY_BYTES,
     MAX_COMPRESSION_RATIO,
     MAX_NESTING_DEPTH,
     MAX_UNCOMPRESSED_BYTES,
@@ -41,6 +42,8 @@ def _check_infos(infos: list[zipfile.ZipInfo]) -> None:
     if sum(i.file_size for i in infos) > MAX_UNCOMPRESSED_BYTES:
         raise TextLimitError("docx is too large when unpacked")
     for info in infos:
+        if info.filename == _BODY_MEMBER and info.file_size > MAX_BODY_BYTES:
+            raise TextLimitError("docx body is too large when unpacked")
         ratio = info.file_size / max(info.compress_size, 1)
         if info.file_size > RATIO_MIN_BYTES and ratio > MAX_COMPRESSION_RATIO:
             raise TextLimitError("docx compression ratio is too high")
