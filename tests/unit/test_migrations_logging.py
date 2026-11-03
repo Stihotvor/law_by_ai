@@ -15,4 +15,5 @@ def test_env_logging_keeps_existing_loggers() -> None:
     assert len(calls) == 1
     kwargs = {k.arg: k.value for k in calls[0].keywords}
     flag = kwargs.get("disable_existing_loggers")
-    assert isinstance(flag, ast.Constant) and flag.value is False
+    assert isinstance(flag, ast.Constant)
+    assert flag.value is False

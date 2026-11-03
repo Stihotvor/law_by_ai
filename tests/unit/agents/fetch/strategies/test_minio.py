@@ -323,7 +323,8 @@ def test_registered_protocol_and_repr() -> None:
     s, _ = _make()
     assert isinstance(s, FetchStrategy)
     text = repr(s)
-    assert SECRET not in text and "test-access" not in text
+    assert SECRET not in text
+    assert "test-access" not in text
     assert all(SECRET not in str(v) for v in vars(s).values() if not isinstance(v, MagicMock))
 
 
@@ -351,7 +352,8 @@ def test_aware_non_utc_is_preserved() -> None:
     when = datetime(2024, 1, 10, 5, tzinfo=tz)
     c.stat_object.return_value = _obj("k", when=when)
     got = s.get_meta(_ref()).published_at
-    assert got is not None and got.utcoffset() == timedelta(hours=2)
+    assert got is not None
+    assert got.utcoffset() == timedelta(hours=2)
     assert got.astimezone(UTC) == datetime(2024, 1, 10, 3, tzinfo=UTC)
 
 

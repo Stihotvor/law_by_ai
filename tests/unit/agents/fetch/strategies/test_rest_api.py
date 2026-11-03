@@ -117,7 +117,8 @@ def test_list_params_gets_same_filter_and_ignored_fields_not_sent() -> None:
 
     flt = DocumentFilter(keyword="secret-kw", doc_type="act", limit=7)
     _strategy(handler, _mapper(list_params=params)).list_refs("src", flt)
-    assert got == [flt] and got[0] is flt
+    assert got == [flt]
+    assert got[0] is flt
     assert urls == ["https://api.example/v1/documents?n=7"]
 
 

@@ -142,9 +142,9 @@ def test_rejected() -> None:
 
 def test_source_mismatch() -> None:
     agent = DocumentFetcherAgent()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="does not match"):
         agent.fetch_document("other", REF)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="does not match"):
         agent.get_document_meta("other", REF)
 
 
@@ -182,7 +182,7 @@ def test_error_messages() -> None:
         DocumentFetcherAgent(Rejecting()).fetch_document("fake", REF)
     assert str(rej.value) == "document rejected: 'fake/1'"
     assert REF.url not in str(rej.value)
-    with pytest.raises(ValueError) as mismatch:
+    with pytest.raises(ValueError, match="does not match") as mismatch:
         DocumentFetcherAgent().get_document_meta("other", REF)
     assert str(mismatch.value) == "ref.source 'fake' does not match source 'other'"
 

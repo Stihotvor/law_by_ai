@@ -41,7 +41,8 @@ def test_formats_do_not_import_forbidden_modules() -> None:
     for path in files:
         for name in _imports(path):
             for bad in _FORBIDDEN:
-                assert name != bad and not name.startswith(bad + "."), f"{path.name}: {name}"
+                assert name != bad, f"{path.name}: {name}"
+                assert not name.startswith(bad + "."), f"{path.name}: {name}"
 
 
 def test_format_errors_derive_from_fetch_error() -> None:

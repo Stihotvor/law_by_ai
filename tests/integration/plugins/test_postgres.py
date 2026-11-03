@@ -64,8 +64,8 @@ def test_store_initializes(tmp_path):
     p.close()
 
 
-def test_save_and_get_roundtrip(plugin, _make_document: Callable):
-    doc = _make_document(title="Konstytucja RP", content="Krajowe źródło prawa.")
+def test_save_and_get_roundtrip(plugin, make_document: Callable):
+    doc = make_document(title="Konstytucja RP", content="Krajowe źródło prawa.")
     doc_id = plugin.save_document(doc)
 
     fetched = plugin.get_document(doc_id)
@@ -84,8 +84,8 @@ def test_get_missing_returns_none(plugin):
     assert plugin.get_document("00000000-0000-0000-0000-000000000000") is None
 
 
-def test_save_upserts_on_conflict(plugin, _make_document: Callable):
-    doc = _make_document(title="Ustawa o VAT", content="Wersja pierwsza")
+def test_save_upserts_on_conflict(plugin, make_document: Callable):
+    doc = make_document(title="Ustawa o VAT", content="Wersja pierwsza")
     doc_id = plugin.save_document(doc)
 
     doc["content"] = "Wersja druga"
@@ -98,7 +98,7 @@ def test_save_upserts_on_conflict(plugin, _make_document: Callable):
 
 
 @pytest.fixture
-def _make_document() -> Callable:
+def make_document() -> Callable:
     """Factory for a minimal document dict (sans id; plugin generates one)."""
 
     def _factory(**overrides):
@@ -116,34 +116,34 @@ def _make_document() -> Callable:
     return _factory
 
 
-def test_search_ilike_matches_title_and_content(plugin, _make_document: Callable):
-    plugin.save_document(_make_document(title="Kodeks cywilny", content="artykuły"))
-    plugin.save_document(_make_document(title="Inny akt", content="Kodeks karny"))
-    plugin.save_document(_make_document(title="Janusz", content="Nie dotyczy"))
+def test_search_ilike_matches_title_and_content(plugin, make_document: Callable):
+    plugin.save_document(make_document(title="Kodeks cywilny", content="artykuły"))
+    plugin.save_document(make_document(title="Inny akt", content="Kodeks karny"))
+    plugin.save_document(make_document(title="Janusz", content="Nie dotyczy"))
 
     hits = plugin.search_documents("kodeks", limit=10)
     titles = sorted(h["title"] for h in hits)
     assert titles == ["Inny akt", "Kodeks cywilny"]
 
 
-def test_search_limit_truncates(plugin, _make_document: Callable):
+def test_search_limit_truncates(plugin, make_document: Callable):
     for i in range(5):
-        plugin.save_document(_make_document(title=f"Temat {i}", content="shared body"))
+        plugin.save_document(make_document(title=f"Temat {i}", content="shared body"))
     hits = plugin.search_documents("shared", limit=3)
     assert len(hits) == 3
 
 
-def test_get_recent_changes_orders_desc(plugin, _make_document: Callable):
-    plugin.save_document(_make_document(title="Old", last_updated="2024-01-01T00:00:00+00:00"))
-    plugin.save_document(_make_document(title="New", last_updated="2025-06-06T12:00:00+00:00"))
+def test_get_recent_changes_orders_desc(plugin, make_document: Callable):
+    plugin.save_document(make_document(title="Old", last_updated="2024-01-01T00:00:00+00:00"))
+    plugin.save_document(make_document(title="New", last_updated="2025-06-06T12:00:00+00:00"))
 
     changes = plugin.get_recent_changes()
     titles = [c["title"] for c in changes]
     assert titles.index("New") < titles.index("Old")
 
 
-def test_delete_removes_document(plugin, _make_document: Callable):
-    doc_id = plugin.save_document(_make_document())
+def test_delete_removes_document(plugin, make_document: Callable):
+    doc_id = plugin.save_document(make_document())
     assert plugin.get_document(doc_id) is not None
 
     plugin.delete_document(doc_id)
@@ -154,8 +154,8 @@ def test_delete_missing_is_noop(plugin):
     plugin.delete_document("00000000-0000-0000-0000-000000000000")  # must not raise
 
 
-def test_update_merge_fields(plugin, _make_document: Callable):
-    doc_id = plugin.save_document(_make_document(title="Pierwotny", is_processed=False))
+def test_update_merge_fields(plugin, make_document: Callable):
+    doc_id = plugin.save_document(make_document(title="Pierwotny", is_processed=False))
     plugin.update_document(doc_id, {"title": "Zaktualizowany", "is_processed": True})
 
     fetched = plugin.get_document(doc_id)
@@ -176,7 +176,7 @@ def test_store_reinitializes_idempotently(plugin):
     assert plugin._initialized is True
 
 
-def test_store_visible_via_platform_env(_make_document: Callable):
+def test_store_visible_via_platform_env(make_document: Callable):
     """Sanity: POSTGRES_URL (or its parts) drives the connection string."""
     url = get_settings().postgres_url
     assert url.startswith("postgresql")

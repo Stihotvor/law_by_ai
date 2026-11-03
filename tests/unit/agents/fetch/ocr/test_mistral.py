@@ -55,7 +55,8 @@ def test_pdf_request() -> None:
     assert _provider(rec).ocr_pdf(b"%PDF data") == "hello"
     assert len(rec.requests) == 1
     req = rec.requests[0]
-    assert req.method == "POST" and str(req.url) == URL
+    assert req.method == "POST"
+    assert str(req.url) == URL
     assert req.headers["Authorization"] == f"Bearer {KEY}"
     body = json.loads(req.content)
     assert body["model"] == "mistral-ocr-latest"
