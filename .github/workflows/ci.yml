@@ -10,6 +10,9 @@ on:
     paths-ignore:
       - 'docs/**'
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -33,7 +36,32 @@ jobs:
 
   unit-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: uv sync --frozen --extra dev
+      - name: Run unit tests (no external services)
+        run: uv run pytest -m "not integration" -q --cov --cov-branch --cov-report=xml --cov-report=term-missing
+      - name: Coverage of changed lines
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: uv run diff-cover coverage.xml --compare-branch="origin/$BASE_REF" --fail-under=90
+
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: lint
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -43,8 +71,28 @@ jobs:
           python-version: "3.13"
       - name: Install dependencies
         run: uv sync --frozen --extra dev
-      - name: Run unit tests (no external services)
-        run: uv run pytest -m "not integration" -q --cov=core --cov=plugins
+      - name: Check mutation target
+        id: target
+        run: |
+          if [ -d src/agents/fetch ] && [ -d tests/unit/agents/fetch ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Mutation target src/agents/fetch not present; skipping."
+          fi
+      - name: Run mutation tests (scope set in pyproject.toml)
+        if: steps.target.outputs.present == 'true'
+        run: uv run mutmut run
+      - name: Summarise results
+        if: always() && steps.target.outputs.present == 'true'
+        run: uv run mutmut results > mutation-summary.txt
+      - name: Upload mutation summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-summary
+          path: mutation-summary.txt
+          if-no-files-found: warn
+          retention-days: 7
 
   typecheck:
     runs-on: ubuntu-latest

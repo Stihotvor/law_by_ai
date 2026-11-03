@@ -18,6 +18,7 @@ class LegalSource(ABC):
     name: ClassVar[str]
     base_url: ClassVar[str]
     strategy_name: ClassVar[str]
+    allow_private_hosts: ClassVar[bool] = False
 
     def __init__(self, strategy: FetchStrategy) -> None:
         self.strategy = strategy

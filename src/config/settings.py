@@ -35,6 +35,24 @@ Variable               Purpose                                Default
 ``RERANK_BASE_URL``       reranking provider base URL             ``https://api.cohere.com/v1``
 ``RERANK_API_KEY``        reranking API key                       ``(empty)``
 ``RERANK_MODEL``          reranking model name                    ``rerank-v3.5``
+``OCR_ENABLED``           send documents to the OCR provider      ``false``
+``MISTRAL_API_KEY``       Mistral API key (OCR)                   ``(empty)``
+``MISTRAL_BASE_URL``      Mistral API base URL                    ``https://api.mistral.ai/v1``
+``MISTRAL_OCR_MODEL``     Mistral OCR model name                  ``mistral-ocr-latest``
+``OCR_TIMEOUT``           total seconds per OCR request           ``120.0``
+``OCR_MAX_BYTES``         max OCR input size in bytes             ``20971520``
+``FETCH_HTTP_TIMEOUT``    total seconds per fetch HTTP request    ``10.0``
+``FETCH_TOTAL_TIMEOUT``   total seconds to read one body          ``60.0``
+``FETCH_MAX_BYTES``       max fetched body size in bytes          ``52428800``
+``MINIO_ENDPOINT``        MinIO ``host:port`` (no scheme)         ``localhost:9000``
+``MINIO_ACCESS_KEY``      MinIO access key                        *(empty)*
+``MINIO_SECRET_KEY``      MinIO secret key                        *(empty)*
+``MINIO_BUCKET``          MinIO bucket for legal documents        ``legal-documents``
+``MINIO_SECURE``          use TLS for MinIO                       ``true``
+``TAVILY_API_KEY``        Tavily API key                          *(empty)*
+``TAVILY_TIMEOUT``        seconds per Tavily request              ``60.0``
+``TAVILY_MAX_PAGES``      pages per Tavily map call               ``20``
+``SEJM_MIN_INTERVAL``     seconds between Sejm requests           ``0.5``
 =====================  =====================================  ================================
 
 Usage::
@@ -66,6 +84,18 @@ def load_env(env_file: str | Path | None = None, *, override: bool = False) -> N
     precedence unless ``override=True``.
     """
     load_dotenv(dotenv_path=env_file or ROOT_DIR / ".env", override=override)
+
+
+def _positive[N: (int, float)](name: str, default: str, kind: type[N]) -> N:
+    """Read env ``name`` as a positive, finite number or raise ``ValueError``."""
+    raw = os.getenv(name, default)
+    try:
+        value = kind(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be a number, got {raw!r}") from None
+    if not 0 < value < float("inf"):
+        raise ValueError(f"{name} must be positive and finite, got {raw!r}")
+    return value
 
 
 class Settings:
@@ -248,6 +278,99 @@ class Settings:
     def rerank_model(self) -> str:
         """Reranking model name (Cohere by default)."""
         return os.getenv("RERANK_MODEL", "rerank-v3.5")
+
+    # --- OCR ---------------------------------------------------------------
+    @property
+    def ocr_enabled(self) -> bool:
+        """Whether document content may be sent to the OCR provider."""
+        return os.getenv("OCR_ENABLED", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+    @property
+    def mistral_api_key(self) -> str:
+        """API key for the Mistral OCR provider."""
+        return os.getenv("MISTRAL_API_KEY", "")
+
+    @property
+    def mistral_base_url(self) -> str:
+        """Base URL of the Mistral API."""
+        return os.getenv("MISTRAL_BASE_URL", "https://api.mistral.ai/v1")
+
+    @property
+    def mistral_ocr_model(self) -> str:
+        """Mistral OCR model name."""
+        return os.getenv("MISTRAL_OCR_MODEL", "mistral-ocr-latest")
+
+    @property
+    def ocr_timeout(self) -> float:
+        """Total timeout in seconds for one OCR request."""
+        return _positive("OCR_TIMEOUT", "120.0", float)
+
+    @property
+    def ocr_max_bytes(self) -> int:
+        """Maximum size in bytes of one OCR input before base64."""
+        return _positive("OCR_MAX_BYTES", "20971520", int)
+
+    # --- Document fetch ------------------------------------------------------
+    @property
+    def fetch_http_timeout(self) -> float:
+        """Total timeout in seconds for one fetch HTTP request."""
+        return _positive("FETCH_HTTP_TIMEOUT", "10.0", float)
+
+    @property
+    def fetch_total_timeout(self) -> float:
+        """Wall-clock seconds allowed for reading one response body."""
+        return _positive("FETCH_TOTAL_TIMEOUT", "60.0", float)
+
+    @property
+    def fetch_max_bytes(self) -> int:
+        """Maximum size in bytes of one fetched document body."""
+        return _positive("FETCH_MAX_BYTES", "52428800", int)
+
+    @property
+    def minio_endpoint(self) -> str:
+        """MinIO endpoint as ``host:port`` without a scheme."""
+        return os.getenv("MINIO_ENDPOINT", "localhost:9000")
+
+    @property
+    def minio_access_key(self) -> str:
+        """MinIO access key (no default secret)."""
+        return os.getenv("MINIO_ACCESS_KEY", "")
+
+    @property
+    def minio_secret_key(self) -> str:
+        """MinIO secret key (no default secret)."""
+        return os.getenv("MINIO_SECRET_KEY", "")
+
+    @property
+    def minio_bucket(self) -> str:
+        """MinIO bucket that holds legal documents."""
+        return os.getenv("MINIO_BUCKET", "legal-documents")
+
+    @property
+    def minio_secure(self) -> bool:
+        """Whether to use TLS when talking to MinIO."""
+        return os.getenv("MINIO_SECURE", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+    # --- Tavily and source politeness ---------------------------------------
+    @property
+    def tavily_api_key(self) -> str:
+        """Tavily API key (secret, env only, empty when unset)."""
+        return os.getenv("TAVILY_API_KEY", "")
+
+    @property
+    def tavily_timeout(self) -> float:
+        """Seconds allowed for one Tavily request."""
+        return _positive("TAVILY_TIMEOUT", "60.0", float)
+
+    @property
+    def tavily_max_pages(self) -> int:
+        """Maximum pages one Tavily map call may return."""
+        return _positive("TAVILY_MAX_PAGES", "20", int)
+
+    @property
+    def sejm_min_interval(self) -> float:
+        """Minimum seconds between two outbound Sejm requests."""
+        return _positive("SEJM_MIN_INTERVAL", "0.5", float)
 
 
 @lru_cache(maxsize=1)
