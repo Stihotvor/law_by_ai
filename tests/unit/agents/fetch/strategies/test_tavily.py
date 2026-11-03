@@ -175,7 +175,7 @@ def test_paging_exact_end_has_no_cursor() -> None:
     assert page.next_cursor is None
 
 
-@pytest.mark.parametrize("cursor", ["abc", "-1", "1e3", "9999999999", "", "1 "])
+@pytest.mark.parametrize("cursor", ["abc", "-1", "1e3", "9999999999", "", "1 ", "8"])
 def test_bad_cursor_makes_no_call(cursor: str) -> None:
     client = _client()
     with pytest.raises(InvalidReferenceError):

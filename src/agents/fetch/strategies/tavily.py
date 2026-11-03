@@ -180,7 +180,7 @@ class TavilyCrawlStrategy:
     def _offset(cursor: str | None) -> int:
         if cursor is None:
             return 0
-        if not _CURSOR.fullmatch(cursor):
+        if not _CURSOR.fullmatch(cursor) or int(cursor) > get_settings().tavily_max_pages:
             raise InvalidReferenceError("invalid cursor")
         return int(cursor)
 
