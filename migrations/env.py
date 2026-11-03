@@ -19,7 +19,7 @@ config = context.config
 
 # Interpret the config file for Python logging.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Override the placeholder URL with the application settings.
 config.set_main_option("sqlalchemy.url", get_settings().postgres_url)
