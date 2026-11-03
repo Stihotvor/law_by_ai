@@ -11,7 +11,7 @@ from agents.fetch.contracts import (
     DocumentRef,
     FetchedDocument,
 )
-from agents.fetch.errors import DocumentRejectedError, SourceConfigError
+from agents.fetch.errors import DocumentRejectedError, SourceConfigError, UnknownSourceError
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
 from agents.fetch.strategies.base import STRATEGIES
@@ -37,14 +37,17 @@ class DocumentFetcherAgent:
         self._rejection: RejectionChecker = rejection or NeverRejected()
 
     def _resolve(self, source: str) -> LegalSource:
-        cls = SOURCES.get(source)
         try:
-            strategy_cls = STRATEGIES.get(cls.strategy_name)
+            source_cls = SOURCES.get(source)
+        except UnknownNameError as exc:
+            raise UnknownSourceError(f"unknown source {source[:64]!r}") from exc
+        try:
+            strategy_cls = STRATEGIES.get(source_cls.strategy_name)
         except UnknownNameError as exc:
             raise SourceConfigError(
-                f"source {source!r} uses unknown strategy {cls.strategy_name!r}"
+                f"source {source!r} uses unknown strategy {source_cls.strategy_name!r}"
             ) from exc
-        return cls(strategy_cls(cls.base_url))
+        return source_cls(strategy_cls(source_cls.base_url))
 
     def list_documents(self, source: str, flt: DocumentFilter) -> DocumentPage:
         return self._resolve(source).list_documents(flt)
@@ -58,6 +61,6 @@ class DocumentFetcherAgent:
     ) -> FetchedDocument:
         _check_source(source, ref)
         if self._rejection.is_rejected(ref.url):
-            raise DocumentRejectedError(f"document rejected: {ref.url}")
+            raise DocumentRejectedError(f"document rejected: {ref.source}/{ref.external_id}")
         result = self._resolve(source).fetch_document(ref)
         return result.model_copy(update={"tenant_id": tenant_id})
