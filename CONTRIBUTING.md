@@ -77,7 +77,7 @@ uv run python scripts/mutation_score.py
   results summary. To change the
   scope, edit `source_paths` and `pytest_add_cli_args_test_selection` in
   `pyproject.toml` (mutmut 3.8.1 reads its scope only from that file). The CI
-  job skips with a notice while `src/agents/fetch` does not exist.
+  job fails (it does not skip) when `src/agents/fetch` does not exist.
 
 ## Branching & PRs
 
