@@ -43,6 +43,7 @@ dev = [
     "freezegun==1.5.5",
     "diff-cover==11.0.0",
     "mutmut==3.8.1",
+    "types-PyYAML==6.0.12.20250915",
 ]
 docs = [
     "mkdocs-material==9.7.7",

@@ -109,6 +109,14 @@ def test_readme_in_each_skeleton_dir():
         assert (ROOT / rel / "README.md").exists(), f"missing {rel}/README.md"
 
 
+def test_every_dev_tool_is_pinned_with_exact_version():
+    extras = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"][
+        "optional-dependencies"
+    ]
+    unpinned = [d for d in extras["dev"] if "==" not in d]
+    assert unpinned == []
+
+
 def test_precommit_revs_match_pinned_dev_tools():
     dev = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"][
         "dev"
