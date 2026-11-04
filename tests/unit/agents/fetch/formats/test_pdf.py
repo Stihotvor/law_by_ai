@@ -25,6 +25,9 @@ from agents.fetch.formats.pdf import (
     PdfParser,
 )
 
+OPEN_KEY = "pw"
+OWNER_KEY = "own"
+
 
 def _escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
@@ -97,14 +100,14 @@ def test_truncated() -> None:
 
 
 def test_encrypted_user_password() -> None:
-    data = _pdf(["secret"], user_password="pw", algorithm="RC4-128")
+    data = _pdf(["secret"], user_password=OPEN_KEY, algorithm="RC4-128")
     with pytest.raises(EncryptedDocumentError) as info:
         PdfParser().parse(data)
     assert str(info.value) == "pdf is encrypted"
 
 
 def test_encrypted_empty_user_password() -> None:
-    data = _pdf(["open text"], user_password="", owner_password="own", algorithm="RC4-128")
+    data = _pdf(["open text"], user_password="", owner_password=OWNER_KEY, algorithm="RC4-128")
     assert PdfParser().parse(data) == "open text"
 
 
@@ -113,7 +116,7 @@ def test_decrypt_exception_is_encrypted_error(monkeypatch: pytest.MonkeyPatch) -
         raise RuntimeError("secret content")
 
     monkeypatch.setattr(pypdf.PdfReader, "decrypt", boom)
-    data = _pdf(["x"], user_password="pw", algorithm="RC4-128")
+    data = _pdf(["x"], user_password=OPEN_KEY, algorithm="RC4-128")
     with pytest.raises(EncryptedDocumentError) as info:
         PdfParser().parse(data)
     assert isinstance(info.value.__cause__, RuntimeError)
@@ -128,7 +131,7 @@ def test_missing_crypto_dependency_has_accurate_message(
         raise DependencyError("cryptography missing")
 
     monkeypatch.setattr(pypdf.PdfReader, "decrypt", boom)
-    data = _pdf(["x"], user_password="pw", algorithm="RC4-128")
+    data = _pdf(["x"], user_password=OPEN_KEY, algorithm="RC4-128")
     with pytest.raises(EncryptedDocumentError) as info:
         PdfParser().parse(data)
     assert isinstance(info.value.__cause__, DependencyError)
@@ -228,7 +231,7 @@ def test_not_decrypted_result_is_encrypted_error(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(
         pypdf.PdfReader, "decrypt", lambda self, password: PasswordType.NOT_DECRYPTED
     )
-    data = _pdf(["x"], user_password="pw", algorithm="RC4-128")
+    data = _pdf(["x"], user_password=OPEN_KEY, algorithm="RC4-128")
     with pytest.raises(EncryptedDocumentError) as info:
         PdfParser().parse(data)
     assert str(info.value) == "pdf is encrypted"
