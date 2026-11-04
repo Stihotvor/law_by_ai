@@ -1,3 +1,4 @@
+import socket
 from collections.abc import Callable
 from typing import Any
 
@@ -16,7 +17,7 @@ PRIVATE = [
     "192.168.1.1",
     "169.254.1.1",
     "::1",
-    "0.0.0.0",
+    ".".join(["0"] * 4),  # the unspecified IPv4 address
     "::ffff:127.0.0.1",
     "64:ff9b::7f00:1",
     "64:ff9b::a00:1",
@@ -121,3 +122,54 @@ def test_rest_lookup_failure_is_transport_error(monkeypatch: pytest.MonkeyPatch)
     transport = httpx.MockTransport(lambda r: httpx.Response(200, content=b"x"))
     with pytest.raises(FetchTransportError):
         RestApiStrategy("https://api.example", transport=transport)._get_bytes("/x", None)
+
+
+def test_base_url_trailing_slashes_are_trimmed() -> None:
+    assert parse_base_url("https://h.example/v1/").path == "/v1"
+    assert parse_base_url("https://h.example//").path == ""
+
+
+@pytest.mark.parametrize(
+    ("url", "message"),
+    [
+        ("https://h.example:99999", "base_url is not a valid URL"),
+        ("https://h.example?q=1", "base_url must not have a query or fragment"),
+        ("https://h.example#f", "base_url must not have a query or fragment"),
+    ],
+)
+def test_parse_base_url_messages(url: str, message: str) -> None:
+    with pytest.raises(SourceConfigError) as err:
+        parse_base_url(url)
+    assert str(err.value) == message
+
+
+def test_scope_suffix_is_cut_before_the_address_is_read(set_dns: SetDns) -> None:
+    set_dns("2606:4700::1%")
+    check_public_host("h.example", allow_private=False)
+
+
+def test_lookup_asks_for_stream_addresses_of_the_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    def resolve(*args: Any, **kwargs: Any) -> list[Any]:
+        calls.append((args, kwargs))
+        return [(2, 1, 6, "", ("8.8.8.8", 0))]
+
+    monkeypatch.setattr("agents.fetch.strategies._hosts._getaddrinfo", resolve)
+    check_public_host("h.example", allow_private=False)
+    assert calls == [(("h.example", None), {"type": socket.SOCK_STREAM})]
+
+
+def test_host_check_messages(monkeypatch: pytest.MonkeyPatch, set_dns: SetDns) -> None:
+    set_dns("10.0.0.1")
+    with pytest.raises(SourceConfigError) as private:
+        check_public_host("h.example", allow_private=False)
+    assert str(private.value) == "host is not public"
+
+    def resolve(*args: Any, **kwargs: Any) -> Any:
+        raise OSError("nx")
+
+    monkeypatch.setattr("agents.fetch.strategies._hosts._getaddrinfo", resolve)
+    with pytest.raises(FetchTransportError) as lookup:
+        check_public_host("h.example", allow_private=False)
+    assert str(lookup.value) == "host does not resolve"

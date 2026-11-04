@@ -52,6 +52,8 @@ jobs:
         run: uv sync --locked --extra dev
       - name: Run unit tests (no external services)
         run: uv run pytest -m "not integration" -q --cov --cov-branch --cov-report=xml --cov-report=term-missing
+      - name: Coverage floor for src/agents
+        run: uv run coverage report --include='src/agents/*' --fail-under=100
       - name: Coverage of changed lines
         if: github.event_name == 'pull_request'
         env:
@@ -62,7 +64,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: lint
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -73,19 +74,20 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --extra dev
       - name: Check mutation target
-        id: target
         run: |
-          if [ -d src/agents/fetch ] && [ -d tests/unit/agents/fetch ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::Mutation target src/agents/fetch not present; skipping."
-          fi
+          for d in src/agents/fetch tests/unit/agents/fetch; do
+            if [ ! -d "$d" ]; then
+              echo "::error::Mutation target $d is missing; the gate must not pass vacuously."
+              exit 1
+            fi
+          done
       - name: Run mutation tests (scope set in pyproject.toml)
-        if: steps.target.outputs.present == 'true'
         run: uv run mutmut run
       - name: Summarise results
-        if: always() && steps.target.outputs.present == 'true'
+        if: always()
         run: uv run mutmut results > mutation-summary.txt
+      - name: Enforce mutation score (threshold in scripts/mutation_score.py)
+        run: uv run python scripts/mutation_score.py
       - name: Upload mutation summary
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -125,7 +127,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --extra dev
       - name: Bandit security scan
-        run: uv run bandit -r src/ -c pyproject.toml
+        run: uv run bandit -r src/ scripts/ -c pyproject.toml
       - name: pip-audit dependency vulnerabilities
         run: uv run pip-audit
 

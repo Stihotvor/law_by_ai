@@ -1,8 +1,10 @@
 """Smoke tests for the repo skeleton and Docker setup (issue #6)."""
 
+import re
 import tomllib
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -108,13 +110,109 @@ def test_readme_in_each_skeleton_dir():
         assert (ROOT / rel / "README.md").exists(), f"missing {rel}/README.md"
 
 
+_EXACT_PIN = re.compile(
+    r"^(?P<name>[A-Za-z0-9_.\-]+)(\[[^\]]+\])?==(?P<version>[A-Za-z0-9_.+\-]+)"
+    r"(?:\s*;\s*(?P<marker>\S.*))?$"
+)
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "ruff==1.2.*",
+        "ruff==*",
+        "ruff>=1.2",
+        "ruff==1.2.*; python_version=='3.13'",
+        "ruff==1.2;",
+        "ruff",
+    ],
+)
+def test_exact_pin_matcher_rejects_non_exact_specs(spec: str):
+    assert _EXACT_PIN.match(spec) is None
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "ruff==0.16.1",
+        "bandit[toml]==1.9.4",
+        "types-PyYAML==6.0.12.20250915",
+        "x==1.0+local",
+        "ruff==1.2; python_version=='3.13'",
+    ],
+)
+def test_exact_pin_matcher_accepts_exact_specs(spec: str):
+    assert _EXACT_PIN.match(spec) is not None
+
+
+def test_every_dev_tool_is_pinned_with_exact_version():
+    extras = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"][
+        "optional-dependencies"
+    ]
+    unpinned = [d for d in extras["dev"] if not _EXACT_PIN.match(d)]
+    assert unpinned == []
+
+
 def test_precommit_revs_match_pinned_dev_tools():
     dev = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"][
         "dev"
     ]
-    pins = {d.split("==")[0].split("[")[0]: d.split("==")[1] for d in dev}
+    matches = [_EXACT_PIN.match(d) for d in dev]
+    pins = {m["name"]: m["version"] for m in matches if m}
     config = yaml.safe_load((ROOT / ".pre-commit-config.yaml").read_text())
     revs = {r["repo"].rsplit("/", 1)[-1]: r["rev"].removeprefix("v") for r in config["repos"]}
     assert revs["ruff-pre-commit"] == pins["ruff"]
     assert revs["pyright-python"] == pins["pyright"]
     assert revs["bandit"] == pins["bandit"]
+
+
+def _workflows() -> dict[str, dict]:
+    paths = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+    return {p.name: yaml.safe_load(p.read_text()) for p in paths}
+
+
+def test_every_workflow_job_has_timeout():
+    for name, wf in _workflows().items():
+        for job, spec in wf["jobs"].items():
+            assert "timeout-minutes" in spec, f"{name}:{job} lacks timeout-minutes"
+
+
+def _uses(node: object) -> list[str]:
+    if isinstance(node, dict):
+        found = [v for k, v in node.items() if k == "uses" and isinstance(v, str)]
+        return found + [u for v in node.values() for u in _uses(v)]
+    if isinstance(node, list):
+        return [u for v in node for u in _uses(v)]
+    return []
+
+
+def test_every_action_is_pinned_to_a_full_sha():
+    for name, wf in _workflows().items():
+        for ref in _uses(wf):
+            if ref.startswith("./"):
+                continue
+            assert re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", ref), f"{name}: {ref}"
+
+
+def test_docs_workflow_triggers_on_build_inputs():
+    wf = _workflows()["docs.yml"]
+    expected = {".github/workflows/docs.yml", "pyproject.toml", "uv.lock", "docs/**"}
+    for event in ("push", "pull_request"):
+        assert expected <= set(wf[True][event]["paths"])
+
+
+def test_coverage_floors_are_enforced():
+    cfg = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    assert cfg["tool"]["coverage"]["report"]["fail_under"] >= 88
+    steps = _workflows()["ci.yml"]["jobs"]["unit-test"]["steps"]
+    runs = " ".join(s.get("run", "") for s in steps)
+    assert "--include='src/agents/*' --fail-under=100" in runs
+
+
+def test_mutation_job_fails_instead_of_skipping_when_target_missing():
+    job = _workflows()["ci.yml"]["jobs"]["mutation"]
+    for step in job["steps"]:
+        assert "steps.target" not in str(step.get("if", ""))
+    check = next(s for s in job["steps"] if s.get("name") == "Check mutation target")
+    assert "exit 1" in check["run"]
+    assert "skipping" not in check["run"]

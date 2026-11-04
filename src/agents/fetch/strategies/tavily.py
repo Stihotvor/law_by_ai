@@ -27,6 +27,7 @@ from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
+from pydantic import BaseModel, ConfigDict, ValidationError
 from tavily import TavilyClient
 from tavily.errors import (
     BadRequestError,
@@ -97,6 +98,32 @@ def _bad_id(external_id: str) -> bool:
 def _check_id(external_id: str) -> None:
     if _bad_id(external_id) or any(ord(c) < 32 or ord(c) == 127 for c in external_id):
         raise InvalidReferenceError("unsafe external_id")
+
+
+class _MapBody(BaseModel):
+    model_config = ConfigDict(strict=True)
+    results: list[object]
+
+
+class _ExtractBody(BaseModel):
+    model_config = ConfigDict(strict=True)
+    results: list[object]
+    failed_results: object = None
+
+
+class _ExtractResult(BaseModel):
+    model_config = ConfigDict(strict=True)
+    raw_content: object = None
+    url: object = None
+
+
+def _first_result(results: list[object]) -> _ExtractResult | None:
+    if len(results) != 1:
+        return None
+    try:
+        return _ExtractResult.model_validate(results[0])
+    except ValidationError:
+        return None
 
 
 @STRATEGIES.register("tavily")
@@ -206,7 +233,7 @@ class TavilyCrawlStrategy:
             raise InvalidReferenceError("invalid cursor")
         return int(cursor)
 
-    def _call(self, method: str, **kwargs: Any) -> Any:
+    def _call(self, method: str, **kwargs: Any) -> object:
         client, pool = self._resources()
         future = pool.submit(getattr(client, method), **kwargs)
         try:
@@ -217,11 +244,13 @@ class TavilyCrawlStrategy:
         except Exception as exc:
             raise _translate(exc) from exc
 
-    def _ids(self, body: Any) -> list[str]:
-        if not isinstance(body, dict) or not isinstance(body.get("results"), list):
-            raise PayloadError("tavily map: unexpected response")
+    def _ids(self, body: object) -> list[str]:
+        try:
+            results = _MapBody.model_validate(body).results
+        except ValidationError:
+            raise PayloadError("tavily map: unexpected response") from None
         found: set[str] = set()
-        for item in body["results"][: get_settings().tavily_max_pages]:
+        for item in results[: get_settings().tavily_max_pages]:
             eid = self._relative(item) if isinstance(item, str) else None
             if eid is not None:
                 found.add(eid)
@@ -248,22 +277,21 @@ class TavilyCrawlStrategy:
         eid = url[len(self._base) + 1 :]
         return None if _bad_id(eid) else eid
 
-    def _content(self, body: Any, eid: str) -> bytes:
-        if not isinstance(body, dict):
-            raise PayloadError("tavily extract: unexpected response")
-        results = body.get("results")
-        if not isinstance(results, list):
-            raise PayloadError("tavily extract: unexpected response")
-        if not results:
-            if body.get("failed_results"):
+    def _content(self, body: object, eid: str) -> bytes:
+        try:
+            extract = _ExtractBody.model_validate(body)
+        except ValidationError:
+            raise PayloadError("tavily extract: unexpected response") from None
+        if not extract.results:
+            if extract.failed_results:
                 raise FetchTransportError("tavily extract failed")
             raise DocumentNotFoundError("tavily extract: no content")
-        first = results[0]
-        text = first.get("raw_content") if len(results) == 1 and isinstance(first, dict) else None
-        if not isinstance(text, str) or not text:
+        first = _first_result(extract.results)
+        text = first.raw_content if first is not None else None
+        if first is None or not isinstance(text, str) or not text:
             raise PayloadError("tavily extract: unexpected result")
-        if "url" in first and (
-            not isinstance(first["url"], str) or self._relative(first["url"]) != eid
+        if "url" in first.model_fields_set and (
+            not isinstance(first.url, str) or self._relative(first.url) != eid
         ):
             raise PayloadError("tavily extract: result is for another url")
         return text.encode("utf-8")

@@ -32,6 +32,9 @@ _ENV_KEYS = (
 )
 
 
+DEFAULT_DB_CRED = "lawbyai"
+
+
 def _clear_env(monkeypatch) -> None:
     for key in _ENV_KEYS:
         monkeypatch.delenv(key, raising=False)
@@ -42,7 +45,7 @@ def test_defaults_when_no_environment(monkeypatch):
     settings = Settings()
 
     assert settings.postgres_user == "lawbyai"
-    assert settings.postgres_password == "lawbyai"
+    assert settings.postgres_password == DEFAULT_DB_CRED
     assert settings.postgres_db == "lawbyai"
     assert settings.postgres_host == "localhost"
     assert settings.postgres_port == "5432"

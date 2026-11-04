@@ -35,7 +35,7 @@ class RestMapper:
     parse_meta: Callable[[Any, DocumentRef], DocumentMeta]
     id_safe: str = ""
     id_pattern: str | None = None
-    alt_content_paths: Mapping[str, str] = field(default_factory=dict)
+    alt_content_paths: Mapping[str, str] = field(default_factory=dict[str, str])
 
     def __post_init__(self) -> None:
         if self.id_safe not in {"", "/"}:

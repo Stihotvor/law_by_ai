@@ -63,7 +63,8 @@ def test_enable_logs_one_warning(caplog: pytest.LogCaptureFixture) -> None:
     assert rec.levelno == logging.WARNING
     text = rec.getMessage()
     assert text == "OCR enabled: document content is sent to ocr.example (fake)"
-    assert MARKER not in text and KEY not in text
+    assert MARKER not in text
+    assert KEY not in text
     m.read_pdf(b"a")
     m.read_image(b"a", "image/png")
     assert len(caplog.records) == 1

@@ -351,11 +351,13 @@ def test_error_mapping(op: str, exc: Exception, kind: type[FetchError], status: 
     client = MagicMock()
     getattr(client, op).side_effect = exc
     strategy = _strategy(client)
+    call = (
+        (lambda: strategy.list_refs("s", DocumentFilter()))
+        if op == "map"
+        else (lambda: strategy.read(_ref()))
+    )
     with pytest.raises(kind) as err:
-        if op == "map":
-            strategy.list_refs("s", DocumentFilter())
-        else:
-            strategy.read(_ref())
+        call()
     text = str(err.value)
     assert "SECRET-MARKER" not in text
     assert KEY not in text

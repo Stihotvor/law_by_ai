@@ -1,18 +1,32 @@
 #!/usr/bin/env python
-"""Initialize the database with a test tenant and admin user."""
+"""Initialize the database with a test tenant and admin user.
 
-import sys
-from pathlib import Path
+Run from the repository root:
+SEED_ADMIN_PASSWORD=<password> PYTHONPATH=src python scripts/seed_db.py
+"""
 
-# Add src to path
-src_path = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(src_path))
+import os
 
 from core.security import ADMIN
 from plugins.relational_db.postgres import PostgreSQLStore
 
+BCRYPT_MAX_BYTES = 72  # bcrypt rejects longer inputs (core.security.passwords uses bcrypt)
 
-def main():
+
+def admin_password() -> str:
+    """Return the seed admin password from SEED_ADMIN_PASSWORD (required)."""
+    password = os.environ.get("SEED_ADMIN_PASSWORD")
+    if not password:
+        raise SystemExit("SEED_ADMIN_PASSWORD must be set to seed the admin user.")
+    if len(password.encode("utf-8")) > BCRYPT_MAX_BYTES:
+        raise SystemExit(
+            f"SEED_ADMIN_PASSWORD must be at most {BCRYPT_MAX_BYTES} bytes in UTF-8 (bcrypt limit)."
+        )
+    return password
+
+
+def main() -> None:
+    password = admin_password()
     plugin = PostgreSQLStore()
     plugin.initialize()
 
@@ -27,7 +41,7 @@ def main():
     try:
         user = plugin.create_user(
             email="admin@example.com",
-            password="admin",
+            password=password,
             role=ADMIN,
             tenant_id="platform",
             name="Admin",

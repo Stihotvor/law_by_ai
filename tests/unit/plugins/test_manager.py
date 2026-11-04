@@ -189,3 +189,32 @@ def test_singleton_and_roots():
 
     assert isinstance(plugin_manager, PluginManager)
     assert (ROOT_DIR / "src").is_dir()
+
+
+def test_type_entries_must_be_mapping(tmp_path):
+    mgr = _write_registry(tmp_path, "plugins:\n  relational_db: [a, b]\n")
+    with pytest.raises(PluginLoadError, match="'relational_db' must hold a mapping"):
+        mgr.load()
+
+
+def test_plugin_spec_must_be_mapping(tmp_path):
+    mgr = _write_registry(tmp_path, "plugins:\n  relational_db:\n    x: just-a-string\n")
+    with pytest.raises(PluginLoadError, match=r"relational_db/'x' must be a mapping"):
+        mgr.load()
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "module: m",
+        "class: C",
+        "module: 5\n      class: C",
+        "module: m\n      class: 5",
+        "module: ''\n      class: C",
+        "module: m\n      class: ''",
+    ],
+)
+def test_spec_needs_string_module_and_class(tmp_path, spec):
+    mgr = _write_registry(tmp_path, f"plugins:\n  relational_db:\n    x:\n      {spec}\n")
+    with pytest.raises(PluginLoadError, match=r"relational_db/'x' needs both 'module' and 'class'"):
+        mgr.load()

@@ -22,6 +22,7 @@ def test_no_plugin_imports_and_no_upward_imports() -> None:
     for path in files:
         in_sub = path.parent.name in {"sources", "strategies"}
         for mod in _imports(path):
-            assert mod != "plugins" and not mod.startswith(("plugins.", "core.plugins")), path
+            assert mod != "plugins", path
+            assert not mod.startswith(("plugins.", "core.plugins")), path
             if in_sub:
                 assert mod != "agents.fetch.document_fetcher", path

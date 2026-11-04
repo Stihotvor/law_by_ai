@@ -4,6 +4,7 @@ import importlib
 import pkgutil
 import re
 from collections.abc import Callable
+from typing import cast
 
 _NAME_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
@@ -36,16 +37,17 @@ class Registry[T]:
         self._validate = validate
         self._items: dict[str, T] = {}
 
-    def register(self, name: str) -> Callable[[T], T]:
+    def register[C](self, name: str) -> Callable[[C], C]:
         if not _NAME_RE.match(name):
             raise InvalidNameError(f"{self._kind}: invalid name {name!r}")
         if name in self._items:
             raise DuplicateNameError(f"{self._kind}: duplicate name {name!r}")
 
-        def decorator(obj: T) -> T:
+        def decorator(obj: C) -> C:
+            item = cast(T, obj)
             if self._validate is not None:
-                self._validate(name, obj)
-            self._items[name] = obj
+                self._validate(name, item)
+            self._items[name] = item
             return obj
 
         return decorator

@@ -7,7 +7,7 @@ from typing import Any, ClassVar, cast
 
 from docx import Document
 from docx.document import Document as DocumentType
-from docx.table import Table, _Cell, _Row
+from docx.table import Table
 from docx.text.paragraph import Paragraph
 
 from agents.fetch.formats import base
@@ -64,11 +64,15 @@ def _check_zip(data: bytes) -> None:
     _check_infos(infos)
 
 
-def _row_texts(row: _Row, depth: int) -> list[str]:
+def _cell_items(tc: Any, table: Table) -> Iterator[Paragraph | Table]:
+    for child in tc.xpath("./w:p | ./w:tbl"):
+        yield Paragraph(child, table) if child.tag.endswith("}p") else Table(child, table)
+
+
+def _row_texts(table: Table, tr: Any, depth: int) -> list[str]:
     texts: list[str] = []
-    for tc in cast(Any, row)._tr.tc_lst:
-        cell = _Cell(tc, row.table)
-        parts = (line for line in _lines(cell.iter_inner_content(), depth + 1) if line)
+    for tc in tr.tc_lst:
+        parts = (line for line in _lines(_cell_items(tc, table), depth + 1) if line)
         texts.append(" ".join(parts))
     return texts
 
@@ -81,7 +85,7 @@ def _lines(items: Iterable[Paragraph | Table], depth: int) -> Iterator[str]:
             yield item.text
             continue
         for row in item.rows:
-            texts = _row_texts(row, depth)
+            texts = _row_texts(item, cast(Any, row)._tr, depth)
             if any(texts):
                 yield " | ".join(texts)
 

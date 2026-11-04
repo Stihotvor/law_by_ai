@@ -12,7 +12,7 @@ by ``config.settings``) determines which implementation serves each type.
 
 import importlib
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeGuard
 
 import yaml
 
@@ -50,6 +50,10 @@ TYPE_TO_PROTOCOL: dict[str, type[Any]] = {
 }
 
 
+def _is_mapping(value: object) -> TypeGuard[dict[str, object]]:
+    return isinstance(value, dict)
+
+
 class PluginManager:
     """Loads plugins from a YAML registry and routes requests by type."""
 
@@ -68,20 +72,20 @@ class PluginManager:
         """Read the YAML registry and import every registered plugin."""
         try:
             with self._config_path.open(encoding="utf-8") as fh:
-                data = yaml.safe_load(fh) or {}
+                data: object = yaml.safe_load(fh) or {}
         except FileNotFoundError as exc:
             raise PluginLoadError(f"plugin registry not found: {self._config_path}") from exc
         except yaml.YAMLError as exc:
             raise PluginLoadError(f"invalid plugin registry YAML: {exc}") from exc
 
-        if not isinstance(data, dict):
+        if not _is_mapping(data):
             raise PluginLoadError(
                 f"plugin registry root must be a mapping in {self._config_path}, "
                 f"got {type(data).__name__}"
             )
 
         registry = data.get("plugins", {})
-        if not isinstance(registry, dict):
+        if not _is_mapping(registry):
             raise PluginLoadError(
                 f"'plugins' must be a mapping in {self._config_path}, got {type(registry).__name__}"
             )
@@ -91,16 +95,22 @@ class PluginManager:
         for plugin_type, entries in registry.items():
             if plugin_type not in TYPE_TO_PROTOCOL:
                 raise PluginLoadError(f"unknown plugin type {plugin_type!r} in {self._config_path}")
+            if not _is_mapping(entries):
+                raise PluginLoadError(f"plugin type {plugin_type!r} must hold a mapping")
             for name, spec in entries.items():
+                if not _is_mapping(spec):
+                    raise PluginLoadError(f"plugin {plugin_type}/{name!r} must be a mapping")
                 instance = self._import(spec, name=name, plugin_type=plugin_type)
                 self._plugins[plugin_type].append((name, instance))
                 if spec.get("active", False):
                     self._active[plugin_type] = instance
         self._loaded = True
 
-    def _import(self, spec: dict[str, Any], *, name: str, plugin_type: str) -> Any:
+    def _import(self, spec: dict[str, object], *, name: str, plugin_type: str) -> Any:
         module_name = spec.get("module")
         class_name = spec.get("class")
+        if not isinstance(module_name, str) or not isinstance(class_name, str):
+            raise PluginLoadError(f"plugin {plugin_type}/{name!r} needs both 'module' and 'class'")
         if not module_name or not class_name:
             raise PluginLoadError(f"plugin {plugin_type}/{name!r} needs both 'module' and 'class'")
         try:

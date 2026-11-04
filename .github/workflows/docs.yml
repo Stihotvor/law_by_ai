@@ -5,9 +5,15 @@ on:
     branches:
       - main
     paths:
+      - '.github/workflows/docs.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
       - 'docs/**'
   pull_request:
     paths:
+      - '.github/workflows/docs.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
       - 'docs/**'
 
 permissions:

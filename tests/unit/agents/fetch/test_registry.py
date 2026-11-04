@@ -122,3 +122,10 @@ def test_registry_error_messages() -> None:
     with pytest.raises(UnknownNameError) as unknown:
         reg.get("nope")
     assert str(unknown.value) == "kind: unknown name 'nope'"
+
+
+def test_no_validator_stores_any_object_unchecked() -> None:
+    reg: Registry[int] = Registry("k")
+    wrong: object = "not-an-int"
+    reg.register("a")(wrong)
+    assert reg.get("a") is wrong

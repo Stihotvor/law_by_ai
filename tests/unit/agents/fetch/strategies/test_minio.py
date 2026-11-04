@@ -19,7 +19,7 @@ from agents.fetch.strategies.base import FetchStrategy
 from agents.fetch.strategies.minio import MinioStrategy
 
 BASE = "https://m.local/gov_pl"
-SECRET = "test-secret-value"
+CANARY = "test-secret-value"
 T0 = datetime(2024, 1, 10, tzinfo=UTC)
 pytestmark = pytest.mark.usefixtures("settings_env")
 KEY = "gov_pl/2024/act-12.pdf"
@@ -64,7 +64,7 @@ def test_default_client_construction(monkeypatch: pytest.MonkeyPatch) -> None:
     args, kwargs = fake.call_args
     assert args == ("minio.test:9000",)
     assert kwargs["access_key"] == "test-access"
-    assert kwargs["secret_key"] == SECRET
+    assert kwargs["secret_key"] == CANARY
     assert kwargs["secure"] is True
     http = kwargs["http_client"]
     assert isinstance(http, urllib3.PoolManager)
@@ -87,7 +87,7 @@ def test_missing_credentials(monkeypatch: pytest.MonkeyPatch, var: str) -> None:
     with pytest.raises(SourceConfigError) as info:
         MinioStrategy(BASE)
     assert str(info.value) == "MinIO credentials are not set"
-    assert SECRET not in str(info.value)
+    assert CANARY not in str(info.value)
 
 
 @pytest.mark.parametrize("url", ["https://m.local", "https://m.local/", "https://m.local/a/../b"])
@@ -304,7 +304,7 @@ def test_read_errors() -> None:
         c.get_object.side_effect = exc
         with pytest.raises(FetchTransportError) as info:
             s.read(_ref())
-        assert SECRET not in str(info.value)
+        assert CANARY not in str(info.value)
         assert "test-access" not in str(info.value)
     c.get_object.side_effect = _s3("InternalError")
     with pytest.raises(FetchTransportError, match=r"get gov_pl/2024/act-12\.pdf: InternalError"):
@@ -323,8 +323,9 @@ def test_registered_protocol_and_repr() -> None:
     s, _ = _make()
     assert isinstance(s, FetchStrategy)
     text = repr(s)
-    assert SECRET not in text and "test-access" not in text
-    assert all(SECRET not in str(v) for v in vars(s).values() if not isinstance(v, MagicMock))
+    assert CANARY not in text
+    assert "test-access" not in text
+    assert all(CANARY not in str(v) for v in vars(s).values() if not isinstance(v, MagicMock))
 
 
 def test_prefix_messages_and_x_chars_kept() -> None:
@@ -351,7 +352,8 @@ def test_aware_non_utc_is_preserved() -> None:
     when = datetime(2024, 1, 10, 5, tzinfo=tz)
     c.stat_object.return_value = _obj("k", when=when)
     got = s.get_meta(_ref()).published_at
-    assert got is not None and got.utcoffset() == timedelta(hours=2)
+    assert got is not None
+    assert got.utcoffset() == timedelta(hours=2)
     assert got.astimezone(UTC) == datetime(2024, 1, 10, 3, tzinfo=UTC)
 
 

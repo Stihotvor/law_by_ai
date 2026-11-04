@@ -60,18 +60,24 @@ The gate agent reads its checks from `.claude/quality-gates.json` (lint, format,
 ```bash
 PYTHONPATH=src uv run pytest -m "not integration" --cov --cov-branch --cov-report=xml --cov-report=term-missing
 uv run diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
+uv run coverage report --include='src/agents/*' --fail-under=100
 uv run mutmut run && uv run mutmut results
+uv run python scripts/mutation_score.py
 ```
 
 - Repo-wide branch coverage must stay at or above `fail_under` in `pyproject.toml`
-  (66%, the baseline; raise it as coverage grows, never lower it).
+  (88%; raise it as coverage grows, never lower it).
+- `src/agents` has its own floor of 100% (CI runs `coverage report --include='src/agents/*' --fail-under=100`).
 - New and changed lines need at least 90% coverage (`diff-cover`, pull requests only).
 - Mutation testing (`mutmut`) is scoped by `[tool.mutmut]` in `pyproject.toml` to
   `src/agents/fetch` with tests in `tests/unit/agents/fetch`. The CI job is
-  non-blocking, runs in CI only, and uploads a results summary. To change the
+  blocking: after the run, `scripts/mutation_score.py` fails it when the killed
+  percentage is below `MIN_KILLED_PERCENT` (the one place the threshold lives; raise
+  it as the score grows, never lower it). The job runs in CI only and uploads a
+  results summary. To change the
   scope, edit `source_paths` and `pytest_add_cli_args_test_selection` in
   `pyproject.toml` (mutmut 3.8.1 reads its scope only from that file). The CI
-  job skips with a notice while `src/agents/fetch` does not exist.
+  job fails (it does not skip) when `src/agents/fetch` does not exist.
 
 ## Branching & PRs
 

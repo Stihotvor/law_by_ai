@@ -14,6 +14,9 @@ VARS = (
 )
 
 
+SK_FIXTURE = "s"
+
+
 @pytest.fixture
 def clean(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     for name in VARS:
@@ -54,7 +57,7 @@ def test_overrides(clean: pytest.MonkeyPatch) -> None:
     assert s.fetch_total_timeout == 9.0
     assert s.minio_endpoint == "h:1"
     assert s.minio_access_key == "a"
-    assert s.minio_secret_key == "s"
+    assert s.minio_secret_key == SK_FIXTURE
     assert s.minio_bucket == "b"
     assert s.minio_secure is False
 

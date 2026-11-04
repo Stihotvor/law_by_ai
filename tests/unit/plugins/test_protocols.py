@@ -39,7 +39,7 @@ class NotARelationalDB:
         return "doc1"
 
 
-@pytest.mark.parametrize("protocol, factory", CONFORMING_PAIRS)
+@pytest.mark.parametrize(("protocol", "factory"), CONFORMING_PAIRS)
 def test_conforming_classes_satisfy_protocols(protocol, factory):
     assert isinstance(factory(), protocol)
 

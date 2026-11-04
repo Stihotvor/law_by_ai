@@ -37,7 +37,7 @@ def test_message_texts() -> None:
         _list_params(DocumentFilter(keyword="x" * 201))
     assert str(err.value) == "invalid filter value"
     ref = DocumentRef(source="sejm_eli", external_id="DU/2024/1", url="https://x")
-    with pytest.raises(ValueError) as err2:
+    with pytest.raises(ValueError, match="ELI does not match") as err2:
         _parse_meta({"ELI": "DU/2024/2"}, ref)
     assert str(err2.value) == "ELI does not match the reference"
 

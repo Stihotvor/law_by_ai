@@ -220,3 +220,22 @@ def test_html_malformed_megabyte_is_fast(unit: str) -> None:
     with contextlib.suppress(FormatError):
         html(data)
     assert time.monotonic() - start < 5
+
+
+def test_nul_error_message_exact() -> None:
+    with pytest.raises(BinaryContentError) as info:
+        txt(b"a\x00b")
+    assert str(info.value) == "data contains NUL characters"
+
+
+def test_size_error_message_exact(monkeypatch: pytest.MonkeyPatch) -> None:
+    from agents.fetch.formats import base as base_module
+
+    monkeypatch.setattr(base_module, "MAX_TEXT_CHARS", 3)
+    with pytest.raises(TextLimitError) as info:
+        txt(b"abcd")
+    assert str(info.value) == "text exceeds 3 characters"
+
+
+def test_html_nested_skip_tags_stay_hidden() -> None:
+    assert html("<svg><style>a</style>b</svg>c") == "c"
