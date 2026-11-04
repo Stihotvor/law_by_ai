@@ -4,6 +4,7 @@ import re
 import tomllib
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -109,7 +110,31 @@ def test_readme_in_each_skeleton_dir():
         assert (ROOT / rel / "README.md").exists(), f"missing {rel}/README.md"
 
 
-_EXACT_PIN = re.compile(r"^(?P<name>[A-Za-z0-9_.\-]+)(\[[^\]]+\])?==(?P<version>[^=<>!~;,\s]+)$")
+_EXACT_PIN = re.compile(
+    r"^(?P<name>[A-Za-z0-9_.\-]+)(\[[^\]]+\])?==(?P<version>[A-Za-z0-9_.+\-]+)$"
+)
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "ruff==1.2.*",
+        "ruff==*",
+        "ruff>=1.2",
+        "ruff==1.2; python_version=='3.13'",
+        "ruff",
+    ],
+)
+def test_exact_pin_matcher_rejects_non_exact_specs(spec: str):
+    assert _EXACT_PIN.match(spec) is None
+
+
+@pytest.mark.parametrize(
+    "spec",
+    ["ruff==0.16.1", "bandit[toml]==1.9.4", "types-PyYAML==6.0.12.20250915", "x==1.0+local"],
+)
+def test_exact_pin_matcher_accepts_exact_specs(spec: str):
+    assert _EXACT_PIN.match(spec) is not None
 
 
 def test_every_dev_tool_is_pinned_with_exact_version():
