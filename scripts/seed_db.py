@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Initialize the database with a test tenant and admin user.
 
-Run from the repository root: PYTHONPATH=src python scripts/seed_db.py
+Run from the repository root:
+SEED_ADMIN_PASSWORD=<password> PYTHONPATH=src python scripts/seed_db.py
 """
 
 import os
