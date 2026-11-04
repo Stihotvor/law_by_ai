@@ -1,8 +1,10 @@
 """Fail when the mutmut killed percentage is below ``MIN_KILLED_PERCENT``.
 
 Reads the ``*.meta`` files mutmut writes under ``mutants/``. A mutant counts as
-killed when its recorded exit code is neither 0 (tests passed, so it survived)
-nor missing (never checked).
+killed when its recorded exit code means the mutant was detected in mutmut 3.8.1
+(see ``mutmut.stats.status_by_exit_code``): killed, timeout, segfault or caught by
+the type check. Survivors (0), no-tests (5, 33), skipped, suspicious, interrupted,
+unchecked (None) and unknown codes stay in the total but do not count as killed.
 
 Usage: python scripts/mutation_score.py [mutants_dir]
 """
@@ -15,6 +17,10 @@ from pathlib import Path
 MIN_KILLED_PERCENT = 97
 
 
+# Exit codes mutmut 3.8.1 maps to a detected mutant.
+KILLED_CODES = frozenset({1, 3, 36, 24, -24, 152, 255, -11, -9, 37})
+
+
 def count(mutants_dir: Path) -> tuple[int, int]:
     """Return ``(killed, total)`` over every meta file below ``mutants_dir``."""
     killed = total = 0
@@ -22,7 +28,7 @@ def count(mutants_dir: Path) -> tuple[int, int]:
         codes = json.loads(meta.read_text(encoding="utf-8"))["exit_code_by_key"]
         for code in codes.values():
             total += 1
-            killed += code not in (0, None)
+            killed += code in KILLED_CODES
     return killed, total
 
 

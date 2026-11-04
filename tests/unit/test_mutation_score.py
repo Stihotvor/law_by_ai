@@ -25,8 +25,20 @@ def _write(root: Path, codes: dict[str, int | None]) -> None:
 
 
 def test_counts_survivors_and_unchecked_as_not_killed(tmp_path: Path) -> None:
-    _write(tmp_path, {"a": 1, "b": 0, "c": None, "d": 36})
+    _write(tmp_path, {"a": 1, "b": 0, "c": None, "d": 3})
     assert _load().count(tmp_path) == (2, 4)
+
+
+@pytest.mark.parametrize("code", [1, 3, 36, 24, -24, 152, 255, -11, -9, 37])
+def test_detected_codes_count_as_killed(tmp_path: Path, code: int) -> None:
+    _write(tmp_path, {"a": code})
+    assert _load().count(tmp_path) == (1, 1)
+
+
+@pytest.mark.parametrize("code", [0, 2, 5, 33, 34, 35, 99, None])
+def test_other_codes_stay_in_total_only(tmp_path: Path, code: int | None) -> None:
+    _write(tmp_path, {"a": code})
+    assert _load().count(tmp_path) == (0, 1)
 
 
 def test_percent_of_empty_total_is_zero() -> None:
