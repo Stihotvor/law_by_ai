@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 # The only place the mutation threshold lives. Raise it, never lower it.
-MIN_KILLED_PERCENT = 94
+MIN_KILLED_PERCENT = 97
 
 
 def count(mutants_dir: Path) -> tuple[int, int]:
