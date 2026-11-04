@@ -162,3 +162,12 @@ def test_coverage_floors_are_enforced():
     steps = _workflows()["ci.yml"]["jobs"]["unit-test"]["steps"]
     runs = " ".join(s.get("run", "") for s in steps)
     assert "--include='src/agents/*' --fail-under=100" in runs
+
+
+def test_mutation_job_fails_instead_of_skipping_when_target_missing():
+    job = _workflows()["ci.yml"]["jobs"]["mutation"]
+    for step in job["steps"]:
+        assert "steps.target" not in str(step.get("if", ""))
+    check = next(s for s in job["steps"] if s.get("name") == "Check mutation target")
+    assert "exit 1" in check["run"]
+    assert "skipping" not in check["run"]

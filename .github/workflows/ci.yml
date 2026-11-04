@@ -74,21 +74,19 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --extra dev
       - name: Check mutation target
-        id: target
         run: |
-          if [ -d src/agents/fetch ] && [ -d tests/unit/agents/fetch ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::Mutation target src/agents/fetch not present; skipping."
-          fi
+          for d in src/agents/fetch tests/unit/agents/fetch; do
+            if [ ! -d "$d" ]; then
+              echo "::error::Mutation target $d is missing; the gate must not pass vacuously."
+              exit 1
+            fi
+          done
       - name: Run mutation tests (scope set in pyproject.toml)
-        if: steps.target.outputs.present == 'true'
         run: uv run mutmut run
       - name: Summarise results
-        if: always() && steps.target.outputs.present == 'true'
+        if: always()
         run: uv run mutmut results > mutation-summary.txt
       - name: Enforce mutation score (threshold in scripts/mutation_score.py)
-        if: steps.target.outputs.present == 'true'
         run: uv run python scripts/mutation_score.py
       - name: Upload mutation summary
         if: always()
