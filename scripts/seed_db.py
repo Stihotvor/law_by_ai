@@ -10,11 +10,18 @@ from core.security import ADMIN
 from plugins.relational_db.postgres import PostgreSQLStore
 
 
+BCRYPT_MAX_BYTES = 72  # bcrypt rejects longer inputs (core.security.passwords uses bcrypt)
+
+
 def admin_password() -> str:
     """Return the seed admin password from SEED_ADMIN_PASSWORD (required)."""
     password = os.environ.get("SEED_ADMIN_PASSWORD")
     if not password:
         raise SystemExit("SEED_ADMIN_PASSWORD must be set to seed the admin user.")
+    if len(password.encode("utf-8")) > BCRYPT_MAX_BYTES:
+        raise SystemExit(
+            f"SEED_ADMIN_PASSWORD must be at most {BCRYPT_MAX_BYTES} bytes in UTF-8 (bcrypt limit)."
+        )
     return password
 
 
