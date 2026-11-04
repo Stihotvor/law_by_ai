@@ -252,3 +252,7 @@ def test_clean_strips_trailing_spaces_only() -> None:
 def test_nul_and_controls_become_clean_text(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pypdf.PageObject, "extract_text", lambda self, *a, **k: "a\x00b\x01c\x1fd")
     assert PdfParser().parse(_pdf(["x"])) == "ab c d"
+
+
+def test_clean_strips_only_trailing_spaces() -> None:
+    assert pdf_module._clean("aX  \nbX \n x") == "aX\nbX\n x"
