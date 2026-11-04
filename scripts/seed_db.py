@@ -9,7 +9,6 @@ import os
 from core.security import ADMIN
 from plugins.relational_db.postgres import PostgreSQLStore
 
-
 BCRYPT_MAX_BYTES = 72  # bcrypt rejects longer inputs (core.security.passwords uses bcrypt)
 
 

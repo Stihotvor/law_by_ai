@@ -109,11 +109,14 @@ def test_readme_in_each_skeleton_dir():
         assert (ROOT / rel / "README.md").exists(), f"missing {rel}/README.md"
 
 
+_EXACT_PIN = re.compile(r"^(?P<name>[A-Za-z0-9_.\-]+)(\[[^\]]+\])?==(?P<version>[^=<>!~;,\s]+)$")
+
+
 def test_every_dev_tool_is_pinned_with_exact_version():
     extras = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"][
         "optional-dependencies"
     ]
-    unpinned = [d for d in extras["dev"] if "==" not in d]
+    unpinned = [d for d in extras["dev"] if not _EXACT_PIN.match(d)]
     assert unpinned == []
 
 
@@ -121,7 +124,8 @@ def test_precommit_revs_match_pinned_dev_tools():
     dev = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"][
         "dev"
     ]
-    pins = {d.split("==")[0].split("[")[0]: d.split("==")[1] for d in dev}
+    matches = [_EXACT_PIN.match(d) for d in dev]
+    pins = {m["name"]: m["version"] for m in matches if m}
     config = yaml.safe_load((ROOT / ".pre-commit-config.yaml").read_text())
     revs = {r["repo"].rsplit("/", 1)[-1]: r["rev"].removeprefix("v") for r in config["repos"]}
     assert revs["ruff-pre-commit"] == pins["ruff"]
