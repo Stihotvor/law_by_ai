@@ -111,7 +111,8 @@ def test_readme_in_each_skeleton_dir():
 
 
 _EXACT_PIN = re.compile(
-    r"^(?P<name>[A-Za-z0-9_.\-]+)(\[[^\]]+\])?==(?P<version>[A-Za-z0-9_.+\-]+)$"
+    r"^(?P<name>[A-Za-z0-9_.\-]+)(\[[^\]]+\])?==(?P<version>[A-Za-z0-9_.+\-]+)"
+    r"(?:\s*;\s*(?P<marker>\S.*))?$"
 )
 
 
@@ -121,7 +122,8 @@ _EXACT_PIN = re.compile(
         "ruff==1.2.*",
         "ruff==*",
         "ruff>=1.2",
-        "ruff==1.2; python_version=='3.13'",
+        "ruff==1.2.*; python_version=='3.13'",
+        "ruff==1.2;",
         "ruff",
     ],
 )
@@ -131,7 +133,13 @@ def test_exact_pin_matcher_rejects_non_exact_specs(spec: str):
 
 @pytest.mark.parametrize(
     "spec",
-    ["ruff==0.16.1", "bandit[toml]==1.9.4", "types-PyYAML==6.0.12.20250915", "x==1.0+local"],
+    [
+        "ruff==0.16.1",
+        "bandit[toml]==1.9.4",
+        "types-PyYAML==6.0.12.20250915",
+        "x==1.0+local",
+        "ruff==1.2; python_version=='3.13'",
+    ],
 )
 def test_exact_pin_matcher_accepts_exact_specs(spec: str):
     assert _EXACT_PIN.match(spec) is not None
