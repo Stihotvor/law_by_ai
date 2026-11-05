@@ -53,6 +53,11 @@ Variable               Purpose                                Default
 ``TAVILY_TIMEOUT``        seconds per Tavily request              ``60.0``
 ``TAVILY_MAX_PAGES``      pages per Tavily map call               ``20``
 ``SEJM_MIN_INTERVAL``     seconds between Sejm requests           ``0.5``
+``INIT_TENANT_ID``        first tenant id (init program)          ``platform``
+``INIT_TENANT_NAME``      first tenant name (init program)        ``Platform``
+``INIT_ADMIN_EMAIL``      first admin email (init program)        *(empty)*
+``INIT_ADMIN_NAME``       first admin display name                ``Admin``
+``INIT_ADMIN_PASSWORD``   first admin password (init program)     *(empty)*
 =====================  =====================================  ================================
 
 Usage::
@@ -371,6 +376,32 @@ class Settings:
     def sejm_min_interval(self) -> float:
         """Minimum seconds between two outbound Sejm requests."""
         return _positive("SEJM_MIN_INTERVAL", "0.5", float)
+
+    # --- Init program (first tenant and admin) -------------------------------
+    @property
+    def init_tenant_id(self) -> str:
+        """Id of the tenant the init program creates if it is missing."""
+        return os.getenv("INIT_TENANT_ID", "platform")
+
+    @property
+    def init_tenant_name(self) -> str:
+        """Name of the tenant the init program creates if it is missing."""
+        return os.getenv("INIT_TENANT_NAME", "Platform")
+
+    @property
+    def init_admin_email(self) -> str:
+        """Email of the first admin (no default)."""
+        return os.getenv("INIT_ADMIN_EMAIL", "")
+
+    @property
+    def init_admin_name(self) -> str:
+        """Display name of the first admin."""
+        return os.getenv("INIT_ADMIN_NAME", "Admin")
+
+    @property
+    def init_admin_password(self) -> str:
+        """Password of the first admin (secret, env only, no default)."""
+        return os.getenv("INIT_ADMIN_PASSWORD", "")
 
 
 @lru_cache(maxsize=1)

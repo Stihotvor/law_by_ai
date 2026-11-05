@@ -24,6 +24,7 @@ PACKAGES = (
     "config",
     "data",
     "storage",
+    "bootstrap",
 )
 
 
