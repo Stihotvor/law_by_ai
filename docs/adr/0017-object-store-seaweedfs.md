@@ -94,7 +94,11 @@ The spike does not prove these points. Treat them as open risks.
 ## Consequences
 
 - Pin the image by tag and by digest.
-- Override the entrypoint to `/usr/bin/weed`.
+- Override the entrypoint to `/usr/bin/weed`. The override removes the switch
+  to UID 1000 that the image entrypoint does. Set `user: "1000:1000"` in the
+  compose service. Root with `cap_drop: ALL` cannot write the fresh `/data`
+  volume, which the `seaweed` user owns, and `weed mini` stops at its
+  writable-directory check.
 - Turn telemetry off with `-master.telemetry=false`.
 - Supply the S3 keys from a mounted file or from env that the init renders. The
   infra change makes this choice, not this ADR.
