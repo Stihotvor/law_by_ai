@@ -28,6 +28,7 @@ status: new
 | [ADR-0014](0014-hardcoded-postgresql.md) | Hardcoded PostgreSQL; plugin system deprecated | Accepted | 2026-08-12 |
 | [ADR-0015](0015-information-only-answers.md) | Answers are legal information, not legal advice | Proposed | 2026-11-01 |
 | [ADR-0016](0016-document-fetcher.md) | Registry and strategy design for the document fetcher | Proposed | 2026-11-02 |
+| [ADR-0017](0017-object-store-seaweedfs.md) | SeaweedFS as the S3 object store | Proposed | 2026-11-05 |
 
 ## How to add an ADR
 

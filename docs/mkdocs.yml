@@ -113,3 +113,4 @@ nav:
       - 0012 - License & Contribution Model: adr/0012-license-contribution-model.md
       - 0013 - Streamlit Authenticator: adr/0013-streamlit-authenticator.md
       - 0014 - Hardcoded PostgreSQL: adr/0014-hardcoded-postgresql.md
+      - 0017 - Object Store SeaweedFS: adr/0017-object-store-seaweedfs.md
