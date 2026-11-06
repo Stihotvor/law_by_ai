@@ -1,34 +1,170 @@
 name: law-by-ai
 
+# Limits are start ceilings. The final values come from `docker stats`.
+# Optional settings use a bare key (`NAME:`): Compose passes the value from
+# docker/.env when it is set and leaves the variable unset when it is not.
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  read_only: true
+
+x-db-env: &db-env
+  POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in docker/.env}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
+  POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in docker/.env}
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+
+x-s3-env: &s3-env
+  MINIO_ENDPOINT: ${MINIO_ENDPOINT:?set MINIO_ENDPOINT in docker/.env}
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY in docker/.env}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in docker/.env}
+  MINIO_BUCKET: ${MINIO_BUCKET:?set MINIO_BUCKET in docker/.env}
+  MINIO_SECURE: ${MINIO_SECURE:-false}
+
+x-app-env: &app-env
+  <<: *db-env
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in docker/.env}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_USER:
+  REDIS_DB:
+  APP_NAME:
+  APP_PORT: ${APP_PORT:-8501}
+  HOME: /tmp
+  LLM_BASE_URL:
+  LLM_API_KEY:
+  LLM_MODEL:
+  LLM_MODEL_DOCUMENT_FETCHER:
+  LLM_MODEL_DOCUMENT_PROCESSOR:
+  LLM_MODEL_LEGAL_RESEARCH:
+  LLM_MODEL_CHANGE_TRACKER:
+  LLM_MODEL_KNOWLEDGE_GRAPH:
+  LLM_MODEL_ANALYSIS:
+  LLM_MODEL_BUREAUCRACY_ASSISTANT:
+  EMBEDDING_BASE_URL:
+  EMBEDDING_API_KEY:
+  EMBEDDING_MODEL:
+  RERANK_BASE_URL:
+  RERANK_API_KEY:
+  RERANK_MODEL:
+
 services:
   postgres:
-    image: postgres:16-alpine
-    env_file: .env
+    <<: *hardening
+    image: postgres:18.6-alpine3.24@sha256:8a334ab9502c8ccb8d7dec4e83b36b5ce8ed7b396e585f1c86b0e69c416f4fca
+    user: "70:70"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in docker/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in docker/.env}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql:uid=70,gid=70
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 1.0
+    pids_limit: 200
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lawbyai} -d ${POSTGRES_DB:-lawbyai}"]
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 5s
-    networks: [internal]
+      start_period: 10s
+    networks: [backend]
 
   redis:
-    image: redis:7-alpine
+    <<: *hardening
+    image: redis:8.8.4-alpine3.23@sha256:ab669f1420eaa05360a417b24f3bd210c9272e2c79a4bb35d3e50b4bfd50dbee
+    user: "999:999"
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --save \"\" --appendonly no"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in docker/.env}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?set REDIS_PASSWORD in docker/.env}
+    tmpfs:
+      - /data:uid=999,gid=999
+    mem_limit: 32m
+    memswap_limit: 32m
+    cpus: 0.5
+    pids_limit: 100
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 10
       start_period: 5s
-    networks: [internal]
+    networks: [backend]
 
-  app:
+  s3:
+    <<: *hardening
+    image: chrislusf/seaweedfs:4.52@sha256:57877e32bb90073b37dc109b438ba66e84fd5ed9ced5f5c04f56444ef243ce59
+    # UID 1000 owns /data in the image. The default entrypoint fails without capabilities.
+    user: "1000:1000"
+    entrypoint: ["/usr/bin/weed"]
+    command: ["mini", "-dir=/data", "-master.telemetry=false"]
+    # weed reads one S3 identity from these two variables. A `configs` file
+    # cannot be created on a read-only root.
+    environment:
+      HOME: /tmp
+      AWS_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY in docker/.env}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in docker/.env}
+    volumes:
+      - s3data:/data
+    tmpfs:
+      - /tmp
+    mem_limit: 496m
+    memswap_limit: 496m
+    cpus: 1.0
+    pids_limit: 200
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [backend]
+
+  init:
+    <<: *hardening
+    restart: "no"
     build:
       context: ..
       dockerfile: docker/Dockerfile
       target: runtime
+    user: "10001:10001"
+    command: ["python", "-m", "bootstrap"]
+    environment:
+      <<: [*db-env, *s3-env]
+      HOME: /tmp
+      INIT_TENANT_ID:
+      INIT_TENANT_NAME:
+      INIT_ADMIN_EMAIL: ${INIT_ADMIN_EMAIL:?set INIT_ADMIN_EMAIL in docker/.env}
+      INIT_ADMIN_NAME:
+      INIT_ADMIN_PASSWORD: ${INIT_ADMIN_PASSWORD:?set INIT_ADMIN_PASSWORD in docker/.env}
+    tmpfs:
+      - /tmp
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.5
+    pids_limit: 100
+    depends_on:
+      postgres:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+    networks: [backend]
+
+  app:
+    <<: *hardening
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    user: "10001:10001"
     command:
       - streamlit
       - run
@@ -36,9 +172,17 @@ services:
       - --server.port=${APP_PORT:-8501}
       - --server.address=0.0.0.0
       - --server.headless=true
+    environment:
+      <<: *app-env
+      STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
     ports:
-      - "${APP_PORT:-8501}:${APP_PORT:-8501}"
-    env_file: .env
+      - "127.0.0.1:${APP_PORT:-8501}:${APP_PORT:-8501}"
+    tmpfs:
+      - /tmp
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 1.0
+    pids_limit: 200
     healthcheck:
       test:
         - CMD
@@ -50,17 +194,21 @@ services:
       retries: 5
       start_period: 15s
     depends_on:
+      init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks: [internal]
+    networks: [backend, edge]
 
   celery-worker:
+    <<: *hardening
     build:
       context: ..
       dockerfile: docker/Dockerfile
       target: runtime
+    user: "10001:10001"
     command:
       - celery
       - -A
@@ -68,7 +216,27 @@ services:
       - worker
       - --loglevel=info
       - --concurrency=2
-    env_file: .env
+    environment:
+      <<: [*app-env, *s3-env]
+      OCR_ENABLED: ${OCR_ENABLED:-false}
+      MISTRAL_API_KEY:
+      MISTRAL_BASE_URL:
+      MISTRAL_OCR_MODEL:
+      OCR_TIMEOUT:
+      OCR_MAX_BYTES:
+      FETCH_HTTP_TIMEOUT:
+      FETCH_TOTAL_TIMEOUT:
+      FETCH_MAX_BYTES:
+      TAVILY_API_KEY:
+      TAVILY_TIMEOUT:
+      TAVILY_MAX_PAGES:
+      SEJM_MIN_INTERVAL:
+    tmpfs:
+      - /tmp
+    mem_limit: 304m
+    memswap_limit: 304m
+    cpus: 1.0
+    pids_limit: 200
     healthcheck:
       test: ["CMD-SHELL", "celery -A tasks.celery_app inspect ping | grep -q pong"]
       interval: 15s
@@ -76,15 +244,18 @@ services:
       retries: 3
       start_period: 30s
     depends_on:
+      init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks: [internal]
+      s3:
+        condition: service_healthy
+    # edge: outbound calls to legal sources, Tavily and Mistral.
+    networks: [backend, edge]
 
-  # Test runner — only built/started with `--profile test`. Keeps prod lean:
-  # `docker compose up` never builds the test image; the `test` build target
-  # is the sole source of dev extras (pytest, etc.).
+  # Test runner. Only `--profile test` builds or starts it.
   test:
     image: law-by-ai:test
     build:
@@ -92,18 +263,32 @@ services:
       dockerfile: docker/Dockerfile
       target: test
     profiles: ["test"]
+    restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    user: "10001:10001"
     env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 1.0
+    pids_limit: 200
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks: [internal]
+    networks: [backend]
     command: ["pytest", "-q", "-p", "no:cacheprovider"]
 
 volumes:
   pgdata:
+  s3data:
 
 networks:
-  internal:
+  backend:
+    internal: true
+  edge:
     driver: bridge

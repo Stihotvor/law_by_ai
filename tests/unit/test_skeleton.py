@@ -75,15 +75,46 @@ def test_dockerfile_has_runtime_and_test_targets():
     assert "--extra dev" not in runtime_section
 
 
+LONG_RUNNING = ("postgres", "redis", "s3", "app", "celery-worker")
+
+
+def _compose() -> dict:
+    return yaml.safe_load((ROOT / "docker" / "docker-compose.yml").read_text())
+
+
 def test_compose_prod_services_use_lean_runtime_target():
     text = (ROOT / "docker" / "docker-compose.yml").read_text()
-    for service in ("app:", "celery-worker:", "postgres:", "redis:"):
-        assert service in text
-    assert "healthcheck:" in text
+    services = _compose()["services"]
+    for service in (*LONG_RUNNING, "init", "test"):
+        assert service in services
     assert "service_healthy" in text
-    # app and celery-worker build the lean `runtime` target (no dev extras)
-    assert text.count("target: runtime") == 2
+    assert "service_completed_successfully" in text
+    # init, app and celery-worker build the lean `runtime` target (no dev extras)
+    assert text.count("target: runtime") == 3
     assert text.count("target: test") == 1
+    assert ":latest" not in text
+
+
+def test_compose_long_running_services_are_hardened():
+    services = _compose()["services"]
+    for name in LONG_RUNNING:
+        svc = services[name]
+        assert svc["cap_drop"] == ["ALL"], name
+        assert "no-new-privileges:true" in svc["security_opt"], name
+        assert svc["mem_limit"] == svc["memswap_limit"], name
+        assert svc["restart"] == "unless-stopped", name
+        assert "healthcheck" in svc, name
+
+
+def test_compose_ports_bind_to_localhost_only():
+    for name, svc in _compose()["services"].items():
+        for port in svc.get("ports", []):
+            assert str(port).startswith("127.0.0.1:"), f"{name}: {port}"
+
+
+def test_compose_env_file_only_on_test_service():
+    services = _compose()["services"]
+    assert [n for n, svc in services.items() if "env_file" in svc] == ["test"]
 
 
 def test_compose_test_service_is_profiled_and_lean():
@@ -93,7 +124,7 @@ def test_compose_test_service_is_profiled_and_lean():
     assert "target: test" in text
     # dev extras come from the build target, never from compose
     assert "--extra dev" not in text
-    assert text.count("healthcheck:") >= 4
+    assert text.count("healthcheck:") >= 5
 
 
 def test_dockerignore_present():
