@@ -45,47 +45,110 @@ class Unreachable(Exception):
 
 
 class InitSettings(Protocol):
+    """Settings that the init program reads."""
+
     @property
-    def postgres_password(self) -> str: ...
+    def postgres_password(self) -> str:
+        """Return the Postgres password."""
+        ...
+
     @property
-    def redis_password(self) -> str: ...
+    def redis_password(self) -> str:
+        """Return the Redis password."""
+        ...
+
     @property
-    def postgres_url(self) -> str: ...
+    def postgres_url(self) -> str:
+        """Return the Postgres connection URL."""
+        ...
+
     @property
-    def minio_endpoint(self) -> str: ...
+    def minio_endpoint(self) -> str:
+        """Return the S3 endpoint."""
+        ...
+
     @property
-    def minio_access_key(self) -> str: ...
+    def minio_access_key(self) -> str:
+        """Return the S3 access key."""
+        ...
+
     @property
-    def minio_secret_key(self) -> str: ...
+    def minio_secret_key(self) -> str:
+        """Return the S3 secret key."""
+        ...
+
     @property
-    def minio_bucket(self) -> str: ...
+    def minio_bucket(self) -> str:
+        """Return the S3 bucket name."""
+        ...
+
     @property
-    def minio_secure(self) -> bool: ...
+    def minio_secure(self) -> bool:
+        """Return True when the S3 client must use HTTPS."""
+        ...
+
     @property
-    def init_tenant_id(self) -> str: ...
+    def init_tenant_id(self) -> str:
+        """Return the ID of the first tenant."""
+        ...
+
     @property
-    def init_tenant_name(self) -> str: ...
+    def init_tenant_name(self) -> str:
+        """Return the name of the first tenant."""
+        ...
+
     @property
-    def init_admin_email(self) -> str: ...
+    def init_admin_email(self) -> str:
+        """Return the email of the first admin."""
+        ...
+
     @property
-    def init_admin_name(self) -> str: ...
+    def init_admin_name(self) -> str:
+        """Return the display name of the first admin."""
+        ...
+
     @property
-    def init_admin_password(self) -> str: ...
+    def init_admin_password(self) -> str:
+        """Return the password of the first admin."""
+        ...
 
 
 class Store(Protocol):
-    def initialize(self) -> None: ...
-    def list_tenants(self) -> list[dict[str, Any]]: ...
-    def create_tenant(self, name: str, tenant_id: str | None = None) -> dict[str, Any]: ...
-    def get_user_by_email(self, email: str) -> dict[str, Any] | None: ...
+    """Store calls that the init program uses."""
+
+    def initialize(self) -> None:
+        """Bring the database schema up to date."""
+        ...
+
+    def list_tenants(self) -> list[dict[str, Any]]:
+        """Return all tenants."""
+        ...
+
+    def create_tenant(self, name: str, tenant_id: str | None = None) -> dict[str, Any]:
+        """Create a tenant and return it."""
+        ...
+
+    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+        """Return the user with this email, or None."""
+        ...
+
     def create_user(
         self, *, email: str, password: str, role: str, tenant_id: str, name: str = ""
-    ) -> dict[str, Any]: ...
+    ) -> dict[str, Any]:
+        """Create a user and return it."""
+        ...
 
 
 class Bucket(Protocol):
-    def bucket_exists(self, bucket_name: str) -> bool: ...
-    def make_bucket(self, bucket_name: str) -> None: ...
+    """S3 client calls that the init program uses."""
+
+    def bucket_exists(self, bucket_name: str) -> bool:
+        """Return True when the bucket exists."""
+        ...
+
+    def make_bucket(self, bucket_name: str) -> None:
+        """Create the bucket."""
+        ...
 
 
 def validate_config(s: InitSettings) -> list[str]:
@@ -139,12 +202,14 @@ def db_revision(url: str) -> str | None:
 
 
 def ensure_schema(store: Store, revision: Callable[[], str | None]) -> Result:
+    """Apply the database migrations and report whether the schema changed."""
     before = revision()
     store.initialize()
     return "created" if revision() != before else "exists"
 
 
 def ensure_bucket(client: Bucket, bucket: str) -> Result:
+    """Create the S3 bucket if it does not exist yet."""
     if client.bucket_exists(bucket):
         return "exists"
     try:
@@ -157,6 +222,7 @@ def ensure_bucket(client: Bucket, bucket: str) -> Result:
 
 
 def ensure_tenant(store: Store, tenant_id: str, name: str) -> Result:
+    """Create the first tenant if it does not exist yet."""
     if any(t["id"] == tenant_id for t in store.list_tenants()):
         return "exists"
     try:
@@ -167,6 +233,7 @@ def ensure_tenant(store: Store, tenant_id: str, name: str) -> Result:
 
 
 def ensure_admin(store: Store, s: InitSettings) -> Result:
+    """Create the first admin user if no user has that email yet."""
     user = store.get_user_by_email(s.init_admin_email)
     if user is not None:
         if user["role"] != ADMIN or not user["is_active"]:
@@ -186,6 +253,7 @@ def ensure_admin(store: Store, s: InitSettings) -> Result:
 
 
 def _run_step(name: str, step: Callable[[], Result], transient: Transient, sleep: Sleep) -> int:
+    """Run one step with retries, log the result and return the exit code."""
     try:
         # Safe to re-run a whole step: it checks state first and treats a race as "exists".
         result = retry(step, transient, sleep)
@@ -244,6 +312,7 @@ def run(
 
 
 def main() -> int:
+    """Run the init program against the configured stack and return the exit code."""
     logging.basicConfig(format="%(levelname)s %(name)s %(message)s")
     _log.setLevel(logging.INFO)
     store = PostgreSQLStore()

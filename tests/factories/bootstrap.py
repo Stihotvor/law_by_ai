@@ -33,6 +33,7 @@ class FakeSettings:
 
 
 def integrity_error() -> IntegrityError:
+    """Build an IntegrityError like the one a duplicate key raises."""
     return IntegrityError("INSERT", {}, Exception("duplicate key"))
 
 
@@ -52,6 +53,7 @@ class FakeStore:
     calls: list[str] = field(default_factory=list)
 
     def _call(self, name: str) -> None:
+        """Record the call and raise its planned error, if any."""
         self.calls.append(name)
         if name in self.fail:
             raise self.fail[name]
@@ -59,31 +61,37 @@ class FakeStore:
             raise self.errors[name].pop(0)
 
     def current_revision(self) -> str | None:
+        """Return the schema revision or raise the next planned error."""
         self.calls.append("current_revision")
         if self.revision_errors:
             raise self.revision_errors.pop(0)
         return self.revision
 
     def initialize(self) -> None:
+        """Record the call and set the schema to the latest revision."""
         self._call("initialize")
         self.revision = "head"
 
     def list_tenants(self) -> list[dict[str, Any]]:
+        """Return the stored tenants."""
         self._call("list_tenants")
         return [{"id": k, "name": v} for k, v in self.tenants.items()]
 
     def create_tenant(self, name: str, tenant_id: str | None = None) -> dict[str, Any]:
+        """Store a tenant and return it."""
         self._call("create_tenant")
         self.tenants[str(tenant_id)] = name
         return {"id": tenant_id, "name": name}
 
     def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+        """Return the stored user with this email, or None."""
         self._call("get_user_by_email")
         return self.users.get(email)
 
     def create_user(
         self, *, email: str, password: str, role: str, tenant_id: str, name: str = ""
     ) -> dict[str, Any]:
+        """Store an active user and return it."""
         self._call("create_user")
         user = {"email": email, "password": password, "role": role}
         user |= {"tenant_id": tenant_id, "name": name, "is_active": True}
@@ -102,12 +110,14 @@ class FakeBucket:
     calls: list[str] = field(default_factory=list)
 
     def bucket_exists(self, bucket_name: str) -> bool:
+        """Return True when the bucket exists or raise the next planned error."""
         self.calls.append("bucket_exists")
         if self.exists_errors:
             raise self.exists_errors.pop(0)
         return bucket_name in self.buckets
 
     def make_bucket(self, bucket_name: str) -> None:
+        """Create the bucket or raise the planned error."""
         self.calls.append("make_bucket")
         if self.make_error is not None:
             raise self.make_error

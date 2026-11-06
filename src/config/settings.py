@@ -111,27 +111,33 @@ class Settings:
     """
 
     def __init__(self) -> None:
+        """Load the .env file into the environment."""
         load_env()
 
     # --- PostgreSQL ----------------------------------------------------------
     @property
     def postgres_user(self) -> str:
+        """Return the Postgres user name."""
         return os.getenv("POSTGRES_USER", "lawbyai")
 
     @property
     def postgres_password(self) -> str:
+        """Return the Postgres password."""
         return os.getenv("POSTGRES_PASSWORD", "lawbyai")
 
     @property
     def postgres_db(self) -> str:
+        """Return the Postgres database name."""
         return os.getenv("POSTGRES_DB", "lawbyai")
 
     @property
     def postgres_host(self) -> str:
+        """Return the Postgres host."""
         return os.getenv("POSTGRES_HOST", "localhost")
 
     @property
     def postgres_port(self) -> str:
+        """Return the Postgres port."""
         return os.getenv("POSTGRES_PORT", "5432")
 
     @property
@@ -150,22 +156,27 @@ class Settings:
     # --- Redis / Celery ------------------------------------------------------
     @property
     def redis_user(self) -> str:
+        """Return the Redis user name."""
         return os.getenv("REDIS_USER", "")
 
     @property
     def redis_password(self) -> str:
+        """Return the Redis password."""
         return os.getenv("REDIS_PASSWORD", "")
 
     @property
     def redis_host(self) -> str:
+        """Return the Redis host."""
         return os.getenv("REDIS_HOST", "localhost")
 
     @property
     def redis_port(self) -> str:
+        """Return the Redis port."""
         return os.getenv("REDIS_PORT", "6379")
 
     @property
     def redis_db(self) -> str:
+        """Return the Redis database number."""
         return os.getenv("REDIS_DB", "0")
 
     @property
@@ -195,6 +206,7 @@ class Settings:
     # --- Application ----------------------------------------------------------
     @property
     def app_name(self) -> str:
+        """Return the application name."""
         return os.getenv("APP_NAME", "law-by-ai")
 
     @property

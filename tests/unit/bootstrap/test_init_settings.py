@@ -17,6 +17,7 @@ INIT_VARS = {
 def test_init_settings_default_and_env(
     var: str, attr_default: tuple[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Check that each init setting has its default and follows the environment."""
     attr, default = attr_default
     monkeypatch.delenv(var, raising=False)
     settings = Settings()

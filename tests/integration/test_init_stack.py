@@ -22,6 +22,7 @@ pytestmark = pytest.mark.integration
 
 
 def _can_connect(url: str) -> bool:
+    """Return True when the database at the URL answers a query."""
     try:
         engine = create_engine(url, future=True)
         with engine.connect() as conn:
@@ -34,6 +35,7 @@ def _can_connect(url: str) -> bool:
 
 @pytest.fixture
 def settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[FakeSettings]:
+    """Give settings with a unique tenant and admin, and delete them afterwards."""
     url = get_settings().postgres_url
     if not _can_connect(url):
         pytest.skip("PostgreSQL unavailable")
@@ -53,6 +55,7 @@ def settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[FakeSettings]:
 
 
 def _count(url: str, sql: str, value: str) -> int:
+    """Return the number of rows that the count query finds for the value."""
     engine = create_engine(url, future=True)
     with engine.connect() as conn:
         count = conn.execute(text(sql), {"v": value}).scalar_one()
@@ -61,6 +64,7 @@ def _count(url: str, sql: str, value: str) -> int:
 
 
 def test_run_twice_creates_one_tenant_and_one_admin(settings: FakeSettings) -> None:
+    """Check that two runs create exactly one tenant and one admin."""
     client = FakeBucket()
     for _ in range(2):
         store = PostgreSQLStore()
