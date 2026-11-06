@@ -49,7 +49,7 @@ The S3 service has no published port. Only the services on the backend network c
 $COMPOSE down
 ```
 
-`down` removes the containers. It keeps the data.
+`down` removes the containers. It keeps the `pgdata` and `s3data` volumes, but it discards the queued tasks and results in `redis`, which keeps no data on disk.
 
 !!! warning
     `down -v` deletes the `pgdata` and `s3data` volumes. All database rows and all stored files are lost. Make a dump first if you need the data.
