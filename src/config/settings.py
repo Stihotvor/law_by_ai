@@ -53,6 +53,11 @@ Variable               Purpose                                Default
 ``TAVILY_TIMEOUT``        seconds per Tavily request              ``60.0``
 ``TAVILY_MAX_PAGES``      pages per Tavily map call               ``20``
 ``SEJM_MIN_INTERVAL``     seconds between Sejm requests           ``0.5``
+``INIT_TENANT_ID``        first tenant id (init program)          ``platform``
+``INIT_TENANT_NAME``      first tenant name (init program)        ``Platform``
+``INIT_ADMIN_EMAIL``      first admin email (init program)        *(empty)*
+``INIT_ADMIN_NAME``       first admin display name                ``Admin``
+``INIT_ADMIN_PASSWORD``   first admin password (init program)     *(empty)*
 =====================  =====================================  ================================
 
 Usage::
@@ -106,27 +111,33 @@ class Settings:
     """
 
     def __init__(self) -> None:
+        """Load the .env file into the environment."""
         load_env()
 
     # --- PostgreSQL ----------------------------------------------------------
     @property
     def postgres_user(self) -> str:
+        """Return the Postgres user name."""
         return os.getenv("POSTGRES_USER", "lawbyai")
 
     @property
     def postgres_password(self) -> str:
+        """Return the Postgres password."""
         return os.getenv("POSTGRES_PASSWORD", "lawbyai")
 
     @property
     def postgres_db(self) -> str:
+        """Return the Postgres database name."""
         return os.getenv("POSTGRES_DB", "lawbyai")
 
     @property
     def postgres_host(self) -> str:
+        """Return the Postgres host."""
         return os.getenv("POSTGRES_HOST", "localhost")
 
     @property
     def postgres_port(self) -> str:
+        """Return the Postgres port."""
         return os.getenv("POSTGRES_PORT", "5432")
 
     @property
@@ -145,22 +156,27 @@ class Settings:
     # --- Redis / Celery ------------------------------------------------------
     @property
     def redis_user(self) -> str:
+        """Return the Redis user name."""
         return os.getenv("REDIS_USER", "")
 
     @property
     def redis_password(self) -> str:
+        """Return the Redis password."""
         return os.getenv("REDIS_PASSWORD", "")
 
     @property
     def redis_host(self) -> str:
+        """Return the Redis host."""
         return os.getenv("REDIS_HOST", "localhost")
 
     @property
     def redis_port(self) -> str:
+        """Return the Redis port."""
         return os.getenv("REDIS_PORT", "6379")
 
     @property
     def redis_db(self) -> str:
+        """Return the Redis database number."""
         return os.getenv("REDIS_DB", "0")
 
     @property
@@ -190,6 +206,7 @@ class Settings:
     # --- Application ----------------------------------------------------------
     @property
     def app_name(self) -> str:
+        """Return the application name."""
         return os.getenv("APP_NAME", "law-by-ai")
 
     @property
@@ -371,6 +388,32 @@ class Settings:
     def sejm_min_interval(self) -> float:
         """Minimum seconds between two outbound Sejm requests."""
         return _positive("SEJM_MIN_INTERVAL", "0.5", float)
+
+    # --- Init program (first tenant and admin) -------------------------------
+    @property
+    def init_tenant_id(self) -> str:
+        """Id of the tenant the init program creates if it is missing."""
+        return os.getenv("INIT_TENANT_ID", "platform")
+
+    @property
+    def init_tenant_name(self) -> str:
+        """Name of the tenant the init program creates if it is missing."""
+        return os.getenv("INIT_TENANT_NAME", "Platform")
+
+    @property
+    def init_admin_email(self) -> str:
+        """Email of the first admin (no default)."""
+        return os.getenv("INIT_ADMIN_EMAIL", "")
+
+    @property
+    def init_admin_name(self) -> str:
+        """Display name of the first admin."""
+        return os.getenv("INIT_ADMIN_NAME", "Admin")
+
+    @property
+    def init_admin_password(self) -> str:
+        """Password of the first admin (secret, env only, no default)."""
+        return os.getenv("INIT_ADMIN_PASSWORD", "")
 
 
 @lru_cache(maxsize=1)

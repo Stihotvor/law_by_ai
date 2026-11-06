@@ -24,20 +24,24 @@ PACKAGES = (
     "config",
     "data",
     "storage",
+    "bootstrap",
 )
 
 
 def test_src_layout_packages_have_init():
+    """Check that every source package has an __init__.py file."""
     for pkg in PACKAGES:
         assert (ROOT / "src" / pkg / "__init__.py").exists(), f"missing src/{pkg}/__init__.py"
 
 
 def test_pyproject_uses_src_layout():
+    """Check that pyproject.toml finds packages under src."""
     text = (ROOT / "pyproject.toml").read_text()
     assert 'where = ["src"]' in text
 
 
 def test_dockerfile_uses_python313_slim_and_nonroot():
+    """Check that the Dockerfile uses a pinned Python 3.13 slim image and a non-root user."""
     text = (ROOT / "docker" / "Dockerfile").read_text()
     assert "python:3.13" in text
     assert "-slim" in text
@@ -47,6 +51,7 @@ def test_dockerfile_uses_python313_slim_and_nonroot():
 
 
 def test_dockerfile_pins_images_uid_and_uv():
+    """Check that the Dockerfile pins every base image and sets a fixed user ID."""
     text = (ROOT / "docker" / "Dockerfile").read_text()
     for line in text.splitlines():
         if line.startswith("FROM ") and not line.startswith(("FROM base", "FROM builder")):
@@ -58,6 +63,7 @@ def test_dockerfile_pins_images_uid_and_uv():
 
 
 def test_dockerignore_keeps_local_secret_files_out_of_context():
+    """Check that .dockerignore keeps local secret files out of the build context."""
     lines = (ROOT / ".dockerignore").read_text().splitlines()
     for entry in (".env", "docker/.env", ".claude"):
         assert entry in lines
@@ -65,6 +71,7 @@ def test_dockerignore_keeps_local_secret_files_out_of_context():
 
 
 def test_dockerfile_has_runtime_and_test_targets():
+    """Check that the Dockerfile has runtime and test targets and only test has dev extras."""
     text = (ROOT / "docker" / "Dockerfile").read_text()
     assert "AS runtime" in text
     assert "AS test" in text
@@ -74,38 +81,78 @@ def test_dockerfile_has_runtime_and_test_targets():
     assert "--extra dev" not in runtime_section
 
 
+LONG_RUNNING = ("postgres", "redis", "s3", "app", "celery-worker")
+
+
+def _compose() -> dict:
+    """Return the parsed docker-compose file."""
+    return yaml.safe_load((ROOT / "docker" / "docker-compose.yml").read_text())
+
+
 def test_compose_prod_services_use_lean_runtime_target():
+    """Check that the long-running services and init build the lean runtime target."""
     text = (ROOT / "docker" / "docker-compose.yml").read_text()
-    for service in ("app:", "celery-worker:", "postgres:", "redis:"):
-        assert service in text
-    assert "healthcheck:" in text
+    services = _compose()["services"]
+    for service in (*LONG_RUNNING, "init", "test"):
+        assert service in services
     assert "service_healthy" in text
-    # app and celery-worker build the lean `runtime` target (no dev extras)
-    assert text.count("target: runtime") == 2
+    assert "service_completed_successfully" in text
+    # init, app and celery-worker build the lean `runtime` target (no dev extras)
+    assert text.count("target: runtime") == 3
     assert text.count("target: test") == 1
+    assert ":latest" not in text
+
+
+def test_compose_long_running_services_are_hardened():
+    """Check that long-running services drop capabilities, cap memory and have health checks."""
+    services = _compose()["services"]
+    for name in LONG_RUNNING:
+        svc = services[name]
+        assert svc["cap_drop"] == ["ALL"], name
+        assert "no-new-privileges:true" in svc["security_opt"], name
+        assert svc["mem_limit"] == svc["memswap_limit"], name
+        assert svc["restart"] == "unless-stopped", name
+        assert "healthcheck" in svc, name
+
+
+def test_compose_ports_bind_to_localhost_only():
+    """Check that every published port binds to localhost only."""
+    for name, svc in _compose()["services"].items():
+        for port in svc.get("ports", []):
+            assert str(port).startswith("127.0.0.1:"), f"{name}: {port}"
+
+
+def test_compose_env_file_only_on_test_service():
+    """Check that only the test service reads an env file."""
+    services = _compose()["services"]
+    assert [n for n, svc in services.items() if "env_file" in svc] == ["test"]
 
 
 def test_compose_test_service_is_profiled_and_lean():
+    """Check that the test service runs only under its profile and needs no compose extras."""
     text = (ROOT / "docker" / "docker-compose.yml").read_text()
     assert "test:" in text
     assert 'profiles: ["test"]' in text
     assert "target: test" in text
     # dev extras come from the build target, never from compose
     assert "--extra dev" not in text
-    assert text.count("healthcheck:") >= 4
+    assert text.count("healthcheck:") >= 5
 
 
 def test_dockerignore_present():
+    """Check that the .dockerignore file exists."""
     assert (ROOT / ".dockerignore").exists()
 
 
 def test_env_example_and_runtime_stubs_present():
+    """Check that the env example and the runtime entry points exist."""
     assert (ROOT / "src" / "config" / ".env.example").exists()
     assert (ROOT / "src" / "ui" / "app.py").exists()
     assert (ROOT / "src" / "tasks" / "celery_app.py").exists()
 
 
 def test_readme_in_each_skeleton_dir():
+    """Check that each skeleton directory has a README."""
     for rel in ("src", *(f"src/{p}" for p in PACKAGES), "src/evals", "scripts", "docker", "tests"):
         assert (ROOT / rel / "README.md").exists(), f"missing {rel}/README.md"
 
@@ -128,6 +175,7 @@ _EXACT_PIN = re.compile(
     ],
 )
 def test_exact_pin_matcher_rejects_non_exact_specs(spec: str):
+    """Check that the pin pattern rejects specs without an exact version."""
     assert _EXACT_PIN.match(spec) is None
 
 
@@ -142,10 +190,12 @@ def test_exact_pin_matcher_rejects_non_exact_specs(spec: str):
     ],
 )
 def test_exact_pin_matcher_accepts_exact_specs(spec: str):
+    """Check that the pin pattern accepts specs with an exact version."""
     assert _EXACT_PIN.match(spec) is not None
 
 
 def test_every_dev_tool_is_pinned_with_exact_version():
+    """Check that every dev tool has an exact version pin."""
     extras = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"][
         "optional-dependencies"
     ]
@@ -154,6 +204,7 @@ def test_every_dev_tool_is_pinned_with_exact_version():
 
 
 def test_precommit_revs_match_pinned_dev_tools():
+    """Check that the pre-commit hook versions match the pinned dev tools."""
     dev = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["optional-dependencies"][
         "dev"
     ]
@@ -167,17 +218,20 @@ def test_precommit_revs_match_pinned_dev_tools():
 
 
 def _workflows() -> dict[str, dict]:
+    """Return every GitHub workflow, parsed and keyed by file name."""
     paths = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
     return {p.name: yaml.safe_load(p.read_text()) for p in paths}
 
 
 def test_every_workflow_job_has_timeout():
+    """Check that every workflow job sets a timeout."""
     for name, wf in _workflows().items():
         for job, spec in wf["jobs"].items():
             assert "timeout-minutes" in spec, f"{name}:{job} lacks timeout-minutes"
 
 
 def _uses(node: object) -> list[str]:
+    """Return every action reference found in a parsed workflow."""
     if isinstance(node, dict):
         found = [v for k, v in node.items() if k == "uses" and isinstance(v, str)]
         return found + [u for v in node.values() for u in _uses(v)]
@@ -187,6 +241,7 @@ def _uses(node: object) -> list[str]:
 
 
 def test_every_action_is_pinned_to_a_full_sha():
+    """Check that every external action is pinned to a full commit SHA."""
     for name, wf in _workflows().items():
         for ref in _uses(wf):
             if ref.startswith("./"):
@@ -195,6 +250,7 @@ def test_every_action_is_pinned_to_a_full_sha():
 
 
 def test_docs_workflow_triggers_on_build_inputs():
+    """Check that the docs workflow runs when any build input changes."""
     wf = _workflows()["docs.yml"]
     expected = {".github/workflows/docs.yml", "pyproject.toml", "uv.lock", "docs/**"}
     for event in ("push", "pull_request"):
@@ -202,6 +258,7 @@ def test_docs_workflow_triggers_on_build_inputs():
 
 
 def test_coverage_floors_are_enforced():
+    """Check that the coverage floors are set and enforced in CI."""
     cfg = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert cfg["tool"]["coverage"]["report"]["fail_under"] >= 88
     steps = _workflows()["ci.yml"]["jobs"]["unit-test"]["steps"]
@@ -210,6 +267,7 @@ def test_coverage_floors_are_enforced():
 
 
 def test_mutation_job_fails_instead_of_skipping_when_target_missing():
+    """Check that the mutation job fails, not skips, when its target is missing."""
     job = _workflows()["ci.yml"]["jobs"]["mutation"]
     for step in job["steps"]:
         assert "steps.target" not in str(step.get("if", ""))

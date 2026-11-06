@@ -97,6 +97,7 @@ nav:
   - Intention: intention.md
   - Architecture: architecture.md
   - Migrations: migrations.md
+  - Operations: operations.md
   - ADRs:
       - ADR Index: adr/index.md
       - 0001 - Plugin Architecture: adr/0001-plugin-architecture.md

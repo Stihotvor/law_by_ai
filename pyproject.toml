@@ -52,7 +52,7 @@ docs = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["core*", "plugins*", "agents*", "tasks*", "ui*", "data*", "config*", "storage*"]
+include = ["core*", "plugins*", "agents*", "tasks*", "ui*", "data*", "config*", "storage*", "bootstrap*"]
 exclude = ["docs*", "site*", "tests*", "scripts*", "evals*"]
 
 [tool.ruff]
