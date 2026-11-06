@@ -66,13 +66,19 @@ The image has no default user (it runs as root), so compose must set
 - Set `user: "999:999"` explicitly.
 - Update `docs/operations.md`, `docker/README.md`, and the compose tests.
 - Keep the service name `redis` for now. A rename is a separate decision.
+- Plan the cutover. The broker keeps no data on disk, so a restart or the
+  switch from Redis to Valkey discards queued tasks and stored results. Before
+  the switch, pause producers, drain pending and active tasks, and save any
+  result that is still needed.
 - Revisit this decision if a Celery release breaks on Valkey, or if Redis
   returns to a permissive license.
 
 ## Alternatives Considered
 
 - **Keep Redis 8** - rejected. The license is RSALv2, SSPLv1, or AGPLv3.
-- **Redis 7.2 or older** - rejected. These versions get no security fixes.
+- **Redis 7.2 or older** - rejected. Only 7.2.4 and older are BSD-licensed, and
+  these versions no longer get fixes. The license of later 7.2 patch releases
+  was not verified.
 - **Postgres-based queue** - rejected. Celery has no stable Postgres broker,
   and it adds load on the database.
 - **KeyDB, Dragonfly** - not tested. Not needed, because Valkey passed.
