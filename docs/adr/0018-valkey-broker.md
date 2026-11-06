@@ -9,9 +9,11 @@ status: proposed
 The stack uses Redis only as the Celery broker and result store (ADR-0006). No
 data is kept on disk. The compose service runs `redis:8.8.4-alpine`.
 
-Redis 8 has a license problem for a public MIT project. It is offered under
-RSALv2, SSPLv1, or AGPLv3. Valkey is the BSD-3-Clause fork of Redis 7.2. It
-speaks the same protocol.
+The goal is to avoid license risk now and in the future. Redis 8 is a problem
+for a public MIT project. It is offered under RSALv2, SSPLv1, or AGPLv3. Redis
+has changed its license once already, and the vendor can change it again.
+Valkey is the BSD-3-Clause fork of Redis 7.2. It is developed under the Linux
+Foundation, not by one vendor. It speaks the same protocol.
 
 ### Spike
 
@@ -76,9 +78,12 @@ The image has no default user (it runs as root), so compose must set
 ## Alternatives Considered
 
 - **Keep Redis 8** - rejected. The license is RSALv2, SSPLv1, or AGPLv3.
-- **Redis 7.2 or older** - rejected. Only 7.2.4 and older are BSD-licensed, and
-  these versions no longer get fixes. The license of later 7.2 patch releases
-  was not verified.
+- **Redis 7.2.x** - rejected. Redis lists the 7.2.x series as BSD-3-Clause and
+  as supported for security fixes, so it is valid today. It does not remove
+  the license risk. It is the last BSD line from Redis, it gets no new
+  features, and the vendor controls the license of every later version. The
+  project would have to leave Redis later anyway. Valkey removes the risk
+  now. The end date of 7.2 support was not verified.
 - **Postgres-based queue** - rejected. Celery has no stable Postgres broker,
   and it adds load on the database.
 - **KeyDB, Dragonfly** - not tested. Not needed, because Valkey passed.
