@@ -29,7 +29,7 @@ COMPOSE="docker compose -f docker/docker-compose.yml"
     chmod 600 docker/.env
     ```
 
-2. Replace every value that starts with `change-me`. Init stops with exit code 2 while a secret still starts with `change-me`. Use letters and digits only in `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY`.
+2. Replace every value that starts with `change-me`. Init stops with exit code 2 while `INIT_ADMIN_PASSWORD`, `POSTGRES_PASSWORD`, `MINIO_SECRET_KEY` or `REDIS_PASSWORD` still starts with `change-me`. Use letters and digits only in `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY`.
 3. Start the stack and check it:
 
     ```bash
@@ -181,7 +181,7 @@ Init exit codes:
 |---|---|---|
 | 0 | All steps are done or were done before | None |
 | 2 | The configuration is not valid | Read the log. Fix `docker/.env`. |
-| 3 | Postgres or S3 did not answer | Check `$COMPOSE ps` and the service logs. |
+| 3 | Postgres or S3 did not answer after 5 tries of a step | Check `$COMPOSE ps` and the service logs. |
 | 4 | A step failed | Read the log line with `result=failed`. |
 
 `required variable ... is missing a value`: Compose found an empty required variable. Set it in `docker/.env`.

@@ -78,6 +78,7 @@ def test_valid_config_has_no_problems() -> None:
         ("init_admin_password", "change-me-admin-password"),
         ("postgres_password", "change-me-postgres"),
         ("minio_secret_key", "Change-Me-s3-secret"),
+        ("redis_password", "change-me-redis"),
         ("minio_access_key", ""),
         ("minio_secret_key", ""),
         ("minio_endpoint", ""),
@@ -140,6 +141,49 @@ def test_retry_recovers_after_short_gap() -> None:
     assert go(store, client, sleeps=sleeps) == 0
     assert sleeps == [1.0, 2.0, 1.0]
     assert client.buckets == {"legal-documents"}
+
+
+@pytest.mark.parametrize(
+    ("store", "client", "sleeps"),
+    [
+        (FakeStore(errors={"initialize": [pg_down()]}), FakeBucket(), [1.0]),
+        (FakeStore(), FakeBucket(make_errors=[ServerError("busy", 503)] * 2), [1.0, 2.0]),
+        (FakeStore(errors={"list_tenants": [pg_down()]}), FakeBucket(), [1.0]),
+        (FakeStore(errors={"create_tenant": [pg_down()] * 3}), FakeBucket(), [1.0, 2.0, 4.0]),
+        (FakeStore(errors={"get_user_by_email": [pg_down()]}), FakeBucket(), [1.0]),
+        (FakeStore(errors={"create_user": [pg_down()]}), FakeBucket(), [1.0]),
+    ],
+)
+def test_later_transient_error_recovers_on_retry(
+    store: FakeStore, client: FakeBucket, sleeps: list[float], caplog: pytest.LogCaptureFixture
+) -> None:
+    got: list[float] = []
+    assert go(store, client, sleeps=got) == 0
+    assert got == sleeps
+    assert store.tenants == {"platform": "Platform"}
+    assert "admin@example.com" in store.users
+    assert client.buckets == {"legal-documents"}
+    for step in STEPS:
+        assert f"step={step} result=created" in caplog.messages
+
+
+@pytest.mark.parametrize(
+    ("step", "store", "client"),
+    [
+        ("schema", FakeStore(fail={"initialize": pg_down()}), FakeBucket()),
+        ("bucket", FakeStore(), FakeBucket(make_error=ServerError("busy", 503))),
+        ("tenant", FakeStore(fail={"list_tenants": pg_down()}), FakeBucket()),
+        ("tenant", FakeStore(fail={"create_tenant": pg_down()}), FakeBucket()),
+        ("admin", FakeStore(fail={"create_user": pg_down()}), FakeBucket()),
+    ],
+)
+def test_later_transient_error_that_never_ends_exits_3(
+    step: str, store: FakeStore, client: FakeBucket, caplog: pytest.LogCaptureFixture
+) -> None:
+    sleeps: list[float] = []
+    assert go(store, client, sleeps=sleeps) == 3
+    assert sleeps == [1.0, 2.0, 4.0, 8.0]
+    assert caplog.messages[-1].startswith(f"step={step} result=failed reason=unreachable")
 
 
 def test_other_probe_error_is_not_retried() -> None:
@@ -206,7 +250,8 @@ def test_secrets_never_appear_in_logs(caplog: pytest.LogCaptureFixture) -> None:
     go(FakeStore(fail={"create_user": RuntimeError(STRONG)}), FakeBucket(), settings)
     go(FakeStore(), FakeBucket(), replace(settings, init_admin_password=STRONG + "x" * 72))
     assert caplog.messages
-    for secret in (STRONG, settings.minio_secret_key, settings.postgres_password):
+    secrets = (STRONG, settings.minio_secret_key, settings.postgres_password)
+    for secret in (*secrets, settings.redis_password):
         assert secret not in caplog.text
 
 

@@ -4,7 +4,7 @@ This package is the init program. Run it with `python -m bootstrap`.
 
 It does these steps in this order:
 
-1. It checks the configuration. It makes no network call in this step.
+1. It checks the configuration. It makes no network call in this step. A secret that starts with `change-me` is an error. The secrets are `INIT_ADMIN_PASSWORD`, `POSTGRES_PASSWORD`, `MINIO_SECRET_KEY` and `REDIS_PASSWORD`.
 2. It runs the database migrations.
 3. It creates the S3 bucket if the bucket is missing.
 4. It creates the first tenant if the tenant is missing.
@@ -13,7 +13,8 @@ It does these steps in this order:
 Each step checks the state first. A second run creates nothing.
 The program never changes an existing user. It never resets a password or a role.
 
-The program tries to connect to Postgres and S3 up to 5 times. The wait doubles after each try.
+A step runs up to 5 times when Postgres or S3 does not answer. The waits are 1, 2, 4 and 8 seconds.
+A new run of a step is safe because the step checks the state first. Other errors stop the program at once.
 
 | Exit code | Meaning |
 |---|---|

@@ -32,8 +32,9 @@ TRIES = 5
 PLACEHOLDER = "change-me"
 MIN_PASSWORD_CHARS = 12
 MAX_PASSWORD_BYTES = 72  # bcrypt limit
-PG_DOWN: tuple[type[Exception], ...] = (OperationalError,)
-S3_DOWN: tuple[type[Exception], ...] = (urllib3.exceptions.HTTPError, ServerError)
+Transient = tuple[type[Exception], ...]
+PG_DOWN: Transient = (OperationalError,)
+S3_DOWN: Transient = (urllib3.exceptions.HTTPError, ServerError)
 
 Result = Literal["created", "exists"]
 Sleep = Callable[[float], None]
@@ -46,6 +47,8 @@ class Unreachable(Exception):
 class InitSettings(Protocol):
     @property
     def postgres_password(self) -> str: ...
+    @property
+    def redis_password(self) -> str: ...
     @property
     def postgres_url(self) -> str: ...
     @property
@@ -99,6 +102,7 @@ def validate_config(s: InitSettings) -> list[str]:
         "INIT_ADMIN_PASSWORD": s.init_admin_password,
         "POSTGRES_PASSWORD": s.postgres_password,
         "MINIO_SECRET_KEY": s.minio_secret_key,
+        "REDIS_PASSWORD": s.redis_password,
     }
     problems = [f"{name} is empty" for name, value in required.items() if not value]
     if "@" not in s.init_admin_email:
@@ -111,7 +115,7 @@ def validate_config(s: InitSettings) -> list[str]:
     return problems
 
 
-def retry[T](call: Callable[[], T], transient: tuple[type[Exception], ...], sleep: Sleep) -> T:
+def retry[T](call: Callable[[], T], transient: Transient, sleep: Sleep) -> T:
     """Call up to TRIES times, sleeping 1 s, 2 s, 4 s, ... between transient errors."""
     for attempt in range(TRIES - 1):
         try:
@@ -134,14 +138,14 @@ def db_revision(url: str) -> str | None:
         engine.dispose()
 
 
-def ensure_schema(store: Store, revision: Callable[[], str | None], sleep: Sleep) -> Result:
-    before = retry(revision, PG_DOWN, sleep)
+def ensure_schema(store: Store, revision: Callable[[], str | None]) -> Result:
+    before = revision()
     store.initialize()
     return "created" if revision() != before else "exists"
 
 
-def ensure_bucket(client: Bucket, bucket: str, sleep: Sleep) -> Result:
-    if retry(lambda: client.bucket_exists(bucket), S3_DOWN, sleep):
+def ensure_bucket(client: Bucket, bucket: str) -> Result:
+    if client.bucket_exists(bucket):
         return "exists"
     try:
         client.make_bucket(bucket)
@@ -181,9 +185,10 @@ def ensure_admin(store: Store, s: InitSettings) -> Result:
     return "created"
 
 
-def _run_step(name: str, step: Callable[[], Result]) -> int:
+def _run_step(name: str, step: Callable[[], Result], transient: Transient, sleep: Sleep) -> int:
     try:
-        result = step()
+        # Safe to re-run a whole step: it checks state first and treats a race as "exists".
+        result = retry(step, transient, sleep)
     except Unreachable as exc:
         _log.error("step=%s result=failed reason=unreachable error=%s", name, exc)
         return UNREACHABLE
@@ -222,17 +227,18 @@ def run(
         return BAD_CONFIG
     s3 = client if client is not None else s3_client(settings)
     current = revision or (lambda: db_revision(settings.postgres_url))
-    steps: tuple[tuple[str, Callable[[], Result]], ...] = (
-        ("schema", lambda: ensure_schema(store, current, sleep)),
-        ("bucket", lambda: ensure_bucket(s3, settings.minio_bucket, sleep)),
+    steps: tuple[tuple[str, Callable[[], Result], Transient], ...] = (
+        ("schema", lambda: ensure_schema(store, current), PG_DOWN),
+        ("bucket", lambda: ensure_bucket(s3, settings.minio_bucket), S3_DOWN),
         (
             "tenant",
             lambda: ensure_tenant(store, settings.init_tenant_id, settings.init_tenant_name),
+            PG_DOWN,
         ),
-        ("admin", lambda: ensure_admin(store, settings)),
+        ("admin", lambda: ensure_admin(store, settings), PG_DOWN),
     )
-    for name, step in steps:
-        if code := _run_step(name, step):
+    for name, step, transient in steps:
+        if code := _run_step(name, step, transient, sleep):
             return code
     return OK
 

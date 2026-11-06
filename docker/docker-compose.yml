@@ -145,6 +145,7 @@ services:
       INIT_ADMIN_EMAIL: ${INIT_ADMIN_EMAIL:?set INIT_ADMIN_EMAIL in docker/.env}
       INIT_ADMIN_NAME:
       INIT_ADMIN_PASSWORD: ${INIT_ADMIN_PASSWORD:?set INIT_ADMIN_PASSWORD in docker/.env}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in docker/.env}
     tmpfs:
       - /tmp
     mem_limit: 128m

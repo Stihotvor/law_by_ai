@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 STRONG = "a-long-admin-secret"
 STRONG_PG = "pg-strong-secret"
 STRONG_S3 = "s3-strong-secret"
+STRONG_REDIS = "redis-strong-secret"
 
 
 @dataclass
@@ -17,6 +18,7 @@ class FakeSettings:
     """Settings stub with valid values for every field init reads."""
 
     postgres_password: str = STRONG_PG
+    redis_password: str = STRONG_REDIS
     postgres_url: str = "sqlite://"
     minio_endpoint: str = "s3:8333"
     minio_access_key: str = "init-access"
@@ -36,12 +38,16 @@ def integrity_error() -> IntegrityError:
 
 @dataclass
 class FakeStore:
-    """In-memory store. ``fail`` maps a method name to the error it raises."""
+    """In-memory store. ``fail`` maps a method name to the error it always raises.
+
+    ``errors`` maps a method name to errors raised one per call, then the call works.
+    """
 
     revision: str | None = None
     tenants: dict[str, str] = field(default_factory=dict)
     users: dict[str, dict[str, Any]] = field(default_factory=dict)
     fail: dict[str, Exception] = field(default_factory=dict)
+    errors: dict[str, list[Exception]] = field(default_factory=dict)
     revision_errors: list[Exception] = field(default_factory=list)
     calls: list[str] = field(default_factory=list)
 
@@ -49,6 +55,8 @@ class FakeStore:
         self.calls.append(name)
         if name in self.fail:
             raise self.fail[name]
+        if self.errors.get(name):
+            raise self.errors[name].pop(0)
 
     def current_revision(self) -> str | None:
         self.calls.append("current_revision")
@@ -85,11 +93,12 @@ class FakeStore:
 
 @dataclass
 class FakeBucket:
-    """S3 client stub. ``exists_errors`` are raised one per ``bucket_exists`` call."""
+    """S3 client stub. ``exists_errors`` and ``make_errors`` are raised one per call."""
 
     buckets: set[str] = field(default_factory=set)
     exists_errors: list[Exception] = field(default_factory=list)
     make_error: Exception | None = None
+    make_errors: list[Exception] = field(default_factory=list)
     calls: list[str] = field(default_factory=list)
 
     def bucket_exists(self, bucket_name: str) -> bool:
@@ -102,4 +111,6 @@ class FakeBucket:
         self.calls.append("make_bucket")
         if self.make_error is not None:
             raise self.make_error
+        if self.make_errors:
+            raise self.make_errors.pop(0)
         self.buckets.add(bucket_name)
