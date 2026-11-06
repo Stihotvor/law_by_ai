@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.1
+    rev: v0.17.3
     hooks:
       - id: ruff
         args: [--fix]
@@ -12,7 +12,7 @@ repos:
         files: ^(src|scripts)/
         args: [-c, pyproject.toml]
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.411
+    rev: v1.1.414
     hooks:
       - id: pyright
         types: [python]
