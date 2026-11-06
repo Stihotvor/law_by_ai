@@ -13,7 +13,7 @@ COMPOSE="docker compose -f docker/docker-compose.yml"
 | Service | Purpose |
 |---|---|
 | `postgres` | Stores tenants, users and documents. |
-| `redis` | Holds the Celery task queue. It keeps no data on disk. |
+| `redis` | Holds the Celery task queue. It runs Valkey and keeps no data on disk. A restart discards queued tasks and results. |
 | `s3` | Stores document files (S3 API, SeaweedFS). |
 | `init` | Runs once on each start. It prepares the schema, the bucket, the tenant and the first admin. |
 | `app` | Serves the Streamlit web UI. |
@@ -49,7 +49,7 @@ The S3 service has no published port. Only the services on the backend network c
 $COMPOSE down
 ```
 
-`down` removes the containers. It keeps the data.
+`down` removes the containers. It keeps the `pgdata` and `s3data` volumes, but it discards the queued tasks and results in `redis`, which keeps no data on disk.
 
 !!! warning
     `down -v` deletes the `pgdata` and `s3data` volumes. All database rows and all stored files are lost. Make a dump first if you need the data.
@@ -77,6 +77,7 @@ $COMPOSE up -d
 - Rebuild the app and the worker only: `$COMPOSE up -d --build --no-deps app celery-worker`.
 - Rebuild without the cache: `$COMPOSE build --no-cache`.
 - Rebuild the test image: `$COMPOSE --profile test build --no-cache test`. A stale test image runs old code.
+- Before you apply a change to the `redis` image, pause producers, drain pending and active tasks, and save any results you still need. The broker keeps no data on disk, so the restart discards them.
 - After a change to an image pin, pull the images, then start: `$COMPOSE pull`, then `$COMPOSE up -d`.
 
 ## Develop
