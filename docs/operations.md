@@ -13,7 +13,7 @@ COMPOSE="docker compose -f docker/docker-compose.yml"
 | Service | Purpose |
 |---|---|
 | `postgres` | Stores tenants, users and documents. |
-| `redis` | Holds the Celery task queue. It keeps no data on disk. |
+| `redis` | Holds the Celery task queue. It runs Valkey and keeps no data on disk. A restart discards queued tasks and results. |
 | `s3` | Stores document files (S3 API, SeaweedFS). |
 | `init` | Runs once on each start. It prepares the schema, the bucket, the tenant and the first admin. |
 | `app` | Serves the Streamlit web UI. |

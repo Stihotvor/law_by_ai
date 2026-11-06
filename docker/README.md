@@ -5,7 +5,7 @@ Containers and orchestration. The operations page in the docs has the full run g
 - `Dockerfile`: pinned `python:3.13` slim base, multi-stage uv build (`builder`, `base`,
   `runtime`, `test`), non-root user (UID 10001). Dev extras (pytest, etc.) are
   installed only in the `test` target, never in `runtime`.
-- `docker-compose.yml`: services `postgres`, `redis`, `s3` (SeaweedFS), `init`
+- `docker-compose.yml`: services `postgres`, `redis` (Valkey), `s3` (SeaweedFS), `init`
   (one-shot setup), `app` (Streamlit), `celery-worker`, and `test`.
   - Every long-running service has a healthcheck, memory and CPU limits, a
     read-only root, no Linux capabilities and a non-root user.
