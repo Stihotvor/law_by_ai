@@ -9,9 +9,18 @@ status: accepted
 The stack uses Redis only as the Celery broker and result store (ADR-0006). No
 data is kept on disk. The compose service runs `redis:8.8.4-alpine`.
 
-The goal is to avoid license risk now and in the future. Redis 8 is a problem
-for a public MIT project. It is offered under RSALv2, SSPLv1, or AGPLv3. Redis
-has changed its license once already, and the vendor can change it again.
+The goal is to avoid license risk now and in the future. Redis 8 is offered
+under a choice of three licenses: RSALv2, SSPLv1, or AGPLv3 (source: the Redis
+licensing page, https://redis.io/legal/licenses/). RSALv2 and SSPLv1 are
+source-available licenses and are not approved by the OSI. AGPLv3 is an open
+source license with network copyleft.
+
+The project does not change Redis and runs it as a separate service, so this
+ADR does not claim a proven conflict with the MIT license today. The risk is
+for the future. A self-hosting operator who changes or offers Redis as a
+service can fall under these terms, and the project cannot give a clear
+answer. This is not legal advice. Redis has changed its license once already,
+and the vendor can change it again.
 Valkey is the BSD-3-Clause fork of Redis 7.2. It is developed under the Linux
 Foundation, not by one vendor. It speaks the same protocol.
 
