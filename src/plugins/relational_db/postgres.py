@@ -23,11 +23,23 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import String, create_engine, event, select, text
-from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from config.settings import get_settings
 from core.security import get_current_tenant, hash_password
+from data.models import Base, LegalDocument
+
+# ``Base`` and ``LegalDocument`` live in ``data.models`` (issue #16); re-exported
+# here so existing imports (e.g. ``migrations/env.py``) keep working.
+__all__ = [
+    "TENANT_SETTING",
+    "Base",
+    "LegalDocument",
+    "PostgreSQLStore",
+    "Tenant",
+    "User",
+    "apply_tenant_rls",
+]
 
 # Session setting used by the RLS policies. Empty string == no tenant scoping.
 TENANT_SETTING = "app.current_tenant"
@@ -35,26 +47,6 @@ TENANT_SETTING = "app.current_tenant"
 # ---------------------------------------------------------------------------
 # ORM models
 # ---------------------------------------------------------------------------
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-class LegalDocument(Base):
-    """Legal document model."""
-
-    __tablename__ = "legal_document"
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    title: Mapped[str] = mapped_column(String(512))
-    content: Mapped[str] = mapped_column(String())
-    source: Mapped[str] = mapped_column(String(256))
-    source_url: Mapped[str] = mapped_column(String(1024))
-    last_updated: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
-    metadata_: Mapped[dict[str, Any] | None] = mapped_column(JSONB, name="metadata")
-    is_processed: Mapped[bool]
-    tenant_id: Mapped[str | None] = mapped_column(String(64), default=None)
 
 
 class Tenant(Base):
