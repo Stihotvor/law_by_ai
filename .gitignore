@@ -20,3 +20,17 @@ htmlcov/
 *.log
 coverage.xml
 mutants/
+
+# Personal and tool config at the repo root (the sandbox also mounts empty
+# placeholders for these paths). Keep the tracked quality gate file.
+/.bash*
+/.z*
+/.profile
+/.gitconfig
+/.gitmodules
+/.ripgreprc
+/.mcp.json
+/.vscode
+/.idea
+/.claude/*
+!/.claude/quality-gates.json
