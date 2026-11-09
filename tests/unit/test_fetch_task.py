@@ -135,6 +135,17 @@ def test_parse_error_reaches_caller_and_saves_nothing(store: MagicMock, agent: M
     agent.close.assert_called_once()
 
 
+def test_save_error_reaches_caller(store: MagicMock, agent: MagicMock) -> None:
+    error = RuntimeError("db down")
+    store.save_document.side_effect = error
+
+    with pytest.raises(RuntimeError) as caught:
+        _run()
+
+    assert caught.value is error
+    agent.close.assert_called_once()
+
+
 def test_agent_closed_after_success(store: MagicMock, agent: MagicMock) -> None:
     _run()
 
