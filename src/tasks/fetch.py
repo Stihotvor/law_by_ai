@@ -21,6 +21,7 @@ _log = logging.getLogger(__name__)
 
 @functools.cache
 def _make_store() -> PostgreSQLStore:
+    """Return this worker process's store, built on first call."""
     # One store per worker process: the store runs Alembic migrations on first use,
     # so a new store per task would migrate on every task run.
     # Call only inside a task: never at import time or in the parent (pre-fork) process.
@@ -28,10 +29,12 @@ def _make_store() -> PostgreSQLStore:
 
 
 def _make_agent(rejection: RejectionChecker) -> DocumentFetcherAgent:
+    """Build a fetcher agent that checks *rejection* before each fetch."""
     return DocumentFetcherAgent(rejection=rejection)
 
 
 def _close_quietly(agent: DocumentFetcherAgent) -> None:
+    """Close *agent*; log a close error as a warning instead of raising it."""
     try:
         agent.close()
     except Exception:
@@ -39,6 +42,7 @@ def _close_quietly(agent: DocumentFetcherAgent) -> None:
 
 
 def _to_document(ref: DocumentRef, fetched: FetchedDocument, text: str) -> dict[str, Any]:
+    """Build the dict that ``PostgreSQLStore.save_document`` stores."""
     return {
         "title": fetched.meta.title,
         "content": text,
@@ -55,8 +59,8 @@ def _to_document(ref: DocumentRef, fetched: FetchedDocument, text: str) -> dict[
 def fetch_document(source: str, url: str, tenant_id: str | None = None) -> dict[str, str]:
     """Fetch *url* from *source* and save it; skip it if an admin rejected it."""
     store = _make_store()
-    agent = _make_agent(store)
     ref = DocumentRef(source=source, external_id=url, url=url)
+    agent = _make_agent(store)
     try:
         try:
             fetched = agent.fetch_document(source, ref, tenant_id=tenant_id)

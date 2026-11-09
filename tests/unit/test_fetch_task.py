@@ -12,6 +12,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from agents.fetch.contracts import DocumentMeta, DocumentRef, FetchedDocument
 from agents.fetch.errors import DocumentRejectedError, FetchTransportError
@@ -133,6 +134,20 @@ def test_parse_error_reaches_caller_and_saves_nothing(store: MagicMock, agent: M
 
     store.save_document.assert_not_called()
     agent.close.assert_called_once()
+
+
+@pytest.mark.parametrize(("source", "url"), [(SOURCE, ""), ("", URL)])
+def test_invalid_ref_raises_before_agent_exists(
+    store: MagicMock, monkeypatch: pytest.MonkeyPatch, source: str, url: str
+) -> None:
+    make_agent = MagicMock()
+    monkeypatch.setattr(fetch, "_make_agent", make_agent)
+
+    with pytest.raises(ValidationError):
+        app.tasks["fetch_document"].delay(source, url).get()
+
+    make_agent.assert_not_called()
+    store.save_document.assert_not_called()
 
 
 def test_save_error_reaches_caller(store: MagicMock, agent: MagicMock) -> None:
