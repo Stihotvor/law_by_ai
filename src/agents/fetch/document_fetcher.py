@@ -45,7 +45,8 @@ class RejectionChecker(Protocol):
 
 
 class NeverRejected:
-    # TODO: replace with the store-backed checker when rejected-document tracking exists.
+    # Default for callers that wire no store. PostgreSQLStore matches RejectionChecker,
+    # so pass a store instance as ``rejection=`` to block rejected documents.
     def is_rejected(self, source_url: str) -> bool:
         return False
 
