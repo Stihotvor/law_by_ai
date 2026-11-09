@@ -7,6 +7,8 @@ ADR-0014). Schema is managed by Alembic migrations (issue #9) — see
 
 - Document CRUD (issue #9): shared ``legal_document`` table, no RLS — the corpus
   is shared, access is scoped by ``tenant_id`` at the query layer.
+- Document reject (issue #92): delete the row and write a ``rejected_document``
+  audit row in one transaction, then notify an optional deletion hook.
 - User/tenant management (issue #52 / ADR-0013): ``users`` and ``tenants`` tables
   with PostgreSQL row-level security keyed on the current tenant.
 
@@ -18,16 +20,18 @@ is empty (platform-level operations), tenant-owned tables are fully visible.
 
 from __future__ import annotations
 
+import logging
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import String, create_engine, event, select, text
+from sqlalchemy import String, create_engine, delete, event, exists, select, text
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from config.settings import get_settings
 from core.security import get_current_tenant, hash_password
-from data.models import Base, LegalDocument
+from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
 
 # ``Base`` and ``LegalDocument`` live in ``data.models`` (issue #16); re-exported
 # here so existing imports (e.g. ``migrations/env.py``) keep working.
@@ -36,6 +40,7 @@ __all__ = [
     "Base",
     "LegalDocument",
     "PostgreSQLStore",
+    "StoreDocumentNotFoundError",
     "Tenant",
     "User",
     "apply_tenant_rls",
@@ -43,6 +48,14 @@ __all__ = [
 
 # Session setting used by the RLS policies. Empty string == no tenant scoping.
 TENANT_SETTING = "app.current_tenant"
+
+
+_log = logging.getLogger(__name__)
+
+
+class StoreDocumentNotFoundError(LookupError):
+    """No ``legal_document`` row has the given id."""
+
 
 # ---------------------------------------------------------------------------
 # ORM models
@@ -128,9 +141,12 @@ class PostgreSQLStore:
     - PostgreSQL row-level security (ADR-0003)
     """
 
-    def __init__(self) -> None:
+    def __init__(self, on_document_deleted: Callable[[str], None] | None = None) -> None:
         self._engine = None
         self._initialized = False
+        # Called once with the document id after a reject commits (issue #92).
+        # Errors it raises are logged, not re-raised.
+        self._on_document_deleted = on_document_deleted
 
     # --- lifecycle ----------------------------------------------------------
 
@@ -162,7 +178,9 @@ class PostgreSQLStore:
 
         If *document* has no ``id``, a new one is generated and written back
         into the dict, so re-saving the same dict upserts the same row.
+        Raises ``ValueError`` for an unknown ``status`` before any write.
         """
+        status = _validate_status(document.get("status", DocumentStatus.NEEDS_REVIEW))
         self._ensure_initialized()
         doc_id = document.get("id") or str(uuid.uuid4())
         document["id"] = doc_id
@@ -184,6 +202,7 @@ class PostgreSQLStore:
                         metadata_=document.get("metadata"),
                         is_processed=bool(document.get("is_processed", False)),
                         tenant_id=tenant,
+                        status=status,
                     )
                 )
             else:
@@ -243,7 +262,12 @@ class PostgreSQLStore:
     def update_document(
         self, document_id: str, document: dict[str, Any], tenant_id: str | None = None
     ) -> None:
-        """Merge ``document`` fields into the row; raises ``KeyError`` if missing."""
+        """Merge ``document`` fields into the row; raises ``KeyError`` if missing.
+
+        Raises ``ValueError`` for an unknown ``status`` before any write.
+        """
+        if "status" in document:
+            _validate_status(document["status"])
         self._ensure_initialized()
         with Session(self._engine) as session:
             row = session.get(LegalDocument, document_id)
@@ -257,6 +281,55 @@ class PostgreSQLStore:
                 elif key != "id" and hasattr(row, key):
                     setattr(row, key, value)
             session.commit()
+
+    # --- reject (issue #92) -------------------------------------------------
+
+    def reject(self, document_id: str, admin: str) -> None:
+        """Delete a document and record the reject in ``rejected_document``.
+
+        ``DELETE ... RETURNING`` and the audit insert share one transaction, so
+        of two concurrent rejects only one deletes the row and writes the audit
+        row. After commit the ``on_document_deleted`` hook (if set) is called
+        once. Raises :class:`StoreDocumentNotFoundError` for an unknown id;
+        nothing is written and the hook is not called. Review state is global:
+        there is no tenant check.
+        """
+        self._ensure_initialized()
+        stmt = (
+            delete(LegalDocument)
+            .where(LegalDocument.id == document_id)
+            .returning(LegalDocument.source_url)
+            .execution_options(synchronize_session=False)
+        )
+        with Session(self._engine) as session, session.begin():
+            source_url = session.execute(stmt).scalar_one_or_none()
+            if source_url is None:
+                raise StoreDocumentNotFoundError(f"Document not found: {document_id}")
+            session.add(
+                RejectedDocument(
+                    document_id=document_id,
+                    source_url=source_url,
+                    admin=admin,
+                    rejected_at=datetime.now(UTC),
+                )
+            )
+        self._notify_document_deleted(document_id)
+
+    def _notify_document_deleted(self, document_id: str) -> None:
+        """Call the deletion hook; log and swallow its errors (the reject is done)."""
+        if self._on_document_deleted is None:
+            return
+        try:
+            self._on_document_deleted(document_id)
+        except Exception:
+            _log.exception("on_document_deleted hook failed for document %s", document_id)
+
+    def is_rejected(self, source_url: str) -> bool:
+        """True when a document with *source_url* has been rejected."""
+        self._ensure_initialized()
+        stmt = select(exists().where(RejectedDocument.source_url == source_url))
+        with Session(self._engine) as session:
+            return bool(session.execute(stmt).scalar())
 
     # --- users / tenants (issue #52, ADR-0013) ------------------------------
 
@@ -321,6 +394,15 @@ class PostgreSQLStore:
 # ---------------------------------------------------------------------------
 
 
+def _validate_status(value: Any) -> str:
+    """Return *value* as a :class:`DocumentStatus` string; ``ValueError`` if unknown."""
+    try:
+        return DocumentStatus(value).value
+    except ValueError:
+        allowed = ", ".join(s.value for s in DocumentStatus)
+        raise ValueError(f"Unknown document status {value!r}; expected one of: {allowed}") from None
+
+
 def _parse_dt(value: Any, *, default: datetime | None = None) -> datetime:
     if value is None:
         return default or datetime.now(UTC)
@@ -340,6 +422,7 @@ def _doc_to_dict(row: LegalDocument) -> dict[str, Any]:
         "metadata": row.metadata_,
         "is_processed": row.is_processed,
         "tenant_id": row.tenant_id,
+        "status": row.status,
     }
 
 
