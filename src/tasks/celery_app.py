@@ -8,4 +8,5 @@ app = Celery(
     "law_by_ai",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend_url,
+    include=["tasks.fetch"],
 )
