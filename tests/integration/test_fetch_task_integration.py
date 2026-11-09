@@ -147,9 +147,13 @@ def store(source_url: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[PostgreS
     original = fetch._make_store
     original.cache_clear()
     monkeypatch.setattr(fetch, "_make_store", lambda: s)
-    yield s
-    s.close()
-    original.cache_clear()
+    try:
+        yield s
+    finally:
+        try:
+            s.close()
+        finally:
+            original.cache_clear()
 
 
 def _run(source_url: str, tenant_id: str | None = None) -> Any:
