@@ -6,8 +6,8 @@ Repo: `Stihotvor/law_by_ai` (public, default branch `main`). GitHub Project 5 "L
 ## Environment
 - Venv: `.venv` (created with uv). Use `.venv/bin/python` and `.venv/bin/pytest`.
 - Dependencies come from `pyproject.toml`. Dev tools: `uv pip install --python .venv/bin/python -e ".[dev]"`.
-- Fast tests: `.venv/bin/pytest -m "not integration"` (54 pass).
-- Full suite (67 pass): `docker compose --profile test -f docker/docker-compose.yml run --rm test`. It needs `docker/.env` (copy of `docker/.env.example`, gitignored). Rebuild the image with `build --no-cache test` after pulling, or the container runs stale code.
+- Fast tests: `.venv/bin/pytest -m "not integration"`.
+- Full suite: `docker compose --profile test -f docker/docker-compose.yml run --rm test`. It needs `docker/.env` (copy of `docker/.env.example`, gitignored). Rebuild the image with `build --no-cache test` after pulling, or the container runs stale code.
 - Quality tools in `.venv`: ruff, pyright, bandit, pip-audit, pre-commit. CI runs lint, typecheck, security scan, unit tests, Docker integration tests.
 - Services: `docker/docker-compose.yml` (postgres, redis, app, celery-worker, test). Stop with `docker compose -f <abs path>/docker/docker-compose.yml down`.
 - Migrations: Alembic (`alembic.ini`, `migrations/`, `docs/migrations.md`).
