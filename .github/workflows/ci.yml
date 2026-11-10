@@ -140,6 +140,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Materialize .env from template
         run: cp docker/.env.example docker/.env
+      # init refuses `change-me` secrets, and the smoke worker needs init.
+      - name: Replace placeholder secrets
+        run: sed -i "s/=change-me.*/=$(openssl rand -hex 16)/" docker/.env
       - name: Validate compose config
         run: docker compose -f docker/docker-compose.yml config --quiet
       - name: Set up Docker Buildx
@@ -154,11 +157,29 @@ jobs:
           load: true
           cache-from: type=gha,scope=test
           cache-to: type=gha,scope=test,mode=max
-      # No `up --wait` here: prod stack boot is verified manually. `run --rm
-      # test` starts only postgres+redis and runs the full test suite against
-      # the live stack — never app/worker (keeps CI lean).
+      # `run --rm test` starts only postgres+redis and runs the full test suite
+      # against the live stack. The app is not started; prod stack boot is
+      # verified manually.
       - name: Run tests against live postgres/redis
         run: docker compose --profile test -f docker/docker-compose.yml run --rm test
+      # Smoke: the worker (with a mocked Sejm API) consumes a queued fetch task.
+      # Tags match the Compose image names, so `up` does not rebuild them.
+      - name: Build runtime image (with GHA layer cache)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          target: runtime
+          tags: |
+            law-by-ai-smoke-init
+            law-by-ai-smoke-celery-worker
+          load: true
+          cache-from: type=gha,scope=runtime
+          cache-to: type=gha,scope=runtime,mode=max
+      - name: Start the smoke worker
+        run: docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --wait celery-worker
+      - name: Run the fetch smoke test
+        run: docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
       - name: Tear down the stack
         if: always()
-        run: docker compose --profile test -f docker/docker-compose.yml down -v
+        run: docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml down -v

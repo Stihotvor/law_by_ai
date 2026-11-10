@@ -1,0 +1,13 @@
+# Smoke override: the worker serves the Sejm ELI API from tests/smoke/fixtures.
+# Use together with docker-compose.yml (see CONTRIBUTING.md). Test stacks only.
+services:
+  celery-worker:
+    volumes:
+      - ../tests/smoke:/smoke:ro
+    # worker_bootstrap.py installs the mock, then starts the worker with the same
+    # args as the celery-worker `command` in docker-compose.yml (WORKER_ARGV).
+    command: ["python", "/smoke/worker_bootstrap.py"]
+    # No edge network: the worker gets no outbound network.
+    networks: !override [backend]
+# Run with `-p law-by-ai-smoke`: an own project gives an own broker and database,
+# so the smoke worker never takes tasks from a development stack.
