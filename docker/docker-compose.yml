@@ -277,8 +277,10 @@ services:
       <<: *app-env
       POSTGRES_URL: ""
       REDIS_URL: ""
-      CELERY_BROKER_URL: ""
-      CELERY_RESULT_BACKEND_URL: ""
+      # Settings use these when set, so pin them to the worker's Redis.
+      # The password is not URL-quoted: keep it URL-safe (e.g. hex).
+      CELERY_BROKER_URL: &test-redis-url "redis://${REDIS_USER:-}:${REDIS_PASSWORD}@redis:6379/${REDIS_DB:-0}"
+      CELERY_RESULT_BACKEND_URL: *test-redis-url
     mem_limit: 1g
     memswap_limit: 1g
     cpus: 1.0

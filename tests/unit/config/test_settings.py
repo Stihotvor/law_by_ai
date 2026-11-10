@@ -62,17 +62,6 @@ def test_defaults_when_no_environment(monkeypatch):
     assert settings.app_name == "law-by-ai"
 
 
-def test_empty_celery_urls_fall_back_to_redis_url(monkeypatch):
-    _clear_env(monkeypatch)
-    monkeypatch.setenv("CELERY_BROKER_URL", "")
-    monkeypatch.setenv("CELERY_RESULT_BACKEND_URL", "")
-
-    settings = Settings()
-
-    assert settings.celery_broker_url == settings.redis_url
-    assert settings.celery_result_backend_url == settings.redis_url
-
-
 def test_environment_overrides(monkeypatch):
     _clear_env(monkeypatch)
     monkeypatch.setenv("POSTGRES_URL", "postgresql://u:p@db:5432/x")

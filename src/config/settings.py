@@ -196,12 +196,12 @@ class Settings:
     @property
     def celery_broker_url(self) -> str:
         """Celery broker; falls back to ``REDIS_URL``."""
-        return os.getenv("CELERY_BROKER_URL") or self.redis_url
+        return os.getenv("CELERY_BROKER_URL", self.redis_url)
 
     @property
     def celery_result_backend_url(self) -> str:
         """Celery result backend; falls back to ``REDIS_URL``."""
-        return os.getenv("CELERY_RESULT_BACKEND_URL") or self.redis_url
+        return os.getenv("CELERY_RESULT_BACKEND_URL", self.redis_url)
 
     # --- Application ----------------------------------------------------------
     @property
