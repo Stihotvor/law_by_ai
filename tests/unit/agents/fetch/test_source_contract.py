@@ -35,7 +35,7 @@ FAKE_CASE = SourceCase(
     strategy_cls=FakeStrategy,
     valid_id=_FAKE_ID,
     expected_url=f"{FAKE_BASE}/{_FAKE_ID}",
-    too_long_id="a" * 33 + ".txt",
+    too_long_id="0" + _FAKE_ID,
     fetch_ref=DocumentRef(source=FAKE_SOURCE, external_id=_FAKE_ID, url=f"{FAKE_BASE}/{_FAKE_ID}"),
 )
 # Its strategy is not a RefBuilder, so only the LegalSource contract applies.
@@ -48,10 +48,11 @@ FETCHER_FAKE_CASE = SourceCase(
 REGISTERED_CASES = {"sejm_eli": SEJM_CASE}
 ALL_CASES = {**REGISTERED_CASES, "fake": FAKE_CASE, "fetcher_fake": FETCHER_FAKE_CASE}
 SOURCE_CASES = [pytest.param(case, id=key) for key, case in ALL_CASES.items()]
-REF_BUILDER_KEYS = [
-    key for key, case in ALL_CASES.items() if hasattr(case.strategy_cls, "make_ref")
+REF_BUILDER_CASES = [
+    pytest.param(case, id=key)
+    for key, case in ALL_CASES.items()
+    if hasattr(case.strategy_cls, "make_ref")
 ]
-REF_BUILDER_CASES = [pytest.param(ALL_CASES[key], id=key) for key in REF_BUILDER_KEYS]
 
 
 class PermissiveStrategy(FakeStrategy):
@@ -63,19 +64,12 @@ class PermissiveStrategy(FakeStrategy):
         return DocumentRef(source=source, external_id=external_id, url=f"{FAKE_BASE}/{external_id}")
 
 
-@pytest.fixture(autouse=True)
-def _clear_recorded() -> None:
-    FakeStrategy.reads.clear()
-    StaticFakeStrategy.reads.clear()
-    StaticFakeStrategy.built_with.clear()
-
-
 def test_every_registered_source_has_a_case() -> None:
     assert set(REGISTERED_CASES) == set(SOURCES.names())
 
 
 def test_every_registered_source_runs_the_ref_builder_contract() -> None:
-    assert set(REGISTERED_CASES) <= set(REF_BUILDER_KEYS)
+    assert set(REGISTERED_CASES) <= {p.id for p in REF_BUILDER_CASES}
 
 
 @pytest.mark.parametrize("field", ["valid_id", "expected_url", "too_long_id"])

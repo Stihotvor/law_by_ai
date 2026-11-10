@@ -51,8 +51,6 @@ class Rejecting:
 
 @pytest.fixture(autouse=True)
 def registries(monkeypatch: pytest.MonkeyPatch) -> Registry[type[LegalSource]]:
-    StaticFakeStrategy.built_with.clear()
-    StaticFakeStrategy.reads.clear()
     PrivateStrategy.kwargs.clear()
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")

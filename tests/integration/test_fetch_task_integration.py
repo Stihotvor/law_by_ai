@@ -49,7 +49,6 @@ def _rows(source_url: str) -> list[dict[str, Any]]:
 
 @pytest.fixture(autouse=True)
 def registries(monkeypatch: pytest.MonkeyPatch) -> None:
-    FakeStrategy.reads.clear()
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
     sources.register(_SOURCE)(FakeSource)
