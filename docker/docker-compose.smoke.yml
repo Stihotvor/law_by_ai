@@ -9,11 +9,5 @@ services:
     command: ["python", "/smoke/worker_bootstrap.py"]
     # No edge network: the worker gets no outbound network.
     networks: !override [backend]
-  # Run with `-p law-by-ai-smoke`: an own project gives an own broker and database,
-  # so the smoke worker never takes tasks from a development stack.
-  test:
-    # Empty values make the test use the same POSTGRES_*/REDIS_* settings as the
-    # worker, even when docker/.env sets full URLs. The worker gets no URL keys.
-    environment:
-      POSTGRES_URL: ""
-      REDIS_URL: ""
+# Run with `-p law-by-ai-smoke`: an own project gives an own broker and database,
+# so the smoke worker never takes tasks from a development stack.
