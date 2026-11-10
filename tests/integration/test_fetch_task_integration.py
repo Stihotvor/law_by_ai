@@ -31,7 +31,7 @@ from plugins.relational_db.postgres import PostgreSQLStore
 from tasks import fetch
 from tasks.celery_app import app
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("eager_celery")]
 
 _BASE = "https://example.invalid/fetch11"
 _SOURCE = "fake"
@@ -80,18 +80,6 @@ class FakeSource(LegalSource):
         )
 
 
-def _can_connect(url: str) -> bool:
-    """Return True when the database at the URL answers a query."""
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
 def _rows(source_url: str) -> list[dict[str, Any]]:
     """Return the ``legal_document`` rows with *source_url*, read with plain SQL."""
     engine = create_engine(get_settings().postgres_url, future=True)
@@ -118,24 +106,12 @@ def registries(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
 
 
-@pytest.fixture(autouse=True)
-def eager() -> Iterator[None]:
-    old = (app.conf.task_always_eager, app.conf.task_eager_propagates)
-    app.conf.task_always_eager = True
-    app.conf.task_eager_propagates = True
-    yield
-    app.conf.task_always_eager, app.conf.task_eager_propagates = old
-
-
 @pytest.fixture
-def source_url() -> Iterator[str]:
+def source_url(postgres_url: str) -> Iterator[str]:
     """Unique source URL; its document and audit rows are removed afterwards."""
-    url = get_settings().postgres_url
-    if not _can_connect(url):
-        pytest.skip("PostgreSQL unavailable")
     value = f"{_BASE}/{uuid.uuid4().hex}.txt"
     yield value
-    engine = create_engine(url, future=True)
+    engine = create_engine(postgres_url, future=True)
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM legal_document WHERE source_url = :u"), {"u": value})
         conn.execute(text("DELETE FROM rejected_document WHERE source_url = :u"), {"u": value})

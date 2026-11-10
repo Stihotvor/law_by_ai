@@ -24,7 +24,7 @@ from plugins.relational_db.postgres import PostgreSQLStore
 from tasks import fetch
 from tasks.celery_app import FETCH_DOCUMENT, app
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("eager_celery")]
 
 _SOURCE = "sejm_eli"
 _ELI = "DU/2024/1"
@@ -77,18 +77,6 @@ class _NoThrottle:
         pass
 
 
-def _can_connect(url: str) -> bool:
-    """Return True when the database at the URL answers a query."""
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
 def _rows(source_url: str) -> list[dict[str, Any]]:
     """Return the test tenant's ``legal_document`` rows with *source_url*."""
     engine = create_engine(get_settings().postgres_url, future=True)
@@ -137,25 +125,12 @@ def requests(monkeypatch: pytest.MonkeyPatch) -> list[httpx.Request]:
     return log
 
 
-@pytest.fixture(autouse=True)
-def eager() -> Iterator[None]:
-    """Run Celery tasks in process and raise their errors."""
-    old = (app.conf.task_always_eager, app.conf.task_eager_propagates)
-    app.conf.task_always_eager = True
-    app.conf.task_eager_propagates = True
-    yield
-    app.conf.task_always_eager, app.conf.task_eager_propagates = old
-
-
 @pytest.fixture
-def clean_db() -> Iterator[None]:
+def clean_db(postgres_url: str) -> Iterator[None]:
     """Remove the test tenant's rows for the Sejm URLs before and after the test."""
-    url = get_settings().postgres_url
-    if not _can_connect(url):
-        pytest.skip("PostgreSQL unavailable")
-    _cleanup(url)
+    _cleanup(postgres_url)
     yield
-    _cleanup(url)
+    _cleanup(postgres_url)
 
 
 @pytest.fixture
