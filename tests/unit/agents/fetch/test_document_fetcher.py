@@ -392,3 +392,8 @@ def test_parse_passes_the_mime_charset_to_the_parser() -> None:
     mime = "text/plain; charset=iso-8859-1"
     assert DocumentFetcherAgent().parse(b"\xa3", "a.txt", mime) == "£"
     assert DocumentFetcherAgent().parse(b"\xa3", "a.txt") == "Ł"
+
+
+def test_make_ref_without_ref_builder_raises() -> None:
+    with pytest.raises(NotImplementedError, match="source does not support fetch by id"):
+        DocumentFetcherAgent().make_ref("fake", "1")

@@ -1,4 +1,4 @@
-"""Celery task ``fetch_document`` with a real PostgreSQL store (issue #11).
+"""Celery task ``fetch_document`` with a real PostgreSQL store.
 
 Wiring under test: task -> fetcher -> rejection check -> store. Only the document
 source is fake; the store is a real ``PostgreSQLStore``.
@@ -48,6 +48,9 @@ class FakeStrategy:
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
         return DocumentPage(items=())
+
+    def make_ref(self, source: str, external_id: str) -> DocumentRef:
+        return DocumentRef(source=source, external_id=external_id, url=f"{_BASE}/{external_id}")
 
     def get_meta(self, ref: DocumentRef) -> DocumentMeta:
         return DocumentMeta(ref=ref, title=_TITLE, extra={"k": "v"})
@@ -157,7 +160,8 @@ def store(source_url: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[PostgreS
 
 
 def _run(source_url: str, tenant_id: str | None = None) -> Any:
-    return app.tasks["fetch_document"].delay(_SOURCE, source_url, tenant_id=tenant_id).get()
+    external_id = source_url.removeprefix(f"{_BASE}/")
+    return app.tasks["fetch_document"].delay(_SOURCE, external_id, tenant_id=tenant_id).get()
 
 
 def test_task_saves_fetched_document(store: PostgreSQLStore, source_url: str) -> None:

@@ -4,6 +4,8 @@ from config.settings import get_settings
 
 settings = get_settings()
 
+FETCH_DOCUMENT = "fetch_document"
+
 app = Celery(
     "law_by_ai",
     broker=settings.celery_broker_url,

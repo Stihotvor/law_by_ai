@@ -1,4 +1,4 @@
-"""Celery task ``fetch_document`` (issue #11).
+"""Celery task ``fetch_document``.
 
 Unit tests: the store and the fetcher are mocked, so no database or network is needed.
 """
@@ -12,21 +12,22 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from pydantic import ValidationError
 
 from agents.fetch.contracts import DocumentMeta, DocumentRef, FetchedDocument
+from agents.fetch.document_fetcher import DocumentFetcherAgent
 from agents.fetch.errors import DocumentRejectedError, FetchTransportError
 from agents.fetch.formats.base import FormatError
 from tasks import fetch
 from tasks.celery_app import app
 
-SOURCE = "test-source"
-URL = "https://example.test/doc/1"
+SOURCE = "sejm_eli"
+EID = "DU/2024/1"
+URL = "https://api.sejm.gov.pl/eli/acts/DU/2024/1/text.html"
 FETCHED_AT = datetime(2026, 1, 2, tzinfo=UTC)
 
 
 def _fetched(tenant_id: str | None = None) -> FetchedDocument:
-    ref = DocumentRef(source=SOURCE, external_id=URL, url=URL)
+    ref = DocumentRef(source=SOURCE, external_id=EID, url=URL)
     meta = DocumentMeta(ref=ref, title="Act 1", extra={"k": "v"})
     return FetchedDocument(
         meta=meta,
@@ -55,16 +56,19 @@ def store(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 
 
 @pytest.fixture
-def agent(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+def agent(monkeypatch: pytest.MonkeyPatch) -> Iterator[MagicMock]:
+    real = DocumentFetcherAgent()
     mock = MagicMock()
+    mock.make_ref.side_effect = real.make_ref
     mock.fetch_document.return_value = _fetched()
     mock.parse.return_value = "parsed text"
     monkeypatch.setattr(fetch, "_make_agent", lambda rejection: mock)
-    return mock
+    yield mock
+    real.close()
 
 
-def _run(tenant_id: str | None = None) -> Any:
-    return app.tasks["fetch_document"].delay(SOURCE, URL, tenant_id=tenant_id).get()
+def _run(tenant_id: str | None = None, external_id: str = EID) -> Any:
+    return app.tasks["fetch_document"].delay(SOURCE, external_id, tenant_id=tenant_id).get()
 
 
 def test_task_is_registered() -> None:
@@ -99,10 +103,10 @@ def test_saved_document_fields(store: MagicMock, agent: MagicMock) -> None:
     }
 
 
-def test_agent_gets_ref_tenant_and_parse_args(store: MagicMock, agent: MagicMock) -> None:
+def test_agent_gets_canonical_ref_tenant_and_parse_args(store: MagicMock, agent: MagicMock) -> None:
     _run(tenant_id="t1")
 
-    ref = DocumentRef(source=SOURCE, external_id=URL, url=URL)
+    ref = DocumentRef(source=SOURCE, external_id=EID, url=URL)
     agent.fetch_document.assert_called_once_with(SOURCE, ref, tenant_id="t1")
     agent.parse.assert_called_once_with(b"raw", URL, "text/plain")
 
@@ -136,18 +140,22 @@ def test_parse_error_reaches_caller_and_saves_nothing(store: MagicMock, agent: M
     agent.close.assert_called_once()
 
 
-@pytest.mark.parametrize(("source", "url"), [(SOURCE, ""), ("", URL)])
-def test_invalid_ref_raises_before_agent_exists(
-    store: MagicMock, monkeypatch: pytest.MonkeyPatch, source: str, url: str
-) -> None:
-    make_agent = MagicMock()
-    monkeypatch.setattr(fetch, "_make_agent", make_agent)
+def test_invalid_id_returns_invalid_and_fetches_nothing(store: MagicMock, agent: MagicMock) -> None:
+    assert _run(external_id="du/2024/1") == {"status": "invalid", "external_id": "du/2024/1"}
 
-    with pytest.raises(ValidationError):
-        app.tasks["fetch_document"].delay(source, url).get()
-
-    make_agent.assert_not_called()
+    agent.fetch_document.assert_not_called()
     store.save_document.assert_not_called()
+
+
+def test_unsupported_source_returns_unsupported_and_fetches_nothing(
+    store: MagicMock, agent: MagicMock
+) -> None:
+    agent.make_ref.side_effect = NotImplementedError("no fetch by id")
+
+    assert _run() == {"status": "unsupported", "external_id": EID}
+    agent.fetch_document.assert_not_called()
+    store.save_document.assert_not_called()
+    agent.close.assert_called_once()
 
 
 def test_save_error_reaches_caller(store: MagicMock, agent: MagicMock) -> None:
@@ -198,7 +206,7 @@ def test_make_agent_uses_store_as_rejection_checker() -> None:
     checker.is_rejected.return_value = True
     built = fetch._make_agent(checker)
     try:
-        ref = DocumentRef(source=SOURCE, external_id=URL, url=URL)
+        ref = DocumentRef(source=SOURCE, external_id=EID, url=URL)
         with pytest.raises(DocumentRejectedError):
             built.fetch_document(SOURCE, ref)
         checker.is_rejected.assert_called_once_with(URL)

@@ -8,7 +8,7 @@ import pytest
 import agents.fetch.sources.sejm_eli as sejm
 from agents.fetch.contracts import DocumentFilter, DocumentRef
 from agents.fetch.document_fetcher import DocumentFetcherAgent
-from agents.fetch.errors import DocumentNotFoundError, PayloadError
+from agents.fetch.errors import DocumentNotFoundError, InvalidReferenceError, PayloadError
 from agents.fetch.sources.base import SOURCES
 from agents.fetch.sources.sejm_eli import MAPPER, SejmEliSource
 from agents.fetch.strategies.rest_api import REST_MAPPERS, RestApiStrategy
@@ -141,3 +141,16 @@ def test_through_the_agent(monkeypatch: pytest.MonkeyPatch, events: list[str]) -
     assert doc.content_type == "text/html"
     assert doc.tenant_id == "t1"
     assert b"Tekst" in doc.content
+
+
+def test_make_ref_url_matches_list_refs(events: list[str]) -> None:
+    source, _ = _source(events)
+    listed = source.list_documents(DocumentFilter()).items[0]
+    strategy = cast(RestApiStrategy, source.strategy)
+    assert strategy.make_ref("sejm_eli", EID).url == listed.url
+
+
+@pytest.mark.parametrize("bad", [f"{sejm._BASE}/acts/{EID}", "../x", "du/2024/1"])
+def test_make_ref_rejects_invalid_id(bad: str) -> None:
+    with pytest.raises(InvalidReferenceError):
+        RestApiStrategy(sejm._BASE).make_ref("sejm_eli", bad)

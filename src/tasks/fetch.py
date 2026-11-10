@@ -1,4 +1,9 @@
-"""Celery task: fetch one document, parse it and save it to the store (issue #11).
+"""Celery task: fetch one document by its source id, parse it and save it to the store.
+
+The fetcher builds the canonical document URL from the source and the id.
+An id the source does not accept gives the ``invalid`` status.
+A source that cannot build a ref from an id gives the ``unsupported`` status;
+the task then fetches and saves nothing.
 
 This module wires the fetcher to the store; ``agents.fetch`` never imports the store.
 """
@@ -11,10 +16,10 @@ from typing import Any
 
 from agents.fetch.contracts import DocumentRef, FetchedDocument
 from agents.fetch.document_fetcher import DocumentFetcherAgent, RejectionChecker
-from agents.fetch.errors import DocumentRejectedError
+from agents.fetch.errors import DocumentRejectedError, InvalidReferenceError
 from data.models import DocumentStatus
 from plugins.relational_db.postgres import PostgreSQLStore
-from tasks.celery_app import app
+from tasks.celery_app import FETCH_DOCUMENT, app
 
 _log = logging.getLogger(__name__)
 
@@ -55,19 +60,24 @@ def _to_document(ref: DocumentRef, fetched: FetchedDocument, text: str) -> dict[
     }
 
 
-@app.task(name="fetch_document")
-def fetch_document(source: str, url: str, tenant_id: str | None = None) -> dict[str, str]:
-    """Fetch *url* from *source* and save it; skip it if an admin rejected it."""
+@app.task(name=FETCH_DOCUMENT)
+def fetch_document(source: str, external_id: str, tenant_id: str | None = None) -> dict[str, str]:
+    """Fetch *external_id* from *source* and save it; skip it if an admin rejected it."""
     store = _make_store()
-    ref = DocumentRef(source=source, external_id=url, url=url)
     agent = _make_agent(store)
     try:
         try:
+            ref = agent.make_ref(source, external_id)
+        except InvalidReferenceError:
+            return {"status": "invalid", "external_id": external_id}
+        except NotImplementedError:
+            return {"status": "unsupported", "external_id": external_id}
+        try:
             fetched = agent.fetch_document(source, ref, tenant_id=tenant_id)
         except DocumentRejectedError:
-            return {"status": "skipped", "source_url": url}
-        text = agent.parse(fetched.content, url, fetched.content_type)
+            return {"status": "skipped", "source_url": ref.url}
+        text = agent.parse(fetched.content, ref.url, fetched.content_type)
     finally:
         _close_quietly(agent)
     document_id = store.save_document(_to_document(ref, fetched, text), tenant_id)
-    return {"status": "saved", "document_id": document_id, "source_url": url}
+    return {"status": "saved", "document_id": document_id, "source_url": ref.url}
