@@ -47,6 +47,8 @@ The MVP planning date is 2027-02-28. Rerank is local (Cohere dropped), and an ev
 
 ## Working rules for this repo
 - Git remote operations (clone, push, `gh`) go through the `git-agent` subagent. A hook blocks `.env` access and pipes in Bash.
+- Design gate for an issue that crosses a module boundary: the issue has a "Contract" section (inputs, outputs and errors of each call, checked against the validation of the callee). The `solution-architect` agent reviews the interface before any code. When the issue is picked, the architect reads it again against the current code and updates the issue text before the branch is created.
+- Each Celery task has at least one integration test with production collaborators. Mock only the network edge.
 - Quality gate before a task is done: ruff check, ruff format --check, pyright, pytest.
 - Coverage commands and gates: see the "Coverage and mutation gates" section of CONTRIBUTING.md.
 - Mutation testing (blocking in CI via scripts/mutation_score.py, runs in CI only, not in pre-commit): see the same CONTRIBUTING.md section.
