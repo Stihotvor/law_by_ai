@@ -10,19 +10,12 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterator
-from datetime import UTC, datetime
-from typing import Any, ClassVar
+from typing import Any
 
 import pytest
+from fakes.fetch import FAKE_BODY, FAKE_SOURCE, FAKE_STRATEGY, FAKE_TITLE, FakeSource, FakeStrategy
 from sqlalchemy import create_engine, text
 
-from agents.fetch.contracts import (
-    DocumentFilter,
-    DocumentMeta,
-    DocumentPage,
-    DocumentRef,
-    FetchedDocument,
-)
 from agents.fetch.registry import Registry
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
@@ -33,51 +26,10 @@ from tasks.celery_app import app
 
 pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("eager_celery")]
 
-_BASE = "https://example.invalid/fetch11"
-_SOURCE = "fake"
-_TITLE = "Ustawa testowa"
-_BODY = "Art. 1. Treść ustawy."
-_FETCHED_AT = datetime(2026, 1, 2, tzinfo=UTC)
-
-
-class FakeStrategy:
-    reads: ClassVar[list[DocumentRef]] = []
-
-    def __init__(self, base_url: str) -> None:
-        pass
-
-    def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
-        return DocumentPage(items=())
-
-    def make_ref(self, source: str, external_id: str) -> DocumentRef:
-        return DocumentRef(source=source, external_id=external_id, url=f"{_BASE}/{external_id}")
-
-    def get_meta(self, ref: DocumentRef) -> DocumentMeta:
-        return DocumentMeta(ref=ref, title=_TITLE, extra={"k": "v"})
-
-    def read(self, ref: DocumentRef) -> bytes:
-        self.reads.append(ref)
-        return _BODY.encode("utf-8")
-
-
-class FakeSource(LegalSource):
-    name: ClassVar[str] = _SOURCE
-    base_url: ClassVar[str] = _BASE
-    strategy_name: ClassVar[str] = "fake_strategy"
-
-    def list_documents(self, flt: DocumentFilter) -> DocumentPage:
-        return self.strategy.list_refs(self.name, flt)
-
-    def get_document_meta(self, ref: DocumentRef) -> DocumentMeta:
-        return self.strategy.get_meta(ref)
-
-    def fetch_document(self, ref: DocumentRef) -> FetchedDocument:
-        return FetchedDocument(
-            meta=self.strategy.get_meta(ref),
-            content=self.strategy.read(ref),
-            content_type="text/plain; charset=utf-8",
-            fetched_at=_FETCHED_AT,
-        )
+_BASE = FakeSource.base_url
+_SOURCE = FAKE_SOURCE
+_TITLE = FAKE_TITLE
+_BODY = FAKE_BODY
 
 
 def _rows(source_url: str) -> list[dict[str, Any]]:
@@ -101,7 +53,7 @@ def registries(monkeypatch: pytest.MonkeyPatch) -> None:
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
     sources.register(_SOURCE)(FakeSource)
-    strategies.register("fake_strategy")(FakeStrategy)
+    strategies.register(FAKE_STRATEGY)(FakeStrategy)
     monkeypatch.setattr("agents.fetch.document_fetcher.SOURCES", sources)
     monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
 

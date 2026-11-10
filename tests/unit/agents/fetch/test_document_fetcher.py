@@ -1,7 +1,12 @@
-from datetime import UTC, datetime
 from typing import Any, ClassVar, cast
 
 import pytest
+from fakes.fetch import STATIC_DOC as DOC
+from fakes.fetch import STATIC_META as META
+from fakes.fetch import STATIC_PAGE as PAGE
+from fakes.fetch import STATIC_REF as REF
+from fakes.fetch import StaticFakeSource as FakeSource
+from fakes.fetch import StaticFakeStrategy as FakeStrategy
 
 from agents.fetch.contracts import (
     DocumentFilter,
@@ -21,45 +26,6 @@ from agents.fetch.errors import (
 from agents.fetch.registry import Registry, UnknownNameError
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
-
-REF = DocumentRef(source="fake", external_id="1", url="https://fake.example/1")
-META = DocumentMeta(ref=REF, title="t")
-PAGE = DocumentPage(items=(REF,))
-DOC = FetchedDocument(meta=META, content=b"x", fetched_at=datetime(2026, 1, 1, tzinfo=UTC))
-
-
-class FakeStrategy:
-    built_with: ClassVar[list[str]] = []
-    reads: ClassVar[list[DocumentRef]] = []
-
-    def __init__(self, base_url: str) -> None:
-        self.built_with.append(base_url)
-
-    def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
-        return PAGE
-
-    def get_meta(self, ref: DocumentRef) -> DocumentMeta:
-        return META
-
-    def read(self, ref: DocumentRef) -> bytes:
-        self.reads.append(ref)
-        return b"x"
-
-
-class FakeSource(LegalSource):
-    name: ClassVar[str] = "fake"
-    base_url: ClassVar[str] = "https://fake.example"
-    strategy_name: ClassVar[str] = "fake_strategy"
-
-    def list_documents(self, flt: DocumentFilter) -> DocumentPage:
-        return PAGE
-
-    def get_document_meta(self, ref: DocumentRef) -> DocumentMeta:
-        return META
-
-    def fetch_document(self, ref: DocumentRef) -> FetchedDocument:
-        self.strategy.read(ref)
-        return DOC
 
 
 class RecordingSource(FakeSource):
