@@ -80,6 +80,14 @@ uv run python scripts/mutation_score.py
   job fails (it does not skip) when `src/agents/fetch` does not exist.
 - Each Celery task has at least one integration test with production
   collaborators. Mock only the network edge.
+- Fetch smoke test: the real broker and worker, with the Sejm ELI API served
+  from `tests/smoke/fixtures` (`docker/docker-compose.smoke.yml`). Run it from
+  the repo root:
+
+  ```bash
+  docker compose --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --build --wait celery-worker
+  docker compose --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm --build -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
+  ```
 
 ## Design gate for cross-module issues
 
