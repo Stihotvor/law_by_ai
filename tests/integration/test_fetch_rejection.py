@@ -7,19 +7,12 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterator
-from datetime import UTC, datetime
-from typing import ClassVar
 
 import pytest
+from fakes.fetch import FAKE_BODY, FAKE_SOURCE, FAKE_STRATEGY, FakeSource, FakeStrategy
 from sqlalchemy import create_engine, text
 
-from agents.fetch.contracts import (
-    DocumentFilter,
-    DocumentMeta,
-    DocumentPage,
-    DocumentRef,
-    FetchedDocument,
-)
+from agents.fetch.contracts import DocumentRef
 from agents.fetch.document_fetcher import DocumentFetcherAgent
 from agents.fetch.errors import DocumentRejectedError
 from agents.fetch.registry import Registry
@@ -31,43 +24,6 @@ from plugins.relational_db.postgres import PostgreSQLStore
 pytestmark = pytest.mark.integration
 
 _BASE = "https://example.invalid/fetch10"
-
-
-class FakeStrategy:
-    reads: ClassVar[list[DocumentRef]] = []
-
-    def __init__(self, base_url: str) -> None:
-        pass
-
-    def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
-        return DocumentPage(items=())
-
-    def get_meta(self, ref: DocumentRef) -> DocumentMeta:
-        return DocumentMeta(ref=ref, title="t")
-
-    def read(self, ref: DocumentRef) -> bytes:
-        self.reads.append(ref)
-        return b"x"
-
-
-class FakeSource(LegalSource):
-    name: ClassVar[str] = "fake"
-    base_url: ClassVar[str] = _BASE
-    strategy_name: ClassVar[str] = "fake_strategy"
-
-    def list_documents(self, flt: DocumentFilter) -> DocumentPage:
-        return self.strategy.list_refs(self.name, flt)
-
-    def get_document_meta(self, ref: DocumentRef) -> DocumentMeta:
-        return self.strategy.get_meta(ref)
-
-    def fetch_document(self, ref: DocumentRef) -> FetchedDocument:
-        content = self.strategy.read(ref)
-        return FetchedDocument(
-            meta=self.strategy.get_meta(ref),
-            content=content,
-            fetched_at=datetime(2026, 1, 1, tzinfo=UTC),
-        )
 
 
 def _can_connect(url: str) -> bool:
@@ -84,11 +40,11 @@ def _can_connect(url: str) -> bool:
 
 @pytest.fixture(autouse=True)
 def registries(monkeypatch: pytest.MonkeyPatch) -> None:
-    FakeStrategy.reads.clear()
+    """Swap in local registries holding the shared fakes."""
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
-    sources.register("fake")(FakeSource)
-    strategies.register("fake_strategy")(FakeStrategy)
+    sources.register(FAKE_SOURCE)(FakeSource)
+    strategies.register(FAKE_STRATEGY)(FakeStrategy)
     monkeypatch.setattr("agents.fetch.document_fetcher.SOURCES", sources)
     monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
 
@@ -131,9 +87,10 @@ def test_rejected_url_is_blocked_before_read(store: PostgreSQLStore, source_url:
 
 
 def test_not_rejected_url_fetches(store: PostgreSQLStore, source_url: str) -> None:
+    """A URL that is not rejected is fetched."""
     ref = _ref(source_url)
 
     with DocumentFetcherAgent(rejection=store) as agent:
         result = agent.fetch_document("fake", ref)
-    assert result.content == b"x"
+    assert result.content == FAKE_BODY.encode("utf-8")
     assert FakeStrategy.reads == [ref]
