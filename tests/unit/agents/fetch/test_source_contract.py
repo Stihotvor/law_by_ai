@@ -58,6 +58,8 @@ class PermissiveStrategy(FakeStrategy):
     """The postmortem bug: a ref builder that accepts any id."""
 
     def make_ref(self, source: str, external_id: str) -> DocumentRef:
+        if source != FAKE_SOURCE:
+            return super().make_ref(source, external_id)
         return DocumentRef(source=source, external_id=external_id, url=f"{FAKE_BASE}/{external_id}")
 
 
@@ -69,7 +71,7 @@ def _clear_recorded() -> None:
 
 
 def test_every_registered_source_has_a_case() -> None:
-    assert set(SOURCES.names()) <= set(REGISTERED_CASES)
+    assert set(REGISTERED_CASES) == set(SOURCES.names())
 
 
 def test_every_registered_source_runs_the_ref_builder_contract() -> None:
@@ -97,5 +99,6 @@ def test_legal_source_contract(case: SourceCase) -> None:
 def test_contract_fails_for_a_ref_builder_that_accepts_any_id() -> None:
     permissive = replace(FAKE_CASE, strategy_cls=PermissiveStrategy)
 
-    with pytest.raises(pytest.fail.Exception, match="DID NOT RAISE"):
+    # Only the invalid-id check can fail: unknown sources still raise.
+    with pytest.raises(pytest.fail.Exception, match=r"DID NOT RAISE.*InvalidReferenceError"):
         check_ref_builder(permissive)
