@@ -78,6 +78,21 @@ uv run python scripts/mutation_score.py
   scope, edit `source_paths` and `pytest_add_cli_args_test_selection` in
   `pyproject.toml` (mutmut 3.8.1 reads its scope only from that file). The CI
   job fails (it does not skip) when `src/agents/fetch` does not exist.
+- Each Celery task has at least one integration test with production
+  collaborators. Mock only the network edge.
+
+## Design gate for cross-module issues
+
+An issue crosses a module boundary when its code in one module calls another
+module, in the same package or in another package.
+
+1. Write a "Contract" section in the issue. For each call, list the inputs,
+   the outputs and the errors. Check each input against the validation of the
+   callee.
+2. Get a review of the interface from the architect (the `solution-architect`
+   agent) before any code.
+3. When you pick the issue, the architect reads it again against the current
+   code and updates the issue text. Then create the branch.
 
 ## Branching & PRs
 
