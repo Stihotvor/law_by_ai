@@ -17,4 +17,11 @@ class FetchStrategy(Protocol):
     def read(self, ref: DocumentRef) -> bytes: ...
 
 
+@runtime_checkable
+class RefBuilder(Protocol):
+    """A strategy that can build a ``DocumentRef`` from a source id."""
+
+    def make_ref(self, source: str, external_id: str) -> DocumentRef: ...
+
+
 STRATEGIES: Registry[type[FetchStrategy]] = Registry("strategies")

@@ -122,9 +122,8 @@ def require_role(
 
         from core.security import require_role
 
-        # Streamlit page guard:
-        # if not require_role(ADMIN)(st.session_state.user["role"]):
-        #     st.error("Admin required"); st.stop()
+        # Streamlit page guard: use ui.components.auth.require_admin(),
+        # which reads the session role through ui.components.auth.current_role().
 
         # Celery task guard:
         # if not require_role(ADMIN)(worker_role):

@@ -83,19 +83,18 @@ class RestApiStrategy:
         if len(listing.external_ids) > flt.limit:
             raise PayloadError("mapper returned more ids than limit")
         try:
-            refs = tuple(
-                DocumentRef(
-                    source=source,
-                    external_id=eid,
-                    url=self._base + self._path(mapper.content_path, eid, mapper),
-                )
-                for eid in listing.external_ids
-            )
+            refs = tuple(self.make_ref(source, eid) for eid in listing.external_ids)
             return DocumentPage(items=refs, next_cursor=listing.next_cursor)
         except InvalidReferenceError as exc:
             raise PayloadError("mapper returned an invalid id") from exc
         except (ValueError, TypeError) as exc:
             raise PayloadError(f"mapper returned an invalid id: {type(exc).__name__}") from exc
+
+    def make_ref(self, source: str, external_id: str) -> DocumentRef:
+        """Build the ref with the canonical content URL; raise InvalidReferenceError on a bad id."""
+        mapper = self._mapper(source)
+        url = self._base + self._path(mapper.content_path, external_id, mapper)
+        return DocumentRef(source=source, external_id=external_id, url=url)
 
     def get_meta(self, ref: DocumentRef) -> DocumentMeta:
         mapper = self._mapper(ref.source)

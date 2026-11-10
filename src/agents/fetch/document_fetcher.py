@@ -29,7 +29,7 @@ from agents.fetch.ocr.errors import OcrError
 from agents.fetch.ocr.manager import get_ocr_manager
 from agents.fetch.registry import UnknownNameError
 from agents.fetch.sources.base import SOURCES, LegalSource
-from agents.fetch.strategies.base import STRATEGIES, FetchStrategy
+from agents.fetch.strategies.base import STRATEGIES, FetchStrategy, RefBuilder
 
 _log = logging.getLogger(__name__)
 _TENANT_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
@@ -129,6 +129,13 @@ class DocumentFetcherAgent:
             if strategy is None:
                 strategy = self._strategies[source] = _build(strategy_cls, source_cls)
         return source_cls(strategy)
+
+    def make_ref(self, source: str, external_id: str) -> DocumentRef:
+        """Build the canonical ref for *external_id*; raise InvalidReferenceError on a bad id."""
+        strategy = self._resolve(source).strategy
+        if not isinstance(strategy, RefBuilder):
+            raise NotImplementedError("source does not support fetch by id")
+        return strategy.make_ref(source, external_id)
 
     def list_documents(self, source: str, flt: DocumentFilter) -> DocumentPage:
         return self._resolve(source).list_documents(flt)
