@@ -49,6 +49,8 @@ def invalid_ids(case: SourceCase) -> tuple[str, ...]:
 
 
 def check_ref_builder(case: SourceCase) -> None:
+    if not (case.valid_id and case.expected_url and case.too_long_id):
+        raise ValueError(f"{case.name}: ref builder case needs valid_id, expected_url, too_long_id")
     strategy = case.strategy()
     assert isinstance(strategy, RefBuilder)
     expected = DocumentRef(source=case.name, external_id=case.valid_id, url=case.expected_url)

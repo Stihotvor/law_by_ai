@@ -5,8 +5,7 @@ from fakes.fetch import STATIC_DOC as DOC
 from fakes.fetch import STATIC_META as META
 from fakes.fetch import STATIC_PAGE as PAGE
 from fakes.fetch import STATIC_REF as REF
-from fakes.fetch import StaticFakeSource as FakeSource
-from fakes.fetch import StaticFakeStrategy as FakeStrategy
+from fakes.fetch import StaticFakeSource, StaticFakeStrategy
 
 from agents.fetch.contracts import (
     DocumentFilter,
@@ -28,7 +27,7 @@ from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
 
 
-class RecordingSource(FakeSource):
+class RecordingSource(StaticFakeSource):
     name: ClassVar[str] = "rec"
     calls: ClassVar[list[tuple[str, object]]] = []
 
@@ -52,13 +51,13 @@ class Rejecting:
 
 @pytest.fixture(autouse=True)
 def registries(monkeypatch: pytest.MonkeyPatch) -> Registry[type[LegalSource]]:
-    FakeStrategy.built_with.clear()
-    FakeStrategy.reads.clear()
+    StaticFakeStrategy.built_with.clear()
+    StaticFakeStrategy.reads.clear()
     PrivateStrategy.kwargs.clear()
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
-    sources.register("fake")(FakeSource)
-    strategies.register("fake_strategy")(FakeStrategy)
+    sources.register("fake")(StaticFakeSource)
+    strategies.register("fake_strategy")(StaticFakeStrategy)
     monkeypatch.setattr("agents.fetch.document_fetcher.SOURCES", sources)
     monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
     return sources
@@ -90,7 +89,7 @@ def test_unknown_source_name_truncated() -> None:
 
 
 def test_unknown_strategy(registries: Registry[type[LegalSource]]) -> None:
-    class Bad(FakeSource):
+    class Bad(StaticFakeSource):
         name: ClassVar[str] = "bad"
         strategy_name: ClassVar[str] = "missing"
 
@@ -102,8 +101,8 @@ def test_unknown_strategy(registries: Registry[type[LegalSource]]) -> None:
 def test_rejected() -> None:
     with pytest.raises(DocumentRejectedError):
         DocumentFetcherAgent(Rejecting()).fetch_document("fake", REF)
-    assert FakeStrategy.reads == []
-    assert FakeStrategy.built_with == []
+    assert StaticFakeStrategy.reads == []
+    assert StaticFakeStrategy.built_with == []
 
 
 def test_source_mismatch() -> None:
@@ -116,7 +115,7 @@ def test_source_mismatch() -> None:
 
 def test_strategy_built_with_base_url() -> None:
     DocumentFetcherAgent().list_documents("fake", DocumentFilter())
-    assert FakeStrategy.built_with == ["https://fake.example"]
+    assert StaticFakeStrategy.built_with == ["https://fake.example"]
 
 
 def test_arguments_forwarded(registries: Registry[type[LegalSource]]) -> None:
@@ -154,7 +153,7 @@ def test_error_messages() -> None:
 
 
 def test_unknown_strategy_message(registries: Registry[type[LegalSource]]) -> None:
-    class Bad(FakeSource):
+    class Bad(StaticFakeSource):
         name: ClassVar[str] = "bad"
         strategy_name: ClassVar[str] = "missing"
 
@@ -164,7 +163,7 @@ def test_unknown_strategy_message(registries: Registry[type[LegalSource]]) -> No
     assert str(info.value) == "source 'bad' uses unknown strategy 'missing'"
 
 
-class ClosableStrategy(FakeStrategy):
+class ClosableStrategy(StaticFakeStrategy):
     closed: ClassVar[int] = 0
 
     def close(self) -> None:
@@ -181,7 +180,7 @@ def test_strategy_cached_per_source_and_closed(
     with DocumentFetcherAgent() as agent:
         agent.list_documents("fake", DocumentFilter())
         agent.list_documents("fake", DocumentFilter())
-        assert FakeStrategy.built_with == ["https://fake.example"]
+        assert StaticFakeStrategy.built_with == ["https://fake.example"]
     assert ClosableStrategy.closed == 1
     agent.close()
     assert ClosableStrategy.closed == 1
@@ -205,7 +204,7 @@ def test_valid_tenant_boundary() -> None:
     assert doc.tenant_id == "t" * 64
 
 
-class PrivateStrategy(FakeStrategy):
+class PrivateStrategy(StaticFakeStrategy):
     kwargs: ClassVar[list[dict[str, bool]]] = []
 
     def __init__(self, base_url: str, allow_private_hosts: bool = False) -> None:
@@ -215,7 +214,7 @@ class PrivateStrategy(FakeStrategy):
         )
 
 
-class PrivateSource(FakeSource):
+class PrivateSource(StaticFakeSource):
     name: ClassVar[str] = "priv"
     allow_private_hosts: ClassVar[bool] = True
 
@@ -245,7 +244,7 @@ def test_never_rejected_warns_once(
 def test_close_closes_all_then_raises_first_error(
     monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
 ) -> None:
-    class Boom(FakeStrategy):
+    class Boom(StaticFakeStrategy):
         def close(self) -> None:
             raise RuntimeError("first")
 
@@ -264,7 +263,7 @@ def test_flag_without_strategy_keyword_is_a_config_error(
     registries.register("priv")(PrivateSource)
     with pytest.raises(SourceConfigError, match="allow_private_hosts"):
         DocumentFetcherAgent().list_documents("priv", DocumentFilter())
-    assert FakeStrategy.built_with == []
+    assert StaticFakeStrategy.built_with == []
 
 
 def test_rejection_message_escapes_and_cuts_id() -> None:

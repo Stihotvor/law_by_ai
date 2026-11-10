@@ -27,6 +27,7 @@ FAKE_BASE = "https://example.invalid/fake"
 FAKE_TITLE = "Ustawa testowa"
 FAKE_BODY = "Art. 1. Treść ustawy."
 FAKE_FETCHED_AT = datetime(2026, 1, 2, tzinfo=UTC)
+STATIC_BASE = "https://fake.example"
 FAKE_ID_PATTERN = re.compile(r"[0-9a-f]{32}\.txt")
 
 
@@ -78,7 +79,7 @@ class FakeSource(LegalSource):
         )
 
 
-STATIC_REF = DocumentRef(source="fake", external_id="1", url="https://fake.example/1")
+STATIC_REF = DocumentRef(source=FAKE_SOURCE, external_id="1", url=f"{STATIC_BASE}/1")
 STATIC_META = DocumentMeta(ref=STATIC_REF, title="t")
 STATIC_PAGE = DocumentPage(items=(STATIC_REF,))
 STATIC_DOC = FetchedDocument(
@@ -107,9 +108,9 @@ class StaticFakeStrategy:
 
 
 class StaticFakeSource(LegalSource):
-    name: ClassVar[str] = "fake"
-    base_url: ClassVar[str] = "https://fake.example"
-    strategy_name: ClassVar[str] = "fake_strategy"
+    name: ClassVar[str] = FAKE_SOURCE
+    base_url: ClassVar[str] = STATIC_BASE
+    strategy_name: ClassVar[str] = FAKE_STRATEGY
 
     def list_documents(self, flt: DocumentFilter) -> DocumentPage:
         return STATIC_PAGE
