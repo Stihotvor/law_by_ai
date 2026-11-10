@@ -171,15 +171,15 @@ jobs:
           file: docker/Dockerfile
           target: runtime
           tags: |
-            law-by-ai-init
-            law-by-ai-celery-worker
+            law-by-ai-smoke-init
+            law-by-ai-smoke-celery-worker
           load: true
           cache-from: type=gha,scope=runtime
           cache-to: type=gha,scope=runtime,mode=max
       - name: Start the smoke worker
-        run: docker compose --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --wait celery-worker
+        run: docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --wait celery-worker
       - name: Run the fetch smoke test
-        run: docker compose --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
+        run: docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
       - name: Tear down the stack
         if: always()
-        run: docker compose --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml down -v
+        run: docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml down -v

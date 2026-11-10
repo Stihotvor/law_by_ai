@@ -85,8 +85,9 @@ uv run python scripts/mutation_score.py
   the repo root:
 
   ```bash
-  docker compose --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --build --wait celery-worker
-  docker compose --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm --build -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
+  docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --build --wait celery-worker
+  docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm --build -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
+  docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml down -v
   ```
 
 ## Design gate for cross-module issues
