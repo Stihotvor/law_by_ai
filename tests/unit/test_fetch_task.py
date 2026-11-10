@@ -147,6 +147,17 @@ def test_invalid_id_returns_invalid_and_fetches_nothing(store: MagicMock, agent:
     store.save_document.assert_not_called()
 
 
+def test_unsupported_source_returns_unsupported_and_fetches_nothing(
+    store: MagicMock, agent: MagicMock
+) -> None:
+    agent.make_ref.side_effect = NotImplementedError("no fetch by id")
+
+    assert _run() == {"status": "unsupported", "external_id": EID}
+    agent.fetch_document.assert_not_called()
+    store.save_document.assert_not_called()
+    agent.close.assert_called_once()
+
+
 def test_save_error_reaches_caller(store: MagicMock, agent: MagicMock) -> None:
     error = RuntimeError("db down")
     store.save_document.side_effect = error

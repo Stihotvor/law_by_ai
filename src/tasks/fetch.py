@@ -2,6 +2,8 @@
 
 The fetcher builds the canonical document URL from the source and the id.
 An id the source does not accept gives the ``invalid`` status.
+A source that cannot build a ref from an id gives the ``unsupported`` status;
+the task then fetches and saves nothing.
 
 This module wires the fetcher to the store; ``agents.fetch`` never imports the store.
 """
@@ -68,6 +70,8 @@ def fetch_document(source: str, external_id: str, tenant_id: str | None = None) 
             ref = agent.make_ref(source, external_id)
         except InvalidReferenceError:
             return {"status": "invalid", "external_id": external_id}
+        except NotImplementedError:
+            return {"status": "unsupported", "external_id": external_id}
         try:
             fetched = agent.fetch_document(source, ref, tenant_id=tenant_id)
         except DocumentRejectedError:

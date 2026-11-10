@@ -91,7 +91,11 @@ class RestApiStrategy:
             raise PayloadError(f"mapper returned an invalid id: {type(exc).__name__}") from exc
 
     def make_ref(self, source: str, external_id: str) -> DocumentRef:
-        """Build the ref with the canonical content URL; raise InvalidReferenceError on a bad id."""
+        """Build the ref with the canonical content URL.
+
+        Raise InvalidReferenceError on a bad id and SourceConfigError when no mapper
+        is registered for *source*.
+        """
         mapper = self._mapper(source)
         url = self._base + self._path(mapper.content_path, external_id, mapper)
         return DocumentRef(source=source, external_id=external_id, url=url)

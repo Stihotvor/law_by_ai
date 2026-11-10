@@ -6,7 +6,9 @@ import streamlit as st
 
 from core.security.rbac import is_admin
 
-# Session key that holds the signed-in user dict. The login UI will replace this.
+# Session key that holds the signed-in user dict. This is a stub until the login UI exists.
+# Nothing may write this key from user-controlled input (form fields, query params, cookies).
+# The login UI must set it only from the authenticator's verified result.
 SESSION_USER_KEY = "user"
 
 

@@ -122,6 +122,12 @@ def test_invalid_result_shows_one_error(send_task: MagicMock) -> None:
     assert [e.value for e in at.error] == ["Invalid document id for this source."]
 
 
+def test_unsupported_result_shows_one_error(send_task: MagicMock) -> None:
+    with _async_result("SUCCESS", {"status": "unsupported", "external_id": "x"}):
+        at = _submit(_page("admin"), EID)
+    assert [e.value for e in at.error] == ["This source does not support fetch by id."]
+
+
 def test_refresh_status_shows_new_state(send_task: MagicMock) -> None:
     with _async_result("PENDING") as mock:
         at = _submit(_page("admin"), EID)

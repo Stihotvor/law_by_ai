@@ -10,6 +10,10 @@ from tasks.celery_app import FETCH_DOCUMENT, app
 from ui.components.auth import require_admin
 
 TASK_KEY = "fetch_task_id"
+_ERRORS = {
+    "invalid": "Invalid document id for this source.",
+    "unsupported": "This source does not support fetch by id.",
+}
 
 
 def _queue(source: str, external_id: str) -> None:
@@ -42,8 +46,8 @@ def _show_status(task_id: str) -> None:
     st.markdown(f"Task `{task_id}`: **{result.state}**")
     if result.state == "SUCCESS" and isinstance(result.result, dict):
         status = result.result.get("status")
-        if status == "invalid":
-            st.error("Invalid document id for this source.")
+        if status in _ERRORS:
+            st.error(_ERRORS[status])
         else:
             st.markdown(f"Result: **{status}**")
     st.button("Refresh status")
