@@ -272,13 +272,10 @@ services:
     user: "10001:10001"
     env_file: .env
     environment:
-      # Same database and broker as the app services, whatever docker/.env sets.
-      # Empty URLs fall back to the POSTGRES_* and REDIS_* values.
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: "5432"
+      # Same database and broker settings as the app services (shell overrides
+      # included). Empty URLs fall back to the POSTGRES_* and REDIS_* values.
+      <<: *app-env
       POSTGRES_URL: ""
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
       REDIS_URL: ""
       CELERY_BROKER_URL: ""
       CELERY_RESULT_BACKEND_URL: ""
