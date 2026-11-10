@@ -83,8 +83,8 @@ uv run python scripts/mutation_score.py
 
 ## Design gate for cross-module issues
 
-An issue crosses a module boundary when its code calls a module in another
-`src/` package.
+An issue crosses a module boundary when its code in one module calls another
+module, in the same package or in another package.
 
 1. Write a "Contract" section in the issue. For each call, list the inputs,
    the outputs and the errors. Check each input against the validation of the
