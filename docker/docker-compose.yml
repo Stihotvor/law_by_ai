@@ -280,6 +280,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_URL: ""
+      CELERY_BROKER_URL: ""
+      CELERY_RESULT_BACKEND_URL: ""
     mem_limit: 1g
     memswap_limit: 1g
     cpus: 1.0

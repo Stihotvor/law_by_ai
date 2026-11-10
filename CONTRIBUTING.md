@@ -81,10 +81,14 @@ uv run python scripts/mutation_score.py
 - Each Celery task has at least one integration test with production
   collaborators. Mock only the network edge.
 - Fetch smoke test: the real broker and worker, with the Sejm ELI API served
-  from `tests/smoke/fixtures` (`docker/docker-compose.smoke.yml`). Run it from
-  the repo root:
+  from `tests/smoke/fixtures` (`docker/docker-compose.smoke.yml`). On a fresh
+  checkout, create `docker/.env` first. `init` refuses the `change-me` secrets,
+  so replace them. Run it from the repo root:
 
   ```bash
+  cp docker/.env.example docker/.env
+  chmod 600 docker/.env
+  sed -i "s/=change-me.*/=$(openssl rand -hex 16)/" docker/.env
   docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --build --wait celery-worker
   docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm --build -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
   docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml down -v
