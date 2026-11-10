@@ -32,7 +32,7 @@ def _queue(source: str, external_id: str) -> None:
         # cannot reconnect to the Redis result backend; any other one is a bug.
         if str(exc) != E_RETRY_LIMIT_EXCEEDED:
             raise
-        st.error("Task queue is not available. Try again later.")
+        st.error("Task result store is not reachable. Restart the Celery services.")
         return
     st.session_state[TASK_KEY] = result.id
 

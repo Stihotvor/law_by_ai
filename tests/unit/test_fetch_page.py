@@ -76,18 +76,21 @@ def test_broker_down_shows_one_error_and_stores_no_task_id(send_task: MagicMock)
 
 
 @pytest.mark.parametrize(
-    "error",
+    ("error", "message"),
     [
-        RedisConnectionError("backend down"),
-        RuntimeError(E_RETRY_LIMIT_EXCEEDED),
+        (RedisConnectionError("backend down"), "Task queue is not available. Try again later."),
+        (
+            RuntimeError(E_RETRY_LIMIT_EXCEEDED),
+            "Task result store is not reachable. Restart the Celery services.",
+        ),
     ],
 )
 def test_backend_down_on_submit_shows_one_error_and_stores_no_task_id(
-    send_task: MagicMock, error: Exception
+    send_task: MagicMock, error: Exception, message: str
 ) -> None:
     send_task.side_effect = error
     at = _submit(_page("admin"), EID)
-    assert [e.value for e in at.error] == ["Task queue is not available. Try again later."]
+    assert [e.value for e in at.error] == [message]
     assert "fetch_task_id" not in at.session_state
 
 
