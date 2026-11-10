@@ -7,10 +7,12 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+from celery.backends.asynchronous import E_RETRY_LIMIT_EXCEEDED
 from kombu.exceptions import OperationalError
+from redis.exceptions import ConnectionError as RedisConnectionError
 from streamlit.testing.v1 import AppTest
 
 from agents.fetch.sources import SOURCES
@@ -71,6 +73,42 @@ def test_broker_down_shows_one_error_and_stores_no_task_id(send_task: MagicMock)
     at = _submit(_page("admin"), EID)
     assert len(at.error) == 1
     assert "fetch_task_id" not in at.session_state
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        RedisConnectionError("backend down"),
+        RuntimeError(E_RETRY_LIMIT_EXCEEDED),
+    ],
+)
+def test_backend_down_on_submit_shows_one_error_and_stores_no_task_id(
+    send_task: MagicMock, error: Exception
+) -> None:
+    send_task.side_effect = error
+    at = _submit(_page("admin"), EID)
+    assert [e.value for e in at.error] == ["Task queue is not available. Try again later."]
+    assert "fetch_task_id" not in at.session_state
+
+
+def test_other_runtime_error_from_send_task_propagates(send_task: MagicMock) -> None:
+    send_task.side_effect = RuntimeError("unrelated bug")
+    at = _submit(_page("admin"), EID)
+    assert at.exception
+    assert "unrelated bug" in at.exception[0].message
+    assert len(at.error) == 0
+    assert "fetch_task_id" not in at.session_state
+
+
+def test_backend_down_on_status_shows_error_and_keeps_refresh(send_task: MagicMock) -> None:
+    with patch("tasks.celery_app.app.AsyncResult") as mock:
+        type(mock.return_value).state = PropertyMock(
+            side_effect=RedisConnectionError("backend down")
+        )
+        at = _submit(_page("admin"), EID)
+    assert [e.value for e in at.error] == ["Task status is not available. Try again later."]
+    assert "task-1" in _text(at)
+    assert any(b.label == "Refresh status" for b in at.button)
 
 
 def test_page_does_not_import_task_module() -> None:
