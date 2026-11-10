@@ -88,7 +88,8 @@ uv run python scripts/mutation_score.py
   ```bash
   cp docker/.env.example docker/.env
   chmod 600 docker/.env
-  sed -i "s/=change-me.*/=$(openssl rand -hex 16)/" docker/.env
+  sed -i.bak "s/=change-me.*/=$(openssl rand -hex 16)/" docker/.env
+  rm docker/.env.bak
   docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml up -d --build --wait celery-worker
   docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml run --rm --build -e SMOKE_WORKER=1 test pytest -q -p no:cacheprovider tests/smoke
   docker compose -p law-by-ai-smoke --profile test -f docker/docker-compose.yml -f docker/docker-compose.smoke.yml down -v
