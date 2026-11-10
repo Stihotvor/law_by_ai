@@ -46,7 +46,10 @@ _TENANT = f"tenant-{uuid.uuid4().hex}"
 
 
 def _make_handler(requests: list[httpx.Request]) -> Callable[[httpx.Request], httpx.Response]:
+    """Return a handler that logs each request and serves the Sejm act."""
+
     def handler(request: httpx.Request) -> httpx.Response:
+        """Serve the meta and text of DU/2024/1; answer 404 to anything else."""
         requests.append(request)
         url = str(request.url)
         if request.method == "GET" and url == _META_URL:
@@ -67,7 +70,10 @@ def _make_handler(requests: list[httpx.Request]) -> Callable[[httpx.Request], ht
 
 
 class _NoThrottle:
+    """Throttle that never waits."""
+
     def wait(self) -> None:
+        """Do not wait."""
         pass
 
 
@@ -99,6 +105,7 @@ def _rows(source_url: str) -> list[dict[str, Any]]:
 
 
 def _cleanup(db_url: str) -> None:
+    """Delete the test tenant's rows for the Sejm URLs."""
     engine = create_engine(db_url, future=True)
     with engine.begin() as conn:
         for url in (_TEXT_URL, _META_URL):
@@ -117,6 +124,7 @@ def requests(monkeypatch: pytest.MonkeyPatch) -> list[httpx.Request]:
     original = RestApiStrategy._new_client
 
     def new_client(self: RestApiStrategy) -> httpx.Client:
+        """Build the real client with the mock transport."""
         self._transport = httpx.MockTransport(handler)
         return original(self)
 
@@ -131,6 +139,7 @@ def requests(monkeypatch: pytest.MonkeyPatch) -> list[httpx.Request]:
 
 @pytest.fixture(autouse=True)
 def eager() -> Iterator[None]:
+    """Run Celery tasks in process and raise their errors."""
     old = (app.conf.task_always_eager, app.conf.task_eager_propagates)
     app.conf.task_always_eager = True
     app.conf.task_eager_propagates = True
@@ -167,12 +176,14 @@ def store(clean_db: None, monkeypatch: pytest.MonkeyPatch) -> Iterator[PostgreSQ
 
 
 def _run(external_id: str) -> Any:
+    """Run the task for *external_id* as the test tenant; return its result."""
     return app.tasks[FETCH_DOCUMENT].delay(_SOURCE, external_id, tenant_id=_TENANT).get()
 
 
 def test_task_fetches_and_saves_sejm_act(
     store: PostgreSQLStore, requests: list[httpx.Request]
 ) -> None:
+    """A valid id is fetched over mocked HTTP and saved with the make_ref URL."""
     expected_url = RestApiStrategy(_API).make_ref(_SOURCE, _ELI).url
     assert expected_url == "https://api.sejm.gov.pl/eli/acts/DU/2024/1/text.html"
 
@@ -196,6 +207,7 @@ def test_task_fetches_and_saves_sejm_act(
 def test_task_rejects_url_as_id_without_http(
     store: PostgreSQLStore, requests: list[httpx.Request]
 ) -> None:
+    """A URL as the id gives status invalid and sends no request."""
     result = _run(_META_URL)
 
     assert result == {"status": "invalid", "external_id": _META_URL}
