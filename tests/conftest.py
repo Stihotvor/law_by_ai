@@ -19,6 +19,8 @@ def _clear_fake_fetch_records() -> None:
 
     Only tests that import the fakes load them, so other tests do not import the fetch package.
     """
+    # Tests must import the fakes as ``fakes.fetch`` (pytest puts tests/ on
+    # sys.path); under another module name this lookup misses and skips the reset.
     fakes = sys.modules.get("fakes.fetch")
     if fakes is not None:
         fakes.FakeStrategy.reads.clear()

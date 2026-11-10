@@ -59,21 +59,25 @@ class PermissiveStrategy(FakeStrategy):
     """The postmortem bug: a ref builder that accepts any id."""
 
     def make_ref(self, source: str, external_id: str) -> DocumentRef:
+        """Build a ref for any id of the fake source."""
         if source != FAKE_SOURCE:
             return super().make_ref(source, external_id)
         return DocumentRef(source=source, external_id=external_id, url=f"{FAKE_BASE}/{external_id}")
 
 
 def test_every_registered_source_has_a_case() -> None:
+    """Each source in the global registry has a contract case."""
     assert set(REGISTERED_CASES) == set(SOURCES.names())
 
 
 def test_every_registered_source_runs_the_ref_builder_contract() -> None:
+    """Each registered source is checked as a ref builder."""
     assert set(REGISTERED_CASES) <= {p.id for p in REF_BUILDER_CASES}
 
 
 @pytest.mark.parametrize("field", ["valid_id", "expected_url", "too_long_id"])
 def test_ref_builder_contract_rejects_an_incomplete_case(field: str) -> None:
+    """A ref builder case with a missing field is a setup error."""
     incomplete = replace(FAKE_CASE, **{field: ""})
 
     with pytest.raises(ValueError, match=field):
@@ -82,15 +86,18 @@ def test_ref_builder_contract_rejects_an_incomplete_case(field: str) -> None:
 
 @pytest.mark.parametrize("case", REF_BUILDER_CASES)
 def test_ref_builder_contract(case: SourceCase) -> None:
+    """The strategy honours the ref builder contract."""
     check_ref_builder(case)
 
 
 @pytest.mark.parametrize("case", SOURCE_CASES)
 def test_legal_source_contract(case: SourceCase) -> None:
+    """The source honours the LegalSource contract."""
     check_legal_source(case)
 
 
 def test_contract_fails_for_a_ref_builder_that_accepts_any_id() -> None:
+    """The contract catches a ref builder that accepts any id."""
     permissive = replace(FAKE_CASE, strategy_cls=PermissiveStrategy)
 
     # Only the invalid-id check can fail: unknown sources still raise.

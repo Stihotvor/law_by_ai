@@ -28,6 +28,8 @@ from agents.fetch.strategies.base import FetchStrategy
 
 
 class RecordingSource(StaticFakeSource):
+    """Fake source that records each call it gets."""
+
     name: ClassVar[str] = "rec"
     calls: ClassVar[list[tuple[str, object]]] = []
 
@@ -51,6 +53,7 @@ class Rejecting:
 
 @pytest.fixture(autouse=True)
 def registries(monkeypatch: pytest.MonkeyPatch) -> Registry[type[LegalSource]]:
+    """Swap in local registries holding the static fakes."""
     PrivateStrategy.kwargs.clear()
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
@@ -87,7 +90,11 @@ def test_unknown_source_name_truncated() -> None:
 
 
 def test_unknown_strategy(registries: Registry[type[LegalSource]]) -> None:
+    """A source naming an unknown strategy raises a config error."""
+
     class Bad(StaticFakeSource):
+        """Source that names a missing strategy."""
+
         name: ClassVar[str] = "bad"
         strategy_name: ClassVar[str] = "missing"
 
@@ -97,6 +104,7 @@ def test_unknown_strategy(registries: Registry[type[LegalSource]]) -> None:
 
 
 def test_rejected() -> None:
+    """A rejected document is refused before the strategy is built."""
     with pytest.raises(DocumentRejectedError):
         DocumentFetcherAgent(Rejecting()).fetch_document("fake", REF)
     assert StaticFakeStrategy.reads == []
@@ -112,6 +120,7 @@ def test_source_mismatch() -> None:
 
 
 def test_strategy_built_with_base_url() -> None:
+    """The strategy is built with the source's base URL."""
     DocumentFetcherAgent().list_documents("fake", DocumentFilter())
     assert StaticFakeStrategy.built_with == ["https://fake.example"]
 
@@ -151,7 +160,11 @@ def test_error_messages() -> None:
 
 
 def test_unknown_strategy_message(registries: Registry[type[LegalSource]]) -> None:
+    """The unknown strategy error names the source and strategy."""
+
     class Bad(StaticFakeSource):
+        """Source that names a missing strategy."""
+
         name: ClassVar[str] = "bad"
         strategy_name: ClassVar[str] = "missing"
 
@@ -162,6 +175,8 @@ def test_unknown_strategy_message(registries: Registry[type[LegalSource]]) -> No
 
 
 class ClosableStrategy(StaticFakeStrategy):
+    """Static strategy that counts close calls."""
+
     closed: ClassVar[int] = 0
 
     def close(self) -> None:
@@ -171,6 +186,7 @@ class ClosableStrategy(StaticFakeStrategy):
 def test_strategy_cached_per_source_and_closed(
     monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
 ) -> None:
+    """One strategy per source is built and closed once."""
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
     strategies.register("fake_strategy")(ClosableStrategy)
     monkeypatch.setattr("agents.fetch.document_fetcher.STRATEGIES", strategies)
@@ -203,6 +219,8 @@ def test_valid_tenant_boundary() -> None:
 
 
 class PrivateStrategy(StaticFakeStrategy):
+    """Static strategy that records the private-host flag it gets."""
+
     kwargs: ClassVar[list[dict[str, bool]]] = []
 
     def __init__(self, base_url: str, allow_private_hosts: bool = False) -> None:
@@ -213,6 +231,8 @@ class PrivateStrategy(StaticFakeStrategy):
 
 
 class PrivateSource(StaticFakeSource):
+    """Static source that opts in to private hosts."""
+
     name: ClassVar[str] = "priv"
     allow_private_hosts: ClassVar[bool] = True
 
@@ -242,7 +262,11 @@ def test_never_rejected_warns_once(
 def test_close_closes_all_then_raises_first_error(
     monkeypatch: pytest.MonkeyPatch, registries: Registry[type[LegalSource]]
 ) -> None:
+    """Close closes every strategy, then raises the first error."""
+
     class Boom(StaticFakeStrategy):
+        """Strategy whose close fails."""
+
         def close(self) -> None:
             raise RuntimeError("first")
 
@@ -258,6 +282,7 @@ def test_close_closes_all_then_raises_first_error(
 def test_flag_without_strategy_keyword_is_a_config_error(
     registries: Registry[type[LegalSource]],
 ) -> None:
+    """The private-host flag needs a strategy that accepts it."""
     registries.register("priv")(PrivateSource)
     with pytest.raises(SourceConfigError, match="allow_private_hosts"):
         DocumentFetcherAgent().list_documents("priv", DocumentFilter())

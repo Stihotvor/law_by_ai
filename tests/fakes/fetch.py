@@ -37,12 +37,15 @@ class FakeStrategy:
     reads: ClassVar[list[DocumentRef]] = []
 
     def __init__(self, base_url: str) -> None:
+        """Keep the base URL used to build document URLs."""
         self._base = base_url.rstrip("/")
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
+        """Return an empty page."""
         return DocumentPage(items=())
 
     def make_ref(self, source: str, external_id: str) -> DocumentRef:
+        """Build a ref for a valid id; reject unknown sources and bad ids."""
         if source != FAKE_SOURCE:
             raise SourceConfigError(f"no fake source {source!r}")
         if not FAKE_ID_PATTERN.fullmatch(external_id):
@@ -52,25 +55,32 @@ class FakeStrategy:
         )
 
     def get_meta(self, ref: DocumentRef) -> DocumentMeta:
+        """Return fixed metadata for the ref."""
         return DocumentMeta(ref=ref, title=FAKE_TITLE, extra={"k": "v"})
 
     def read(self, ref: DocumentRef) -> bytes:
+        """Record the read and return the fake body."""
         self.reads.append(ref)
         return FAKE_BODY.encode("utf-8")
 
 
 class FakeSource(LegalSource):
+    """Fake source that fetches through ``FakeStrategy``."""
+
     name: ClassVar[str] = FAKE_SOURCE
     base_url: ClassVar[str] = FAKE_BASE
     strategy_name: ClassVar[str] = FAKE_STRATEGY
 
     def list_documents(self, flt: DocumentFilter) -> DocumentPage:
+        """List documents through the strategy."""
         return self.strategy.list_refs(self.name, flt)
 
     def get_document_meta(self, ref: DocumentRef) -> DocumentMeta:
+        """Get metadata through the strategy."""
         return self.strategy.get_meta(ref)
 
     def fetch_document(self, ref: DocumentRef) -> FetchedDocument:
+        """Read the document through the strategy and wrap it."""
         return FetchedDocument(
             meta=self.strategy.get_meta(ref),
             content=self.strategy.read(ref),
@@ -94,30 +104,39 @@ class StaticFakeStrategy:
     reads: ClassVar[list[DocumentRef]] = []
 
     def __init__(self, base_url: str) -> None:
+        """Record the base URL the strategy was built with."""
         self.built_with.append(base_url)
 
     def list_refs(self, source: str, flt: DocumentFilter) -> DocumentPage:
+        """Return the fixed page."""
         return STATIC_PAGE
 
     def get_meta(self, ref: DocumentRef) -> DocumentMeta:
+        """Return the fixed metadata."""
         return STATIC_META
 
     def read(self, ref: DocumentRef) -> bytes:
+        """Record the read and return fixed bytes."""
         self.reads.append(ref)
         return b"x"
 
 
 class StaticFakeSource(LegalSource):
+    """Fake source with fixed answers; fetch calls the strategy's read."""
+
     name: ClassVar[str] = FAKE_SOURCE
     base_url: ClassVar[str] = STATIC_BASE
     strategy_name: ClassVar[str] = FAKE_STRATEGY
 
     def list_documents(self, flt: DocumentFilter) -> DocumentPage:
+        """Return the fixed page."""
         return STATIC_PAGE
 
     def get_document_meta(self, ref: DocumentRef) -> DocumentMeta:
+        """Return the fixed metadata."""
         return STATIC_META
 
     def fetch_document(self, ref: DocumentRef) -> FetchedDocument:
+        """Read through the strategy and return the fixed document."""
         self.strategy.read(ref)
         return STATIC_DOC

@@ -37,9 +37,11 @@ class SourceCase:
 
     @property
     def name(self) -> str:
+        """Registry name of the source."""
         return self.source_cls.name
 
     def strategy(self) -> Any:
+        """Build the strategy with the source's base URL."""
         return self.strategy_cls(self.source_cls.base_url)
 
 
@@ -49,6 +51,7 @@ def invalid_ids(case: SourceCase) -> tuple[str, ...]:
 
 
 def check_ref_builder(case: SourceCase) -> None:
+    """Assert the strategy builds the expected ref and refuses bad ids and sources."""
     if not (case.valid_id and case.expected_url and case.too_long_id):
         raise ValueError(f"{case.name}: ref builder case needs valid_id, expected_url, too_long_id")
     strategy = case.strategy()
@@ -63,6 +66,7 @@ def check_ref_builder(case: SourceCase) -> None:
 
 
 def check_legal_source(case: SourceCase) -> None:
+    """Assert the source class is valid and, when possible, fetches its ref."""
     _validate_source(case.name, case.source_cls)
     if case.fetch_ref is None:
         return

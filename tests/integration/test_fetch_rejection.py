@@ -40,6 +40,7 @@ def _can_connect(url: str) -> bool:
 
 @pytest.fixture(autouse=True)
 def registries(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Swap in local registries holding the shared fakes."""
     sources: Registry[type[LegalSource]] = Registry("sources", _validate_source)
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
     sources.register(FAKE_SOURCE)(FakeSource)
@@ -86,6 +87,7 @@ def test_rejected_url_is_blocked_before_read(store: PostgreSQLStore, source_url:
 
 
 def test_not_rejected_url_fetches(store: PostgreSQLStore, source_url: str) -> None:
+    """A URL that is not rejected is fetched."""
     ref = _ref(source_url)
 
     with DocumentFetcherAgent(rejection=store) as agent:
