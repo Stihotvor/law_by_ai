@@ -35,6 +35,7 @@ def _expected_url() -> str:
 
 
 def _row_saved(engine: Engine, source_url: str, since: datetime) -> bool:
+    """Return True if a legal_document row for *source_url* was updated at or after *since*."""
     with engine.connect() as conn:
         row = conn.execute(
             text(
@@ -46,6 +47,7 @@ def _row_saved(engine: Engine, source_url: str, since: datetime) -> bool:
 
 
 def test_queued_fetch_saves_a_legal_document_row() -> None:
+    """A queued fetch_document task saves a legal_document row within the timeout."""
     source_url = _expected_url()
     engine = create_engine(get_settings().postgres_url, future=True)
     t0 = datetime.now(UTC)

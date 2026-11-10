@@ -21,16 +21,19 @@ TEXT_URL = META_URL + "/text.html"
 
 @pytest.fixture
 def handler() -> wb.Handler:
+    """Return a mock Sejm handler built from the test fixtures."""
     return wb.make_handler(wb.load_fixtures(FIXTURES))
 
 
 def test_meta_path_returns_the_meta_fixture(handler: wb.Handler) -> None:
+    """GET on the act path returns the meta JSON fixture."""
     response = handler(httpx.Request("GET", META_URL))
     assert response.status_code == 200
     assert response.content == (FIXTURES / "du_2024_1_meta.json").read_bytes()
 
 
 def test_text_path_returns_the_html_fixture(handler: wb.Handler) -> None:
+    """GET on the text.html path returns the HTML fixture with an HTML content type."""
     response = handler(httpx.Request("GET", TEXT_URL))
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
@@ -46,15 +49,18 @@ def test_text_path_returns_the_html_fixture(handler: wb.Handler) -> None:
     ],
 )
 def test_anything_else_returns_404(handler: wb.Handler, method: str, url: str) -> None:
+    """Unknown paths, non-GET methods, and other hosts get a 404."""
     assert handler(httpx.Request(method, url)).status_code == 404
 
 
 def test_missing_fixture_raises(tmp_path: Path) -> None:
+    """Installing the mock without fixture files raises FileNotFoundError."""
     with pytest.raises(FileNotFoundError):
         wb.install_sejm_mock(tmp_path)
 
 
 def test_host_check_skips_only_the_sejm_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The patched host check skips the Sejm host and checks every other host."""
     calls: list[tuple[str, bool]] = []
     monkeypatch.setattr(
         wb,
@@ -67,6 +73,7 @@ def test_host_check_skips_only_the_sejm_host(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_install_routes_sejm_eli_through_the_mock(monkeypatch: pytest.MonkeyPatch) -> None:
+    """After install, the sejm_eli strategy fetches meta from the mock."""
     strategies: Registry[type[FetchStrategy]] = Registry("strategies")
     monkeypatch.setattr(wb, "STRATEGIES", strategies)
     monkeypatch.setattr(SejmEliSource, "strategy_name", SejmEliSource.strategy_name)
@@ -80,6 +87,7 @@ def test_install_routes_sejm_eli_through_the_mock(monkeypatch: pytest.MonkeyPatc
 
 
 def test_main_installs_the_mock_then_starts_the_worker(monkeypatch: pytest.MonkeyPatch) -> None:
+    """main installs the mock, then starts the worker with the compose args."""
     calls: list[object] = []
     monkeypatch.setattr(wb, "install_sejm_mock", calls.append)
     monkeypatch.setattr(wb.app, "worker_main", calls.append)

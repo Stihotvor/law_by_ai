@@ -42,6 +42,7 @@ def make_handler(bodies: dict[str, tuple[bytes, str]]) -> Handler:
     """Return a handler that serves *bodies* for GET on the Sejm host and 404 otherwise."""
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Serve the fixture for a known GET path on the Sejm host; else 404."""
         hit = bodies.get(request.url.path)
         if request.method != "GET" or request.url.host != SEJM_HOST or hit is None:
             return httpx.Response(404)
@@ -62,7 +63,10 @@ def install_sejm_mock(fixtures_dir: Path) -> None:
     transport = httpx.MockTransport(make_handler(load_fixtures(fixtures_dir)))
 
     class SmokeRestApiStrategy(rest_api.RestApiStrategy):
+        """REST strategy that sends every request through the mock transport."""
+
         def __init__(self, base_url: str, *, allow_private_hosts: bool = False) -> None:
+            """Build the strategy with the mock transport injected."""
             super().__init__(base_url, transport=transport, allow_private_hosts=allow_private_hosts)
 
     STRATEGIES.register(STRATEGY_NAME)(SmokeRestApiStrategy)
@@ -71,6 +75,7 @@ def install_sejm_mock(fixtures_dir: Path) -> None:
 
 
 def main() -> NoReturn:
+    """Install the Sejm mock, then run the Celery worker."""
     install_sejm_mock(FIXTURES_DIR)
     app.worker_main(WORKER_ARGV)
     raise SystemExit(0)
