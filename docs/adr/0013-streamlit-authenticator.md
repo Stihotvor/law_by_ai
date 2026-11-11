@@ -74,11 +74,14 @@ therefore uses the library differently:
 - On every rerun, `require_auth()` reads the user from PostgreSQL again and
   derives the role and `tenant_id` from that row. An inactive user or an
   invalid role ends the session.
-- Each user row has a `sessions_valid_after` timestamp. Deactivation,
-  reactivation and a password change set it to the current time.
-  `require_auth()` rejects a cookie that was issued before that time (issue
-  time = the cookie expiry minus `AUTH_COOKIE_EXPIRY_DAYS`). A copied cookie
-  therefore stops working for good, also after a reactivation.
+- Each user row has an integer `session_version`. Deactivation, reactivation
+  and a password change increment it. Login reads the version from the same
+  row as the password hash it verifies. The signed cookie value is
+  `<email>|<session_version>`. `require_auth()` rejects a cookie whose version
+  does not equal the current row. A copied cookie therefore stops working for
+  good, also after a reactivation. A login that verified an old password
+  issues a cookie with the old version, which is rejected. The check does not
+  depend on `AUTH_COOKIE_EXPIRY_DAYS`.
 - Emails are normalised on every write as well as on login. Existing rows are
   migrated, and collisions are resolved before a check constraint is added.
 - The library's failed-attempt tracking is not used. It counted per session
