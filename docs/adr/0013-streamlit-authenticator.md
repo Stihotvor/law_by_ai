@@ -75,7 +75,9 @@ therefore uses the library differently:
   derives the role and `tenant_id` from that row. An inactive user or an
   invalid role ends the session.
 - Each user row has an integer `session_version`. Deactivation, reactivation
-  and a password change increment it. Login reads the version from the same
+  and a password change increment it in the same `UPDATE` statement that
+  changes `is_active` or the password hash, so the two changes commit
+  atomically. Login reads the version from the same
   row as the password hash it verifies. The signed cookie value is
   `<email>|<session_version>`. `require_auth()` rejects a cookie whose version
   does not equal the current row. A copied cookie therefore stops working for
