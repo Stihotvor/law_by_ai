@@ -60,12 +60,40 @@ from the authenticated session instead of a JWT claim.
   (ADR-0003). Cross-tenant leak tests are not built yet.
 - **RBAC**: unchanged — `admin`/`user` roles still gate UI operations.
 
+## Amendment (2026-11): login reads one user from the database
+
+The library's `login()` checks passwords only against an in-memory credentials
+dict. To use it, the app would have to load every user of every tenant, with
+their bcrypt hashes, into each Streamlit process. That read crosses tenants,
+and a deactivated user stays valid until the dict is reloaded. The app
+therefore uses the library differently:
+
+- A custom `st.form` collects email and password. The app reads one user by
+  normalised email (`strip().lower()`) and checks the password with
+  `check_password()`. A dummy hash keeps the timing equal when no user exists.
+- streamlit-authenticator is used only for the signed session cookie
+  (`CookieModel`). The cookie holds the email, never the role or tenant.
+- On every rerun, `require_auth()` reads the user from PostgreSQL again and
+  derives the role and `tenant_id` from that row. An inactive user or an
+  invalid role ends the session.
+- The library's failed-attempt tracking is not used. It counted per session
+  only. A database-backed lockout is future work.
+- There is no bundled dev admin. The database seed creates the first admin.
+- The pre-tenant lookup moves to a `SECURITY DEFINER` function owned by a
+  dedicated role, with fail-closed RLS policies and a non-superuser app role.
+- `AUTH_COOKIE_KEY` is required, at least 32 characters, and not the library
+  default. `AUTH_COOKIE_NAME` and `AUTH_COOKIE_EXPIRY_DAYS` (at least 1) are
+  settings.
+
 ## Alternatives Considered
 
 - **JWT (ADR-0004)** — stateless and service-agnostic, but heavy for a
   single-process UI; superseded by this ADR.
 - **OAuth2/OIDC external IdP** — heavier still; revisit only if hosted
   identity becomes a requirement.
+- **Load all users into the library's credentials dict** (amendment) — keeps
+  the library's login widget and lockout, but reads every tenant's users and
+  hashes into memory and misses deactivations until reload.
 - **Streamlit `st.secrets`-based DIY login** — re-implements what
   streamlit-authenticator already provides (hashing, cookies, widgets).
 
