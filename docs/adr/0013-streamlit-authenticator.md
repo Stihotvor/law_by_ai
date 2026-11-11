@@ -18,20 +18,19 @@ this was overkill for the current shape of the product:
   plumbing in Streamlit — all for one login page.
 - `streamlit-authenticator` provides battle-tested login/logout widgets,
   bcrypt password handling, signed session cookies, and failed-attempt
-  tracking out of the box.
+  tracking out of the box. (The amendment uses only the cookie.)
 
 Multi-tenant isolation (ADR-0003) is unaffected: `tenant_id` still threads
 through the `core/security/tenant.py` contextvar and is enforced by
 PostgreSQL RLS / collection / subgraph scoping. The tenant and role are read
-from the authenticated session instead of a JWT claim.
+from the user row in PostgreSQL on every rerun, not from a JWT claim.
 
 ## Decision
 
 - Replace the JWT auth layer (`auth.py`, `token_store.py`, key management,
   refresh flows) with **streamlit-authenticator** for the Streamlit app.
-- Users live in PostgreSQL (`users`, `tenants` tables, bcrypt hashes) and are
-  exposed to the authenticator as credentials; a bundled dev admin keeps the
-  app runnable without a database.
+- Users live in PostgreSQL (`users`, `tenants` tables, bcrypt hashes). The
+  amendment below describes the login flow.
 - The UI adapter (`ui/components/auth.py`) keeps the existing surface:
   `login_form()`, `logout_button()`, `require_auth()`, `get_current_user()`,
   `is_admin()` / `require_admin()`, and threads `tenant_id` into the
@@ -46,8 +45,7 @@ from the authenticated session instead of a JWT claim.
 - **Positive**
   - Much smaller security surface: no signing keys, no token store, no
     refresh machinery.
-  - Login/logout, cookie sessions, and failed-attempt tracking come from a
-    maintained library.
+  - Signed cookie sessions come from a maintained library.
   - The PostgreSQL user store doubles as the single source of truth for
     credentials (no YAML credential file).
 - **Negative**
@@ -76,6 +74,13 @@ therefore uses the library differently:
 - On every rerun, `require_auth()` reads the user from PostgreSQL again and
   derives the role and `tenant_id` from that row. An inactive user or an
   invalid role ends the session.
+- Each user row has a `sessions_valid_after` timestamp. Deactivation,
+  reactivation and a password change set it to the current time.
+  `require_auth()` rejects a cookie that was issued before that time (issue
+  time = the cookie expiry minus `AUTH_COOKIE_EXPIRY_DAYS`). A copied cookie
+  therefore stops working for good, also after a reactivation.
+- Emails are normalised on every write as well as on login. Existing rows are
+  migrated, and collisions are resolved before a check constraint is added.
 - The library's failed-attempt tracking is not used. It counted per session
   only. A database-backed lockout is future work.
 - There is no bundled dev admin. The database seed creates the first admin.
