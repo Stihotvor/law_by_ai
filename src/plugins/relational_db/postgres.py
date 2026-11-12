@@ -30,7 +30,7 @@ from sqlalchemy import String, create_engine, delete, event, exists, select, tex
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from config.settings import get_settings
-from core.security import get_current_tenant, hash_password
+from core.security import get_current_tenant, hash_password, without_tenant
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
 
 # ``Base`` and ``LegalDocument`` live in ``data.models`` (issue #16); re-exported
@@ -83,6 +83,7 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(32))
     name: Mapped[str] = mapped_column(String(256), default="")
     is_active: Mapped[bool] = mapped_column(default=True)
+    session_version: Mapped[int] = mapped_column(server_default=text("0"))
 
 
 # ---------------------------------------------------------------------------
@@ -357,7 +358,7 @@ class PostgreSQLStore:
             user = User(
                 id=str(uuid.uuid4()),
                 tenant_id=tenant_id,
-                email=email,
+                email=email.strip().lower(),
                 password_hash=hash_password(password),
                 role=role,
                 name=name,
@@ -370,9 +371,22 @@ class PostgreSQLStore:
     def get_user_by_email(self, email: str) -> dict[str, Any] | None:
         """Return the user record for *email*, or ``None`` if not found."""
         self._ensure_initialized()
+        stmt = select(User).where(User.email == email.strip().lower())
         with Session(self._engine) as session:
-            row = session.execute(select(User).where(User.email == email)).scalar_one_or_none()
+            row = session.execute(stmt).scalar_one_or_none()
             return _user_to_dict(row) if row is not None else None
+
+    def get_login_user(self, email: str) -> dict[str, Any] | None:
+        """Return the login row for *email* across all tenants, or ``None``.
+
+        Exact match on ``strip().lower()``. Includes ``password_hash`` and
+        ``session_version``. Raises ``OperationalError`` when the database is down.
+        """
+        self._ensure_initialized()
+        stmt = select(User).where(User.email == email.strip().lower())
+        with without_tenant(), Session(self._engine) as session:
+            row = session.execute(stmt).scalar_one_or_none()
+            return _login_user_to_dict(row) if row is not None else None
 
     def list_users(self) -> list[dict[str, Any]]:
         """All users visible under the current tenant scoping."""
@@ -434,6 +448,14 @@ def _user_to_dict(row: User) -> dict[str, Any]:
         "role": row.role,
         "name": row.name,
         "is_active": row.is_active,
+    }
+
+
+def _login_user_to_dict(row: User) -> dict[str, Any]:
+    return {
+        **_user_to_dict(row),
+        "password_hash": row.password_hash,
+        "session_version": row.session_version,
     }
 
 
