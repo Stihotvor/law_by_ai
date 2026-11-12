@@ -30,6 +30,10 @@ APP = str(Path(__file__).resolve().parents[2] / "src" / "ui" / "app.py")
 PLAIN = "right-pass"
 HASH = bcrypt.hashpw(PLAIN.encode(), bcrypt.gensalt(rounds=4)).decode()
 FAILED = "Invalid email or password."
+LOGOUT_WARNING = (
+    "You are logged out here, but the server could not revoke other copies of your session. "
+    "They stay valid until the cookie expires."
+)
 
 
 # --- role guard -------------------------------------------------------------
@@ -287,21 +291,23 @@ def test_logout_bumps_session_version_before_cookie_delete(env: Env) -> None:
     assert env.deleted == deleted + 1
 
 
-def test_logout_keeps_session_when_bump_fails_and_retry_works(env: Env) -> None:
+def test_logout_clears_locally_and_warns_when_bump_fails(env: Env) -> None:
     at = _login(_open(), "admin@x.com")
+    deleted = env.deleted
     env.store.bump_error = OperationalError("UPDATE", {}, Exception("down"))
     at.button(key="logout_button").click()
     at.run()
-    assert [e.value for e in at.error] == ["Logout failed: the database is unavailable. Try again."]
-    assert at.session_state["user"]["role"] == "admin"
-    assert at.session_state["username"] == "admin@x.com|3"
-    assert COOKIE in env.jar
-    env.store.bump_error = None
-    at.button(key="logout_button").click()
-    at.run()
     assert "user" not in at.session_state
+    assert "username" not in at.session_state
+    assert auth.EXPIRES_KEY not in at.session_state
+    env.reset_tenant.assert_called()
     assert env.jar == {}
+    assert env.deleted == deleted + 1
     assert _login_form_shown(at)
+    assert [w.value for w in at.warning] == [LOGOUT_WARNING]
+    assert auth.LOGOUT_WARNING_KEY not in at.session_state
+    at.run()
+    assert len(at.warning) == 0
 
 
 def test_copied_cookie_replayed_in_new_session_after_logout_is_refused(env: Env) -> None:

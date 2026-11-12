@@ -26,7 +26,13 @@ LOGOUT_KEY = "logout"
 # Unix time when the session claim expires: the cookie expiry, applied to open sessions.
 EXPIRES_KEY = "auth_expires"
 _PUBLIC_FIELDS = ("id", "tenant_id", "email", "name", "role")
+# Session flag set when logout cleared this session but could not revoke other copies.
+LOGOUT_WARNING_KEY = "logout_warning"
 _LOGIN_FAILED = "Invalid email or password."
+_LOGOUT_WARNING = (
+    "You are logged out here, but the server could not revoke other copies of your session. "
+    "They stay valid until the cookie expires."
+)
 
 
 @st.cache_resource
@@ -74,6 +80,8 @@ def authenticate(email: str, password: str) -> dict[str, Any] | None:
 
 def login_form(cookie: CookieModel) -> None:
     """Show the login form; on success store the user, set the cookie and rerun."""
+    if st.session_state.pop(LOGOUT_WARNING_KEY, False):
+        st.warning(_LOGOUT_WARNING)
     with st.form("login"):
         email = st.text_input("Email", key="login_email")
         password = st.text_input("Password", type="password", key="login_password")
@@ -167,24 +175,34 @@ def get_current_user() -> dict[str, Any] | None:
     return user if isinstance(user, dict) else None
 
 
+def _revoke(user: dict[str, Any] | None) -> bool:
+    """Bump the user's session version; return False when the database refused."""
+    if user is None:
+        return True
+    try:
+        _store().bump_session_version(user["id"])
+    except SQLAlchemyError:
+        return False
+    return True
+
+
 def logout_button(cookie: CookieModel) -> None:
-    """Show a sidebar logout button; on click revoke the session, then clear it and the cookie."""
+    """Show a sidebar logout button; on click revoke the session, then clear it and the cookie.
+
+    Local logout always happens. When revocation fails, the login form warns that
+    other copies of the session stay valid until the cookie expires.
+    """
     if not st.sidebar.button("Log out", key="logout_button"):
         return
-    user = get_current_user()
-    if user is not None:
-        # Revocation must never look successful when it failed: keep the session to retry.
-        try:
-            _store().bump_session_version(user["id"])
-        except SQLAlchemyError:
-            st.error("Logout failed: the database is unavailable. Try again.")
-            return
+    revoked = _revoke(get_current_user())
     st.session_state.pop(SESSION_USER_KEY, None)
     st.session_state.pop(USERNAME_KEY, None)
     st.session_state.pop(EXPIRES_KEY, None)
     st.session_state[LOGOUT_KEY] = True
     reset_current_tenant()
     cookie.delete_cookie()
+    if not revoked:
+        st.session_state[LOGOUT_WARNING_KEY] = True
     st.rerun()
 
 
