@@ -177,6 +177,9 @@ services:
       - --server.headless=true
     environment:
       <<: *app-env
+      AUTH_COOKIE_KEY: ${AUTH_COOKIE_KEY:?set AUTH_COOKIE_KEY in docker/.env}
+      AUTH_COOKIE_NAME:
+      AUTH_COOKIE_EXPIRY_DAYS:
       STREAMLIT_BROWSER_GATHER_USAGE_STATS: "false"
     ports:
       - "127.0.0.1:${APP_PORT:-8501}:${APP_PORT:-8501}"

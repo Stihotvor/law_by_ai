@@ -32,4 +32,4 @@ def check_password(plain: str, hashed: str) -> bool:
 
 # Checked when no user matches, so a login takes the same time either way.
 # Built with the BCRYPT_ROUNDS value at import time.
-_DUMMY_HASH = hash_password(secrets.token_urlsafe(32))
+DUMMY_HASH = hash_password(secrets.token_urlsafe(32))

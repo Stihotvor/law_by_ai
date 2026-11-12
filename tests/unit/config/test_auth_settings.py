@@ -28,6 +28,14 @@ def test_cookie_key_rejected(clean: pytest.MonkeyPatch, value: str) -> None:
         assert value not in str(exc.value)
 
 
+def test_cookie_key_rejects_change_me(clean: pytest.MonkeyPatch) -> None:
+    value = "change-me" + "k" * 32
+    clean.setenv("AUTH_COOKIE_KEY", value)
+    with pytest.raises(ValueError, match="AUTH_COOKIE_KEY") as exc:
+        _ = Settings().auth_cookie_key
+    assert value not in str(exc.value)
+
+
 def test_cookie_key_valid(clean: pytest.MonkeyPatch) -> None:
     clean.setenv("AUTH_COOKIE_KEY", "k" * 32)
     assert Settings().auth_cookie_key == "k" * 32

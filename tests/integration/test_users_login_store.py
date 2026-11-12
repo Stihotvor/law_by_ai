@@ -18,6 +18,7 @@ from alembic.config import Config
 from sqlalchemy import Connection, Engine, create_engine, inspect, make_url, text
 from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError
 
+from core.security import tenant_context
 from plugins.relational_db.postgres import PostgreSQLStore
 
 pytestmark = pytest.mark.integration
@@ -106,6 +107,20 @@ def test_login_lookup_raises_when_database_down(monkeypatch: pytest.MonkeyPatch)
 
     with pytest.raises(OperationalError):
         s.get_login_user("admin@example.com")
+
+
+def test_logout_bump_makes_old_session_version_stale(store: PostgreSQLStore) -> None:
+    email = f"admin-{_hex()}@example.com"
+    created = _create(store, email)
+    old = store.get_login_user(email)
+    assert old is not None
+
+    with tenant_context(TEST_TENANT):
+        store.bump_session_version(created["id"])
+
+    row = store.get_login_user(email)
+    assert row is not None
+    assert row["session_version"] == old["session_version"] + 1
 
 
 def test_writes_are_normalised(store: PostgreSQLStore) -> None:

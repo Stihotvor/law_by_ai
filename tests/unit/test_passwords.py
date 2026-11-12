@@ -1,7 +1,7 @@
 import bcrypt
 import pytest
 
-from core.security.passwords import _DUMMY_HASH, check_password, hash_password
+from core.security.passwords import DUMMY_HASH, check_password, hash_password
 
 
 @pytest.mark.parametrize("hashed", ["", "not-a-hash", "$2b$12$short"])
@@ -10,13 +10,13 @@ def test_malformed_hash_returns_false(hashed: str) -> None:
 
 
 def test_dummy_hash_uses_same_rounds_as_real_hashes() -> None:
-    assert _DUMMY_HASH[:7] == hash_password("x")[:7]
-    assert bcrypt.checkpw(b"x", _DUMMY_HASH.encode()) is False
+    assert DUMMY_HASH[:7] == hash_password("x")[:7]
+    assert bcrypt.checkpw(b"x", DUMMY_HASH.encode()) is False
 
 
 @pytest.mark.parametrize("plain", ["", "secret", "admin"])
 def test_dummy_hash_never_matches(plain: str) -> None:
-    assert check_password(plain, _DUMMY_HASH) is False
+    assert check_password(plain, DUMMY_HASH) is False
 
 
 def test_hash_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
