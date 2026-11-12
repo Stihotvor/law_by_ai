@@ -7,7 +7,8 @@ VARS = ("AUTH_COOKIE_KEY", "AUTH_COOKIE_NAME", "AUTH_COOKIE_EXPIRY_DAYS")
 
 @pytest.fixture
 def clean(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
-    Settings()  # may load a repo dotenv file; clear the vars after construction
+    # Keep a developer's .env file out of these tests.
+    monkeypatch.setattr("config.settings.load_env", lambda *a, **k: None)
     for name in VARS:
         monkeypatch.delenv(name, raising=False)
     return monkeypatch
