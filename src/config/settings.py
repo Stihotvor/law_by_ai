@@ -58,6 +58,9 @@ Variable               Purpose                                Default
 ``INIT_ADMIN_EMAIL``      first admin email (init program)        *(empty)*
 ``INIT_ADMIN_NAME``       first admin display name                ``Admin``
 ``INIT_ADMIN_PASSWORD``   first admin password (init program)     *(empty)*
+``AUTH_COOKIE_KEY``       auth cookie signing key (32+ chars)     *(required)*
+``AUTH_COOKIE_NAME``      auth cookie name                        ``law_by_ai_auth``
+``AUTH_COOKIE_EXPIRY_DAYS``  auth cookie lifetime in days         ``30``
 =====================  =====================================  ================================
 
 Usage::
@@ -414,6 +417,26 @@ class Settings:
     def init_admin_password(self) -> str:
         """Password of the first admin (secret, env only, no default)."""
         return os.getenv("INIT_ADMIN_PASSWORD", "")
+
+    # --- Auth cookie -----------------------------------------------------------
+    @property
+    def auth_cookie_key(self) -> str:
+        """Key that signs the auth cookie (secret, env only, 32+ chars)."""
+        key = os.getenv("AUTH_COOKIE_KEY", "")
+        # The length check also rejects the library default "some_key".
+        if len(key) < 32:
+            raise ValueError("AUTH_COOKIE_KEY must be set to at least 32 characters")
+        return key
+
+    @property
+    def auth_cookie_name(self) -> str:
+        """Name of the auth cookie."""
+        return os.getenv("AUTH_COOKIE_NAME", "law_by_ai_auth")
+
+    @property
+    def auth_cookie_expiry_days(self) -> int:
+        """Days before the auth cookie expires."""
+        return _positive("AUTH_COOKIE_EXPIRY_DAYS", "30", int)
 
 
 @lru_cache(maxsize=1)

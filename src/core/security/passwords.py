@@ -1,13 +1,14 @@
 """Password hashing helpers (ADR-0013).
 
-bcrypt wrappers used by the PostgreSQL user store and by the
-streamlit-authenticator credential builder. The work factor is controlled by
-the ``BCRYPT_ROUNDS`` environment variable (default 12).
+bcrypt wrappers used by the PostgreSQL user store and by the login form.
+The work factor is controlled by the ``BCRYPT_ROUNDS`` environment variable
+(default 12).
 """
 
 from __future__ import annotations
 
 import os
+import secrets
 
 import bcrypt
 
@@ -27,3 +28,8 @@ def check_password(plain: str, hashed: str) -> bool:
         return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
     except Exception:
         return False
+
+
+# Checked when no user matches, so a login takes the same time either way.
+# Built with the BCRYPT_ROUNDS value at import time.
+_DUMMY_HASH = hash_password(secrets.token_urlsafe(32))
