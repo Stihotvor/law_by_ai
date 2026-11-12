@@ -26,7 +26,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import String, create_engine, delete, event, exists, select, text
+from sqlalchemy import String, create_engine, delete, event, exists, select, text, update
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from config.settings import get_settings
@@ -387,6 +387,19 @@ class PostgreSQLStore:
         with without_tenant(), Session(self._engine) as session:
             row = session.execute(stmt).scalar_one_or_none()
             return _login_user_to_dict(row) if row is not None else None
+
+    def bump_session_version(self, user_id: str) -> None:
+        """Add one to the user's ``session_version`` under the current tenant.
+
+        Every cookie signed with the old version stops working (server-side logout).
+        """
+        self._ensure_initialized()
+        stmt = (
+            update(User).where(User.id == user_id).values(session_version=User.session_version + 1)
+        )
+        with Session(self._engine) as session:
+            session.execute(stmt)
+            session.commit()
 
     def list_users(self) -> list[dict[str, Any]]:
         """All users visible under the current tenant scoping."""

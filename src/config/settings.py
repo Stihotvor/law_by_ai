@@ -424,8 +424,8 @@ class Settings:
         """Key that signs the auth cookie (secret, env only, 32+ chars)."""
         key = os.getenv("AUTH_COOKIE_KEY", "")
         # The length check also rejects the library default "some_key".
-        if len(key) < 32:
-            raise ValueError("AUTH_COOKIE_KEY must be set to at least 32 characters")
+        if len(key) < 32 or key.startswith("change-me"):
+            raise ValueError("AUTH_COOKIE_KEY must be a real secret of at least 32 characters")
         return key
 
     @property
