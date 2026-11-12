@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import contextlib
+from datetime import datetime, timedelta
 from typing import Any, NoReturn
 
 import jwt
@@ -23,6 +23,8 @@ SESSION_USER_KEY = "user"
 # Keys that CookieModel reads: the signed cookie value and the logout flag.
 USERNAME_KEY = "username"
 LOGOUT_KEY = "logout"
+# Unix time when the session claim expires: the cookie expiry, applied to open sessions.
+EXPIRES_KEY = "auth_expires"
 _PUBLIC_FIELDS = ("id", "tenant_id", "email", "name", "role")
 _LOGIN_FAILED = "Invalid email or password."
 
@@ -84,6 +86,8 @@ def login_form(cookie: CookieModel) -> None:
         return
     st.session_state[SESSION_USER_KEY] = _public(row)
     st.session_state[USERNAME_KEY] = f"{row['email']}|{row['session_version']}"
+    expiry = timedelta(days=get_settings().auth_cookie_expiry_days)
+    st.session_state[EXPIRES_KEY] = (datetime.now() + expiry).timestamp()
     st.session_state[LOGOUT_KEY] = False
     cookie.set_cookie()
     st.rerun()
@@ -98,8 +102,14 @@ def _cookie_username(cookie: CookieModel) -> object:
 
 
 def _claim(cookie: CookieModel) -> tuple[str, int] | None:
-    """Return (email, session_version) from the session, else from the signed cookie."""
-    value = st.session_state.get(USERNAME_KEY) or _cookie_username(cookie)
+    """Return (email, session_version) from the session, else from the signed cookie.
+
+    A session claim past its expiry returns None, so the caller signs out.
+    """
+    value = st.session_state.get(USERNAME_KEY)
+    if value and st.session_state.get(EXPIRES_KEY, 0) <= datetime.now().timestamp():
+        return None
+    value = value or _cookie_username(cookie)
     if not isinstance(value, str) or "|" not in value:
         return None
     email, version = value.rsplit("|", 1)
@@ -123,6 +133,7 @@ def _sign_out(cookie: CookieModel, cookie_name: str) -> NoReturn:
     """Clear the session, delete a sent cookie once, show the login form and stop."""
     st.session_state.pop(SESSION_USER_KEY, None)
     st.session_state.pop(USERNAME_KEY, None)
+    st.session_state.pop(EXPIRES_KEY, None)
     reset_current_tenant()
     # The request cookies stay stale until the browser reloads. The logout flag
     # makes the cookie unread from now on, so the delete runs only once and never
@@ -162,11 +173,15 @@ def logout_button(cookie: CookieModel) -> None:
         return
     user = get_current_user()
     if user is not None:
-        # On a database error the local logout below still runs.
-        with contextlib.suppress(SQLAlchemyError):
+        # Revocation must never look successful when it failed: keep the session to retry.
+        try:
             _store().bump_session_version(user["id"])
+        except SQLAlchemyError:
+            st.error("Logout failed: the database is unavailable. Try again.")
+            return
     st.session_state.pop(SESSION_USER_KEY, None)
     st.session_state.pop(USERNAME_KEY, None)
+    st.session_state.pop(EXPIRES_KEY, None)
     st.session_state[LOGOUT_KEY] = True
     reset_current_tenant()
     cookie.delete_cookie()

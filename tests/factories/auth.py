@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, ClassVar
 
 import jwt
@@ -37,9 +38,11 @@ class FakeCookie:
         if token is None:
             return None
         try:
-            return jwt.decode(token, self.key, algorithms=["HS256"])
+            data = jwt.decode(token, self.key, algorithms=["HS256"])
         except (jwt.DecodeError, jwt.InvalidSignatureError):
             return None
+        # Like CookieModel: an expired token reads as no cookie.
+        return data if data.get("exp_date", 0) > datetime.now().timestamp() else None
 
     def set_cookie(self) -> None:
         self.jar[self.name] = make_token(st.session_state["username"], self.key)

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -17,6 +18,7 @@ import jwt
 import pytest
 import streamlit as st
 from factories.auth import COOKIE, KEY, FakeCookie, make_token
+from freezegun import freeze_time
 from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 from streamlit.testing.v1 import AppTest
 
@@ -113,6 +115,9 @@ class FakeStore:
         if self.bump_error is not None:
             raise self.bump_error
         self.bumped.append((user_id, FakeCookie.deleted))
+        for row in self.rows.values():
+            if row["id"] == user_id:
+                row["session_version"] += 1
 
     def get_login_user(self, email: str) -> dict[str, Any] | None:
         if self.error is not None:
@@ -137,7 +142,9 @@ def env(monkeypatch: pytest.MonkeyPatch) -> Iterator[Env]:
     monkeypatch.setenv("AUTH_COOKIE_KEY", KEY)
     monkeypatch.delenv("AUTH_COOKIE_NAME", raising=False)
     monkeypatch.delenv("AUTH_COOKIE_EXPIRY_DAYS", raising=False)
-    store = FakeStore({"admin@x.com": _row(), "user@x.com": _row("user@x.com", role="user")})
+    store = FakeStore(
+        {"admin@x.com": _row(), "user@x.com": _row("user@x.com", id="u-2", role="user")}
+    )
     FakeCookie.reset()
     with (
         patch.object(auth, "_store", lambda: store),
@@ -280,14 +287,33 @@ def test_logout_bumps_session_version_before_cookie_delete(env: Env) -> None:
     assert env.deleted == deleted + 1
 
 
-def test_logout_still_clears_session_when_bump_fails(env: Env) -> None:
+def test_logout_keeps_session_when_bump_fails_and_retry_works(env: Env) -> None:
     at = _login(_open(), "admin@x.com")
     env.store.bump_error = OperationalError("UPDATE", {}, Exception("down"))
+    at.button(key="logout_button").click()
+    at.run()
+    assert [e.value for e in at.error] == ["Logout failed: the database is unavailable. Try again."]
+    assert at.session_state["user"]["role"] == "admin"
+    assert at.session_state["username"] == "admin@x.com|3"
+    assert COOKIE in env.jar
+    env.store.bump_error = None
     at.button(key="logout_button").click()
     at.run()
     assert "user" not in at.session_state
     assert env.jar == {}
     assert _login_form_shown(at)
+
+
+def test_copied_cookie_replayed_in_new_session_after_logout_is_refused(env: Env) -> None:
+    at = _login(_open(), "admin@x.com")
+    token = env.jar[COOKIE]
+    at.button(key="logout_button").click()
+    at.run()
+    assert env.store.rows["admin@x.com"]["session_version"] == 4
+    env.jar[COOKIE] = token
+    fresh = _open()
+    assert _login_form_shown(fresh)
+    assert "user" not in fresh.session_state
 
 
 def test_stale_browser_cookie_does_not_log_in_after_logout(env: Env) -> None:
@@ -350,6 +376,28 @@ def test_stale_cookie_is_rejected_and_deleted(env: Env) -> None:
     env.jar[COOKIE] = stale  # the request cookies keep the old copy until reload
     at.run()
     assert env.deleted == 1
+
+
+def test_open_session_ends_when_cookie_expiry_passes(env: Env) -> None:
+    with freeze_time("2026-01-01") as frozen:
+        at = _login(_open(), "admin@x.com")
+        frozen.tick(timedelta(days=29))
+        at.run()
+        assert "hello admin" in _text(at)
+        frozen.tick(timedelta(days=1, seconds=1))
+        at.run()
+        assert _login_form_shown(at)
+        assert "user" not in at.session_state
+        assert "username" not in at.session_state
+        assert "auth_expires" not in at.session_state
+        env.reset_tenant.assert_called()
+
+
+def test_expired_cookie_shows_login_form(env: Env) -> None:
+    env.jar[COOKIE] = make_token("admin@x.com|3", exp_date=1.0)
+    at = _open()
+    assert _login_form_shown(at)
+    assert "user" not in at.session_state
 
 
 def test_no_cookie_is_not_deleted(env: Env) -> None:
