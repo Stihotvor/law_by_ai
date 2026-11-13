@@ -25,6 +25,8 @@ GOOD_ATTRS = {
     "lawbyai_app": (False, False, True),
     "lawbyai_auth": (False, True, False),
 }
+# (table, policy) as 4439761c5e40 creates them.
+GOOD_POLICIES = {("tenants", "tenants_isolation"), ("users", "users_isolation")}
 
 
 def _load() -> ModuleType:
@@ -63,6 +65,8 @@ class _FakeOp:
         auth_can_create: bool = True,
         attrs: dict[str, tuple[bool, bool, bool]] | None = None,
         app_in_auth: bool = False,
+        policies: set[tuple[str, str]] | None = None,
+        rls: dict[str, bool] | None = None,
     ) -> None:
         self.roles = roles
         self.attrs = GOOD_ATTRS | (attrs or {})
@@ -70,6 +74,8 @@ class _FakeOp:
         self.tables = _good_tables() if tables is None else tables
         self.functions = _good_functions() if functions is None else functions
         self.auth_can_create = auth_can_create
+        self.policies = GOOD_POLICIES if policies is None else policies
+        self.rls = {"tenants": True, "users": True} | (rls or {})
         self.statements: list[str] = []
 
     def execute(self, sql: Any) -> None:
@@ -80,7 +86,7 @@ class _FakeOp:
 
 
 class _FakeBind:
-    """A connection that answers pg_roles, pg_class and pg_proc queries by their SQL text."""
+    """A connection that answers the catalog queries (pg_roles, pg_class, ...) by SQL text."""
 
     def __init__(self, op: _FakeOp) -> None:
         self._op = op
@@ -96,6 +102,10 @@ class _FakeBind:
         names = params["names"]
         if "pg_roles" in text:
             return _Result([(n, *self._op.attrs[n]) for n in names if n in self._op.roles])
+        if "pg_policy" in text:
+            return _Result([p for p in sorted(self._op.policies) if p[1] in names])
+        if "relrowsecurity" in text:
+            return _Result([(n, self._op.rls[n]) for n in names if n in self._op.rls])
         if "pg_proc" in text:
             return _Result(_rows(names, self._op.functions))
         if "pg_class" in text:
@@ -451,3 +461,26 @@ def test_missing_auth_role_skips_the_membership_check() -> None:
     with pytest.raises(RuntimeError) as err:
         _run(_FakeOp(ALL_ROLES - {"lawbyai_auth"}, app_in_auth=True))
     assert "member of" not in str(err.value)
+
+
+def test_missing_policy_stops_the_migration() -> None:
+    """Step 1 names a missing users_isolation policy (from pg_policy) before any change."""
+    fake = _FakeOp(ALL_ROLES, policies={("tenants", "tenants_isolation")})
+    with pytest.raises(RuntimeError) as err:
+        _run(fake)
+    message = str(err.value)
+    assert "policy users_isolation on users does not exist" in message
+    assert "tenants_isolation" not in message
+    assert not [s for s in fake.statements if s.startswith(("ALTER", "GRANT", "CREATE"))]
+
+
+def test_rls_disabled_stops_the_migration() -> None:
+    """Step 1 names a table with relrowsecurity false, together with other problems."""
+    fake = _FakeOp(ALL_ROLES, policies=set(), rls={"users": False})
+    with pytest.raises(RuntimeError) as err:
+        _run(fake)
+    message = str(err.value)
+    assert "row level security is not enabled on users" in message
+    assert "row level security is not enabled on tenants" not in message
+    assert "policy tenants_isolation on tenants does not exist" in message
+    assert not [s for s in fake.statements if s.startswith(("ALTER", "GRANT", "CREATE"))]

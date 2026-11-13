@@ -71,15 +71,31 @@ the tables, the `users_isolation` and `tenants_isolation` policies, and
 ENABLE and FORCE ROW LEVEL SECURITY on `users` and `tenants`. On such a
 volume `lawbyai_owner` does not exist yet. Do these steps in order:
 
-1. Stamp the initial revision with the bootstrap superuser connection. This
+1. Make sure that the two policies exist and that RLS is enabled. Run this
+   query with `psql` as the bootstrap superuser, on the app database:
+
+   ```sql
+   SELECT c.relname, c.relrowsecurity, p.polname
+   FROM pg_class c
+   JOIN pg_namespace n ON n.oid = c.relnamespace
+   LEFT JOIN pg_policy p
+     ON p.polrelid = c.oid AND p.polname = c.relname || '_isolation'
+   WHERE n.nspname = 'public' AND c.relname IN ('tenants', 'users');
+   ```
+
+   The result must have two rows. In each row, `relrowsecurity` must be `t`
+   and `polname` must be `tenants_isolation` or `users_isolation`. If a row
+   is missing, `relrowsecurity` is `f` or `polname` is empty, do not adopt
+   the database. Use a fresh volume.
+2. Stamp the initial revision with the bootstrap superuser connection. This
    creates the `alembic_version` table:
    `POSTGRES_OWNER_URL=<superuser URL> uv run alembic stamp 4439761c5e40`.
-2. Upgrade to the revision before the RLS hardening, with the same
+3. Upgrade to the revision before the RLS hardening, with the same
    connection. This creates the objects that the next step expects:
    `POSTGRES_OWNER_URL=<superuser URL> uv run alembic upgrade 77985ac8fa22`.
-3. Do steps 1 and 2 of "Upgrade an old volume" below. They create the roles
+4. Do steps 1 and 2 of "Upgrade an old volume" below. They create the roles
    and give every object, `alembic_version` included, to `lawbyai_owner`.
-4. Run `uv run alembic upgrade head` with the owner connection (step 3 below).
+5. Run `uv run alembic upgrade head` with the owner connection (step 3 below).
 
 Do not stamp `head`, because the later revisions would then never run.
 

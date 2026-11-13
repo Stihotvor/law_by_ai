@@ -1,7 +1,8 @@
 """harden RLS: role checks, tenant-only policies, auth_lookup_user, grants
 
 Checks that the three rls-201 roles exist and that ``lawbyai_owner`` owns the
-tables and the ``users_bump_session_version`` function; if not, it stops and
+tables and the ``users_bump_session_version`` function, and that ``tenants``
+and ``users`` have their isolation policies and RLS enabled; if not, it stops and
 names each problem before it changes anything. The ``tenants`` and ``users``
 policies then match only the tenant in ``app.current_tenant``, so no tenant
 set means zero rows. Every data read of this revision runs inside a
@@ -88,6 +89,18 @@ FUNCTION_OWNERS_SQL = """
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname = ANY(:names)
 """
+POLICIES_SQL = """
+    SELECT c.relname, p.polname
+    FROM pg_policy p
+    JOIN pg_class c ON c.oid = p.polrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND p.polname = ANY(:names)
+"""
+RLS_ENABLED_SQL = """
+    SELECT c.relname, c.relrowsecurity
+    FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') AND c.relname = ANY(:names)
+"""
 
 # Policy expressions exactly as 4439761c5e40 created them (used by the downgrade).
 _SETTING = f"current_setting('{TENANT_SETTING}', true)"
@@ -125,7 +138,7 @@ def downgrade() -> None:
 
 
 def _check_prerequisites() -> None:
-    """Raise RuntimeError naming each missing or wrong role, missing object or wrong owner."""
+    """Raise RuntimeError naming each wrong role, missing object, wrong owner or RLS gap."""
     bind = op.get_bind()
     rows = bind.execute(sa.text(ROLES_SQL), {"names": list(REQUIRED_ROLES)}).all()
     attributes = {row[0]: tuple(bool(v) for v in row[1:]) for row in rows}
@@ -137,6 +150,7 @@ def _check_prerequisites() -> None:
     problems += _owner_problems("table", OWNED_TABLES, tables)
     problems += _owner_problems("function", OWNED_FUNCTIONS, functions)
     problems += _auth_schema_problems(bind, roles)
+    problems += _policy_problems(bind) + _rls_enabled_problems(bind)
     if problems:
         raise RuntimeError("rls-201 prerequisites not met: " + "; ".join(problems))
 
@@ -187,6 +201,32 @@ def _auth_schema_problems(bind: sa.Connection, roles: set[str]) -> list[str]:
     if bind.execute(sa.text(AUTH_SCHEMA_CREATE_SQL), {"role": AUTH_ROLE}).scalar_one():
         return []
     return [f"role {AUTH_ROLE} has no CREATE on schema public (needed to own auth_lookup_user)"]
+
+
+def _policy_problems(bind: sa.Connection) -> list[str]:
+    """Return one message per POLICIES entry that does not exist on its table."""
+    names = [policy for _table, policy, _column in POLICIES]
+    rows = bind.execute(sa.text(POLICIES_SQL), {"names": names}).all()
+    found = {(row[0], row[1]) for row in rows}
+    return [
+        f"policy {policy} on {table} does not exist"
+        for table, policy, _column in POLICIES
+        if (table, policy) not in found
+    ]
+
+
+def _rls_enabled_problems(bind: sa.Connection) -> list[str]:
+    """Return one message per FORCED_TABLES table with relrowsecurity false.
+
+    A missing table is skipped here: the owner check already names it.
+    """
+    rows = bind.execute(sa.text(RLS_ENABLED_SQL), {"names": list(FORCED_TABLES)}).all()
+    enabled = {row[0]: bool(row[1]) for row in rows}
+    return [
+        f"row level security is not enabled on {table}"
+        for table in FORCED_TABLES
+        if enabled.get(table) is False
+    ]
 
 
 def _owner_problems(kind: str, names: Sequence[str], owners: dict[str, str]) -> list[str]:
