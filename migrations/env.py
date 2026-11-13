@@ -1,7 +1,9 @@
 """Alembic migration environment (issue #9).
 
-Connects to PostgreSQL using ``config.settings`` (``POSTGRES_URL`` /
-``POSTGRES_*``) and autogenerates against the SQLAlchemy models in
+Connects to PostgreSQL as the owner role ``lawbyai_owner`` using
+``config.settings.postgres_owner_url`` (``POSTGRES_OWNER_URL`` /
+``LAWBYAI_OWNER_PASSWORD`` + ``POSTGRES_*``). The app role ``lawbyai_app``
+cannot migrate. Autogenerates against the SQLAlchemy models in
 ``plugins.relational_db.postgres`` (``Base.metadata``).
 """
 
@@ -21,8 +23,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-# Override the placeholder URL with the application settings.
-config.set_main_option("sqlalchemy.url", get_settings().postgres_url)
+# Override the placeholder URL with the owner URL. Escape "%" (URL-quoted
+# passwords) for configparser interpolation.
+config.set_main_option("sqlalchemy.url", get_settings().postgres_owner_url.replace("%", "%%"))
 
 # Model's MetaData object for autogenerate support.
 target_metadata = Base.metadata

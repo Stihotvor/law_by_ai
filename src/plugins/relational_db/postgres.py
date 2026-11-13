@@ -3,7 +3,8 @@
 
 Direct PostgreSQL integration using SQLAlchemy 2.0 ORM (no plugin indirection,
 ADR-0014). Schema is managed by Alembic migrations (issue #9) — see
-``migrations/`` and ``docs/migrations.md``.
+``migrations/`` and ``docs/migrations.md``. Migrations run as the owner role;
+:meth:`PostgreSQLStore.initialize` only checks that the database is at head.
 
 - Document CRUD (issue #9): shared ``legal_document`` table, no RLS — the corpus
   is shared, access is scoped by ``tenant_id`` at the query layer.
@@ -24,9 +25,10 @@ import logging
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
-from sqlalchemy import String, create_engine, delete, event, exists, select, text, update
+from sqlalchemy import Engine, String, create_engine, delete, event, exists, select, text, update
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from config.settings import get_settings
@@ -40,6 +42,7 @@ __all__ = [
     "Base",
     "LegalDocument",
     "PostgreSQLStore",
+    "SchemaNotAtHeadError",
     "StoreDocumentNotFoundError",
     "Tenant",
     "User",
@@ -55,6 +58,17 @@ _log = logging.getLogger(__name__)
 
 class StoreDocumentNotFoundError(LookupError):
     """No ``legal_document`` row has the given id."""
+
+
+class SchemaNotAtHeadError(RuntimeError):
+    """The database revision differs from the Alembic head; run the migrations."""
+
+    def __init__(self, current: str | None, head: str | None) -> None:
+        self.current, self.head = current, head
+        super().__init__(
+            f"database schema is at revision {current or '<none>'}, "
+            f"expected head {head or '<none>'}: run 'alembic upgrade head' as lawbyai_owner"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -110,22 +124,25 @@ def _set_tenant_setting(conn) -> None:
     )
 
 
-def _upgrade_schema() -> None:
-    """Run Alembic migrations to bring the schema up to date (issue #9).
-
-    Locates the repo's ``alembic.ini`` and ``migrations/`` directory relative to
-    this file and applies ``head``. The migration environment reads the DB URL
-    from ``config.settings``, so it stays consistent with this module's engine.
-    """
-    from pathlib import Path
-
-    from alembic import command
+def _alembic_head() -> str | None:
+    """Return the head revision of the repo's ``migrations/`` scripts."""
     from alembic.config import Config
+    from alembic.script import ScriptDirectory
 
-    repo_root = Path(__file__).resolve().parents[3]
-    cfg = Config(str(repo_root / "alembic.ini"))
-    cfg.set_main_option("script_location", str(repo_root / "migrations"))
-    command.upgrade(cfg, "head")
+    cfg = Config()
+    cfg.set_main_option("script_location", str(Path(__file__).resolve().parents[3] / "migrations"))
+    return ScriptDirectory.from_config(cfg).get_current_head()
+
+
+def _check_schema_head(engine: Engine) -> None:
+    """Raise :class:`SchemaNotAtHeadError` unless the DB is at head. Never migrates."""
+    from alembic.runtime.migration import MigrationContext
+
+    head = _alembic_head()
+    with engine.connect() as conn:
+        current = MigrationContext.configure(conn).get_current_revision()
+    if current != head:
+        raise SchemaNotAtHeadError(current, head)
 
 
 # ---------------------------------------------------------------------------
@@ -152,12 +169,17 @@ class PostgreSQLStore:
     # --- lifecycle ----------------------------------------------------------
 
     def initialize(self) -> None:
-        """Connect and bring the schema up to date via Alembic migrations."""
+        """Connect and check the Alembic head; raise SchemaNotAtHeadError if not at head."""
         if self._initialized:
             return
-        self._engine = create_engine(get_settings().postgres_url, future=True)
-        apply_tenant_rls(self._engine)
-        _upgrade_schema()
+        engine = create_engine(get_settings().postgres_url, future=True)
+        try:
+            _check_schema_head(engine)
+        except Exception:
+            engine.dispose()
+            raise
+        apply_tenant_rls(engine)
+        self._engine = engine
         self._initialized = True
 
     def close(self) -> None:

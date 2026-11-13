@@ -9,9 +9,12 @@ with connection strings ending in ``_URL``:
 =====================  =====================================  ================================
 Variable               Purpose                                Default
 =====================  =====================================  ================================
-``POSTGRES_URL``       Full SQLAlchemy URL                    assembled from ``POSTGRES_*``
-``POSTGRES_USER``      PostgreSQL user                        ``lawbyai``
-``POSTGRES_PASSWORD``  PostgreSQL password                    ``lawbyai``
+``POSTGRES_URL``       App URL (role ``lawbyai_app``)         assembled from ``POSTGRES_*``
+``POSTGRES_OWNER_URL``  Migration URL (role ``lawbyai_owner``)  assembled from ``POSTGRES_*``
+``LAWBYAI_APP_PASSWORD``  ``lawbyai_app`` password            *(empty)*
+``LAWBYAI_OWNER_PASSWORD``  ``lawbyai_owner`` password        *(empty)*
+``POSTGRES_USER``      bootstrap superuser (postgres only)    ``lawbyai``
+``POSTGRES_PASSWORD``  bootstrap superuser password           ``lawbyai``
 ``POSTGRES_DB``        PostgreSQL database name               ``lawbyai``
 ``POSTGRES_HOST``      PostgreSQL host                        ``localhost``
 ``POSTGRES_PORT``      PostgreSQL port                        ``5432``
@@ -68,7 +71,8 @@ Usage::
     from config.settings import get_settings
 
     settings = get_settings()
-    print(settings.postgres_url)
+    print(settings.postgres_url)        # app, worker, tests: lawbyai_app
+    print(settings.postgres_owner_url)  # Alembic migrations: lawbyai_owner
     print(settings.celery_broker_url)
 """
 
@@ -83,6 +87,10 @@ from dotenv import load_dotenv
 
 # Repository root: <repo>/src/config/settings.py -> <repo>/
 ROOT_DIR = Path(__file__).resolve().parents[2]
+
+# Fixed login roles (docker/initdb/00-roles.sh). Only the passwords come from env.
+APP_ROLE = "lawbyai_app"
+OWNER_ROLE = "lawbyai_owner"
 
 
 def load_env(env_file: str | Path | None = None, *, override: bool = False) -> None:
@@ -120,13 +128,23 @@ class Settings:
     # --- PostgreSQL ----------------------------------------------------------
     @property
     def postgres_user(self) -> str:
-        """Return the Postgres user name."""
+        """Return the bootstrap superuser name (postgres service and init script only)."""
         return os.getenv("POSTGRES_USER", "lawbyai")
 
     @property
     def postgres_password(self) -> str:
-        """Return the Postgres password."""
+        """Return the bootstrap superuser password (postgres service and init script only)."""
         return os.getenv("POSTGRES_PASSWORD", "lawbyai")
+
+    @property
+    def postgres_app_password(self) -> str:
+        """Return the ``lawbyai_app`` password."""
+        return os.getenv("LAWBYAI_APP_PASSWORD", "")
+
+    @property
+    def postgres_owner_password(self) -> str:
+        """Return the ``lawbyai_owner`` password."""
+        return os.getenv("LAWBYAI_OWNER_PASSWORD", "")
 
     @property
     def postgres_db(self) -> str:
@@ -145,16 +163,31 @@ class Settings:
 
     @property
     def postgres_url(self) -> str:
-        """Full SQLAlchemy URL.
+        """App SQLAlchemy URL (role ``lawbyai_app``): app, worker and tests.
 
         ``POSTGRES_URL`` wins when set; otherwise the URL is assembled from
-        ``POSTGRES_*`` with URL-quoted credentials.
+        ``LAWBYAI_APP_PASSWORD`` and ``POSTGRES_*`` with URL-quoted credentials.
         """
         if url := os.getenv("POSTGRES_URL"):
             return url
-        user = quote(self.postgres_user, safe="")
-        password = quote(self.postgres_password, safe="")
-        return f"postgresql+psycopg://{user}:{password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        return self._postgres_role_url(APP_ROLE, self.postgres_app_password)
+
+    @property
+    def postgres_owner_url(self) -> str:
+        """Migration SQLAlchemy URL (role ``lawbyai_owner``): Alembic only.
+
+        ``POSTGRES_OWNER_URL`` wins when set; otherwise the URL is assembled from
+        ``LAWBYAI_OWNER_PASSWORD`` and ``POSTGRES_*`` with URL-quoted credentials.
+        """
+        if url := os.getenv("POSTGRES_OWNER_URL"):
+            return url
+        return self._postgres_role_url(OWNER_ROLE, self.postgres_owner_password)
+
+    def _postgres_role_url(self, role: str, password: str) -> str:
+        """Assemble a URL for one login role with URL-quoted credentials."""
+        user = quote(role, safe="")
+        secret = quote(password, safe="")
+        return f"postgresql+psycopg://{user}:{secret}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
     # --- Redis / Celery ------------------------------------------------------
     @property
