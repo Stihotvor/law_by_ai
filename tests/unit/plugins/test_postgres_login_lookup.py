@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 import pytest
+from sqlalchemy.exc import OperationalError
 
 from core.security import get_current_tenant, set_current_tenant
 from plugins.relational_db import postgres
@@ -70,23 +71,118 @@ def store_with(monkeypatch: pytest.MonkeyPatch):
     return make
 
 
-def test_get_login_user_normalises_email_and_ignores_tenant(store_with) -> None:
-    store = store_with(ROW)
+LOGIN_ROW = {
+    "id": "u-1",
+    "tenant_id": "t-1",
+    "email": "a@x.pl",
+    "role": "admin",
+    "name": "Admin",
+    "is_active": True,
+    "password_hash": BCRYPT_HASH,
+    "session_version": 2,
+}
+LOGIN_KEYS = {
+    "id",
+    "tenant_id",
+    "email",
+    "role",
+    "name",
+    "is_active",
+    "password_hash",
+    "session_version",
+}
+
+
+class FakeLoginSession(FakeSession):
+    """Records the SQL and parameters of the ``auth_lookup_user`` call."""
+
+    def __init__(self, engine: object, row: dict[str, Any] | None, error: Exception | None) -> None:
+        super().__init__(engine, None)
+        self._login_row, self._error = row, error
+
+    def execute(self, stmt: Any, params: dict[str, Any] | None = None) -> FakeLoginSession:
+        if self._error is not None:
+            raise self._error
+        FakeSession.seen |= {"stmt": stmt, "params": params, "tenant": get_current_tenant()}
+        return self
+
+    def mappings(self) -> FakeLoginSession:
+        return self
+
+    def one_or_none(self) -> dict[str, Any] | None:
+        return self._login_row
+
+
+@pytest.fixture
+def login_store_with(monkeypatch: pytest.MonkeyPatch):
+    def make(row: dict[str, Any] | None, error: Exception | None = None) -> PostgreSQLStore:
+        def session(engine: object) -> FakeLoginSession:
+            return FakeLoginSession(engine, row, error)
+
+        store = PostgreSQLStore()
+        monkeypatch.setattr(store, "_ensure_initialized", lambda: None)
+        monkeypatch.setattr(postgres, "Session", session)
+        FakeSession.seen = {}
+        return store
+
+    return make
+
+
+def test_get_login_user_calls_auth_lookup_user(login_store_with) -> None:
+    """Scenario: Login lookup uses the function."""
+    result = login_store_with(LOGIN_ROW).get_login_user(" A@x.PL ")
+
+    assert "auth_lookup_user(:email)" in str(FakeSession.seen["stmt"])
+    assert FakeSession.seen["params"] == {"email": "a@x.pl"}
+    assert result is not None
+    assert set(result) == LOGIN_KEYS
+    assert result == LOGIN_ROW
+
+
+def test_get_login_user_ignores_extra_columns(login_store_with) -> None:
+    """A column the function adds later does not break the lookup or leak into the dict."""
+    result = login_store_with(LOGIN_ROW | {"created_at": "2026-01-01"}).get_login_user("a@x.pl")
+
+    assert result == LOGIN_ROW
+
+
+def test_get_login_user_keeps_the_current_tenant(login_store_with) -> None:
+    """The lookup no longer clears the tenant; the function itself ignores RLS."""
+    store = login_store_with(LOGIN_ROW)
     set_current_tenant("t-other")
     try:
-        result = store.get_login_user("  Admin@Example.COM ")
+        assert store.get_login_user("a@x.pl") is not None
     finally:
         set_current_tenant(None)
-
-    assert _email() == "admin@example.com"
-    assert FakeSession.seen["tenant"] is None
-    assert result is not None
-    assert result["session_version"] == 2
-    assert result["password_hash"] == BCRYPT_HASH
+    assert FakeSession.seen["tenant"] == "t-other"
 
 
-def test_get_login_user_returns_none_for_unknown_email(store_with) -> None:
-    assert store_with(None).get_login_user("nobody@example.com") is None
+def test_get_login_user_returns_none_for_unknown_email(login_store_with) -> None:
+    """Scenario: Unknown email."""
+    assert login_store_with(None).get_login_user("nobody@example.com") is None
+
+
+def test_get_login_user_propagates_operational_error(login_store_with) -> None:
+    """Scenario: Database down."""
+    store = login_store_with(None, OperationalError("SELECT", {}, Exception("down")))
+    with pytest.raises(OperationalError):
+        store.get_login_user("a@x.pl")
+
+
+def test_get_user_by_email_docstring_states_none_without_tenant() -> None:
+    """Scenario: Docstrings are fixed."""
+    doc = " ".join((PostgreSQLStore.get_user_by_email.__doc__ or "").split())
+    assert "None" in doc
+    assert "no tenant set" in doc
+
+
+def test_module_docstring_and_list_tenants_are_fail_closed() -> None:
+    """The module docstring no longer says an empty setting shows every row."""
+    doc = " ".join((postgres.__doc__ or "").split())
+    assert "fully visible" not in doc
+    assert "no rows" in doc
+    tenants_doc = " ".join((PostgreSQLStore.list_tenants.__doc__ or "").split())
+    assert "current tenant only" in tenants_doc
 
 
 def test_get_user_by_email_normalises_email(store_with) -> None:

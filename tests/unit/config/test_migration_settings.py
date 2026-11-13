@@ -35,10 +35,11 @@ def owner_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     get_settings.cache_clear()
 
 
-def _run_env_py() -> Config:
+def _run_env_py(url: str = "") -> Config:
     """Run migrations/env.py in offline mode with no revisions to apply."""
     cfg = Config(output_buffer=io.StringIO())
     cfg.set_main_option("script_location", str(ROOT / "migrations"))
+    cfg.set_main_option("sqlalchemy.url", url)
     script = ScriptDirectory.from_config(cfg)
     with EnvironmentContext(cfg, script, fn=lambda _rev, _ctx: [], as_sql=True):
         script.run_env()
@@ -53,6 +54,13 @@ def test_settings_alembic_uses_the_owner_url(owner_env: None) -> None:
     assert url == get_settings().postgres_owner_url
     assert url is not None
     assert "lawbyai_owner" in url
+
+
+def test_settings_alembic_keeps_a_url_the_caller_set(owner_env: None) -> None:
+    """A URL already on the Alembic config wins over the settings."""
+    cfg = _run_env_py("postgresql://lawbyai_owner:p%%40ss@other/x")
+
+    assert cfg.get_main_option("sqlalchemy.url") == "postgresql://lawbyai_owner:p%40ss@other/x"
 
 
 def _services() -> dict[str, Any]:

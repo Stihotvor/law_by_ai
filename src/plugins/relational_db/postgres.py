@@ -15,8 +15,9 @@ ADR-0014). Schema is managed by Alembic migrations (issue #9) — see
 
 RLS model: queries are scoped to the tenant stored in the ``app.current_tenant``
 session setting (see :func:`apply_tenant_rls`), which is populated from the
-``core.security.tenant`` contextvar when a transaction begins. When the setting
-is empty (platform-level operations), tenant-owned tables are fully visible.
+``core.security.tenant`` contextvar when a transaction begins. The policies fail
+closed: when the setting is empty, tenant-owned tables return no rows. Login,
+which runs before a tenant is known, calls the ``auth_lookup_user`` function.
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ from sqlalchemy import Engine, String, create_engine, delete, event, exists, sel
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from config.settings import get_settings
-from core.security import get_current_tenant, hash_password, without_tenant
+from core.security import get_current_tenant, hash_password
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
 
 # ``Base`` and ``LegalDocument`` live in ``data.models`` (issue #16); re-exported
@@ -49,10 +50,12 @@ __all__ = [
     "apply_tenant_rls",
 ]
 
-# Session setting used by the RLS policies. Empty string == no tenant scoping.
+# Session setting used by the RLS policies. Empty string == no rows (fail closed).
 TENANT_SETTING = "app.current_tenant"
-
-
+# Login lookup (SECURITY DEFINER): the login columns of one user in any tenant.
+_AUTH_LOOKUP_SQL = text("SELECT * FROM public.auth_lookup_user(:email)")
+_LOGIN_KEYS = ("id", "tenant_id", "email", "role", "name", "is_active")
+_LOGIN_KEYS += ("password_hash", "session_version")
 _log = logging.getLogger(__name__)
 
 
@@ -391,7 +394,7 @@ class PostgreSQLStore:
             return _user_to_dict(user)
 
     def get_user_by_email(self, email: str) -> dict[str, Any] | None:
-        """Return the user record for *email*, or ``None`` if not found."""
+        """Return the user for *email* in the current tenant; ``None`` with no tenant set."""
         self._ensure_initialized()
         stmt = select(User).where(User.email == email.strip().lower())
         with Session(self._engine) as session:
@@ -401,14 +404,13 @@ class PostgreSQLStore:
     def get_login_user(self, email: str) -> dict[str, Any] | None:
         """Return the login row for *email* across all tenants, or ``None``.
 
-        Exact match on ``strip().lower()``. Includes ``password_hash`` and
-        ``session_version``. Raises ``OperationalError`` when the database is down.
+        Calls ``auth_lookup_user`` (needs no tenant). Raises ``OperationalError`` when down.
         """
         self._ensure_initialized()
-        stmt = select(User).where(User.email == email.strip().lower())
-        with without_tenant(), Session(self._engine) as session:
-            row = session.execute(stmt).scalar_one_or_none()
-            return _login_user_to_dict(row) if row is not None else None
+        with Session(self._engine) as session:
+            result = session.execute(_AUTH_LOOKUP_SQL, {"email": email.strip().lower()})
+            row = result.mappings().one_or_none()
+            return {key: row[key] for key in _LOGIN_KEYS} if row is not None else None
 
     def bump_session_version(self, user_id: str) -> None:
         """Add one to the user's ``session_version`` under the current tenant.
@@ -431,7 +433,7 @@ class PostgreSQLStore:
             return [_user_to_dict(r) for r in rows]
 
     def list_tenants(self) -> list[dict[str, Any]]:
-        """All tenants visible under the current tenant scoping."""
+        """Tenants visible under RLS: the current tenant only, none with no tenant set."""
         self._ensure_initialized()
         with Session(self._engine) as session:
             rows = session.execute(select(Tenant).order_by(Tenant.name)).scalars().all()

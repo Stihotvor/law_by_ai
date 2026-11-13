@@ -17,5 +17,8 @@
   "T4": {
     "state": "done",
     "note": "--note dba approved after CREATE grant fix; live checks in T8"
+  },
+  "T6": {
+    "state": "done"
   }
 }
