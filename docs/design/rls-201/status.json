@@ -28,5 +28,9 @@
   "T8": {
     "state": "done",
     "note": "--note collected; first live run in CI"
+  },
+  "T9": {
+    "state": "done",
+    "note": "--note unit gate green, diff-cover 100 percent; Docker suite in CI"
   }
 }

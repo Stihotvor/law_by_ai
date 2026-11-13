@@ -15,6 +15,20 @@
 : "${LAWBYAI_OWNER_PASSWORD:?set LAWBYAI_OWNER_PASSWORD in docker/.env}"
 : "${LAWBYAI_APP_PASSWORD:?set LAWBYAI_APP_PASSWORD in docker/.env}"
 
+# Refuse the placeholder values from docker/.env.example. The entrypoint sources
+# this file, so `exit 1` ends the entrypoint with an error and initdb stops,
+# the same as a failed `:?` check above. No role is created.
+case "$LAWBYAI_OWNER_PASSWORD" in
+  change-me*)
+    echo "00-roles.sh: LAWBYAI_OWNER_PASSWORD is still the change-me placeholder; set a real password in docker/.env" >&2
+    exit 1 ;;
+esac
+case "$LAWBYAI_APP_PASSWORD" in
+  change-me*)
+    echo "00-roles.sh: LAWBYAI_APP_PASSWORD is still the change-me placeholder; set a real password in docker/.env" >&2
+    exit 1 ;;
+esac
+
 psql -v ON_ERROR_STOP=1 \
   --no-psqlrc \
   --username "$POSTGRES_USER" \

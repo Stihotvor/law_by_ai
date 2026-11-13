@@ -74,7 +74,9 @@ def test_no_password_in_the_repo() -> None:
     text = _script()
     assert not re.search(r"PASSWORD\s+'", text, re.IGNORECASE)
     assert not re.search(r"PASSWORD\s+\"", text, re.IGNORECASE)
-    assert "change-me" not in text
+    # change-me is only the refused placeholder pattern (and its message), never a value.
+    assert not re.search(r"""[=:'"]\s*change-me""", text)
+    assert text.count("change-me*)") == 2
     assert re.findall(r"PASSWORD\s+:'(\w+)'", text) == ["owner_password", "app_password"]
     assert "-v owner_password" not in text
     assert "-v app_password" not in text
@@ -110,3 +112,20 @@ def test_env_example_has_change_me_passwords() -> None:
     text = ENV_EXAMPLE.read_text()
     for var in NEW_PASSWORDS:
         assert re.search(rf"^{var}=change-me", text, re.MULTILINE), var
+
+
+def test_script_refuses_change_me_passwords() -> None:
+    """Each password is checked for the change-me placeholder before psql runs.
+
+    The entrypoint sources the script, so ``exit 1`` stops initdb with the message.
+    """
+    text = _script()
+    psql = text.index("psql -v ON_ERROR_STOP=1")
+    for var in NEW_PASSWORDS:
+        match = re.search(
+            rf'case "\${var}" in\s+change-me\*\)\s+echo "[^"]*{var}[^"]*" >&2'
+            r"\s+exit 1\s*;;\s+esac",
+            text,
+        )
+        assert match, var
+        assert match.end() < psql, f"{var} is checked after psql runs"

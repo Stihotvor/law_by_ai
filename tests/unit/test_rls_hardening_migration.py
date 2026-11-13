@@ -19,6 +19,12 @@ REVISION_FILE = next(VERSIONS.glob("*_harden_rls_tenant_only_policies.py"))
 TENANT = "nullif(current_setting('app.current_tenant', true), '')"
 ALL_ROLES = {"lawbyai_owner", "lawbyai_app", "lawbyai_auth"}
 TABLES = ("tenants", "users", "legal_document", "rejected_document", "alembic_version")
+# (rolsuper, rolbypassrls, rolcanlogin) as the init script creates each role.
+GOOD_ATTRS = {
+    "lawbyai_owner": (False, False, True),
+    "lawbyai_app": (False, False, True),
+    "lawbyai_auth": (False, True, False),
+}
 
 
 def _load() -> ModuleType:
@@ -55,8 +61,12 @@ class _FakeOp:
         functions: dict[str, str] | None = None,
         *,
         auth_can_create: bool = True,
+        attrs: dict[str, tuple[bool, bool, bool]] | None = None,
+        app_in_auth: bool = False,
     ) -> None:
         self.roles = roles
+        self.attrs = GOOD_ATTRS | (attrs or {})
+        self.app_in_auth = app_in_auth
         self.tables = _good_tables() if tables is None else tables
         self.functions = _good_functions() if functions is None else functions
         self.auth_can_create = auth_can_create
@@ -80,9 +90,12 @@ class _FakeBind:
         if "has_schema_privilege" in text:
             return _Result([(self._op.auth_can_create,)])
         assert params is not None
+        if "pg_auth_members" in text:
+            assert (params["member"], params["role"]) == ("lawbyai_app", "lawbyai_auth")
+            return _Result([(self._op.app_in_auth,)])
         names = params["names"]
         if "pg_roles" in text:
-            return _Result([(n,) for n in names if n in self._op.roles])
+            return _Result([(n, *self._op.attrs[n]) for n in names if n in self._op.roles])
         if "pg_proc" in text:
             return _Result(_rows(names, self._op.functions))
         if "pg_class" in text:
@@ -360,3 +373,60 @@ def test_downgrade_literals_match_the_constants() -> None:
     assert found["seq"] == [(module.APP_SEQUENCE, module.APP_ROLE)]
     assert found["cols"] == [(module.AUTH_COLUMN_LIST, module.AUTH_ROLE)]
     assert found["role"] == [module.AUTH_ROLE]
+
+
+def test_wrong_role_attributes_are_all_named() -> None:
+    """Step 1 names every wrong rolsuper, rolbypassrls and rolcanlogin in one error."""
+    attrs = {
+        "lawbyai_owner": (True, False, True),
+        "lawbyai_app": (False, True, False),
+        "lawbyai_auth": (True, False, True),
+    }
+    fake = _FakeOp(ALL_ROLES, attrs=attrs)
+    with pytest.raises(RuntimeError) as err:
+        _run(fake)
+    message = str(err.value)
+    for expected in (
+        "role lawbyai_owner has rolsuper true, expected false",
+        "role lawbyai_app has rolbypassrls true, expected false",
+        "role lawbyai_app has rolcanlogin false, expected true",
+        "role lawbyai_auth has rolsuper true, expected false",
+        "role lawbyai_auth has rolbypassrls false, expected true",
+        "role lawbyai_auth has rolcanlogin true, expected false",
+    ):
+        assert expected in message
+    assert "lawbyai_owner has rolbypassrls" not in message
+    assert not [s for s in fake.statements if s.startswith(("ALTER", "GRANT", "CREATE"))]
+
+
+def test_app_member_of_auth_stops_the_migration() -> None:
+    """Step 1 stops when lawbyai_app is a member of lawbyai_auth (pg_auth_members)."""
+    fake = _FakeOp(ALL_ROLES, app_in_auth=True)
+    with pytest.raises(RuntimeError, match="lawbyai_app is a member of lawbyai_auth"):
+        _run(fake)
+    assert not [s for s in fake.statements if s.startswith(("ALTER", "GRANT", "CREATE"))]
+
+
+def test_membership_and_attribute_problems_join_other_problems() -> None:
+    """One error lists a wrong owner, a wrong attribute and the membership together."""
+    fake = _FakeOp(
+        ALL_ROLES,
+        tables=_good_tables() | {"users": "postgres"},
+        attrs={"lawbyai_app": (False, True, True)},
+        app_in_auth=True,
+    )
+    with pytest.raises(RuntimeError) as err:
+        _run(fake)
+    message = str(err.value)
+    assert "table users is owned by postgres" in message
+    assert "role lawbyai_app has rolbypassrls true" in message
+    assert "lawbyai_app is a member of lawbyai_auth" in message
+
+
+def test_missing_app_role_skips_the_membership_check() -> None:
+    """With no lawbyai_app role, step 1 names the role and does not query pg_auth_members."""
+    with pytest.raises(RuntimeError) as err:
+        _run(_FakeOp(ALL_ROLES - {"lawbyai_app"}, app_in_auth=True))
+    message = str(err.value)
+    assert "role lawbyai_app does not exist" in message
+    assert "member of" not in message

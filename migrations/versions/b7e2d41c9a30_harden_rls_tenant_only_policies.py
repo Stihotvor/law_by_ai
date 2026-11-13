@@ -63,7 +63,24 @@ AUTH_FUNCTION_SQL = """
     $$
 """
 
-ROLES_SQL = "SELECT rolname FROM pg_roles WHERE rolname = ANY(:names)"
+ROLE_ATTRIBUTES = ("rolsuper", "rolbypassrls", "rolcanlogin")
+# (rolsuper, rolbypassrls, rolcanlogin) each role must have, as the init script creates it.
+EXPECTED_ATTRIBUTES = {
+    OWNER_ROLE: (False, False, True),
+    APP_ROLE: (False, False, True),
+    AUTH_ROLE: (False, True, False),
+}
+ROLES_SQL = (
+    "SELECT rolname, rolsuper, rolbypassrls, rolcanlogin FROM pg_roles WHERE rolname = ANY(:names)"
+)
+MEMBERSHIP_SQL = """
+    SELECT EXISTS (
+        SELECT 1 FROM pg_auth_members m
+        JOIN pg_roles r ON r.oid = m.roleid
+        JOIN pg_roles u ON u.oid = m.member
+        WHERE r.rolname = :role AND u.rolname = :member
+    )
+"""
 # ALTER FUNCTION ... OWNER TO lawbyai_auth needs CREATE on the schema for the new owner.
 AUTH_SCHEMA_CREATE_SQL = "SELECT has_schema_privilege(:role, 'public', 'CREATE')"
 TABLE_OWNERS_SQL = """
@@ -113,14 +130,16 @@ def downgrade() -> None:
 
 
 def _check_prerequisites() -> None:
-    """Raise RuntimeError naming each missing role, missing object or wrong owner."""
+    """Raise RuntimeError naming each missing or wrong role, missing object or wrong owner."""
     bind = op.get_bind()
-    roles = {
-        row[0] for row in bind.execute(sa.text(ROLES_SQL), {"names": list(REQUIRED_ROLES)}).all()
-    }
+    rows = bind.execute(sa.text(ROLES_SQL), {"names": list(REQUIRED_ROLES)}).all()
+    attributes = {row[0]: tuple(bool(v) for v in row[1:]) for row in rows}
+    roles = set(attributes)
     tables = _owners(bind, TABLE_OWNERS_SQL, OWNED_TABLES)
     functions = _owners(bind, FUNCTION_OWNERS_SQL, OWNED_FUNCTIONS)
-    problems = _missing_roles(roles) + _owner_problems("table", OWNED_TABLES, tables)
+    problems = _missing_roles(roles) + _attribute_problems(attributes)
+    problems += _membership_problems(bind, roles)
+    problems += _owner_problems("table", OWNED_TABLES, tables)
     problems += _owner_problems("function", OWNED_FUNCTIONS, functions)
     problems += _auth_schema_problems(bind, roles)
     if problems:
@@ -136,6 +155,31 @@ def _owners(bind: sa.Connection, sql: str, names: Sequence[str]) -> dict[str, st
 def _missing_roles(found: set[str]) -> list[str]:
     """Return one message per required role that does not exist."""
     return [f"role {name} does not exist" for name in REQUIRED_ROLES if name not in found]
+
+
+def _attribute_problems(found: dict[str, tuple[bool, ...]]) -> list[str]:
+    """Return one message per role attribute that differs from EXPECTED_ATTRIBUTES."""
+    problems: list[str] = []
+    for role, expected in EXPECTED_ATTRIBUTES.items():
+        actual = found.get(role)
+        if actual is None:
+            continue
+        for name, want, got in zip(ROLE_ATTRIBUTES, expected, actual, strict=True):
+            if want != got:
+                problems.append(
+                    f"role {role} has {name} {str(got).lower()}, expected {str(want).lower()}"
+                )
+    return problems
+
+
+def _membership_problems(bind: sa.Connection, roles: set[str]) -> list[str]:
+    """Return a message if lawbyai_app is a member of lawbyai_auth (skip if either is missing)."""
+    if not {APP_ROLE, AUTH_ROLE} <= roles:
+        return []
+    params = {"role": AUTH_ROLE, "member": APP_ROLE}
+    if not bind.execute(sa.text(MEMBERSHIP_SQL), params).scalar_one():
+        return []
+    return [f"role {APP_ROLE} is a member of {AUTH_ROLE} (it must not reach BYPASSRLS)"]
 
 
 def _auth_schema_problems(bind: sa.Connection, roles: set[str]) -> list[str]:

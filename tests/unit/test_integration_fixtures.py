@@ -14,6 +14,7 @@ from factories import scratch_db
 from sqlalchemy import make_url
 
 INTEGRATION = Path(__file__).resolve().parents[1] / "integration"
+INIT_SCRIPT = Path(__file__).resolve().parents[2] / "docker" / "initdb" / "00-roles.sh"
 EMPTY_TENANT = re.compile(r"set_config\(\s*'app\.current_tenant'\s*,\s*''")
 
 
@@ -83,3 +84,11 @@ def test_integration_tests_never_set_an_empty_tenant() -> None:
     ]
 
     assert found == []
+
+
+def test_scratch_schema_grant_matches_the_init_script() -> None:
+    """AUTH_SCHEMA_GRANT copies one grant of the init script; it must stay the same."""
+    lines = [line.strip() for line in INIT_SCRIPT.read_text().splitlines()]
+    grants = [line for line in lines if line.startswith("GRANT") and "lawbyai_auth;" in line]
+
+    assert grants == [f"{scratch_db.AUTH_SCHEMA_GRANT};"]

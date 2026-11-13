@@ -74,7 +74,7 @@ owns. The block changes the owner of each object one at a time.
 2. Run the block below with `psql -v ON_ERROR_STOP=1` as the bootstrap
    superuser, on the app database. This option stops `psql` at the first
    error. `psql` reads the two passwords from env with `\getenv`.
-3. Run `uv run alembic upgrade head` with the owner URL. Set `POSTGRES_URL` to
+3. Run `uv run alembic upgrade head` with the owner URL. Set `POSTGRES_OWNER_URL` to
    a URL with the user `lawbyai_owner` and the owner password.
 
 ```sql

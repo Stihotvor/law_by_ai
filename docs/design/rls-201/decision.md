@@ -20,7 +20,7 @@ The app, the worker, the tests and Alembic all connect as one role (`POSTGRES_US
 ## Decision
 The user chose Path 1. Reasons:
 - It meets every requirement and every metric, including the pg_proc checks.
-- An SQL injection in the app reads at most one row with fixed columns, by exact email.
+- The cross-tenant login path returns at most one row with fixed columns, by exact email. RLS stops app queries that leave out the tenant. RLS does not stop SQL injection, because injected SQL can set `app.current_tenant` itself. Parameterized SQL is still the defence against injection.
 - It adds no runtime component and does not move data.
 
 ## Consequences

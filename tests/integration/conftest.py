@@ -12,8 +12,9 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 import pytest
+from factories.db_probe import can_connect
 from factories.scratch_db import tenant_sql
-from sqlalchemy import Row, create_engine, text
+from sqlalchemy import Row
 
 from config.settings import get_settings
 from tasks.celery_app import app
@@ -21,33 +22,27 @@ from tasks.celery_app import app
 OwnerSql = Callable[..., list[Row[Any]]]
 
 
-def can_connect(url: str) -> bool:
-    """Return True when the database at the URL answers a query."""
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
 @pytest.fixture
 def postgres_url() -> str:
-    """Return the app URL (``lawbyai_app``); skip the test when it is unreachable."""
+    """Return the app URL (``lawbyai_app``); skip only when the host is unreachable.
+
+    A wrong password or a missing role fails the test.
+    """
     url = get_settings().postgres_url
     if not can_connect(url):
-        pytest.skip("PostgreSQL unavailable")
+        pytest.skip("PostgreSQL host unreachable")
     return url
 
 
 @pytest.fixture
 def owner_url() -> str:
-    """Return the owner URL (``lawbyai_owner``); skip the test when it is unreachable."""
+    """Return the owner URL (``lawbyai_owner``); skip only when the host is unreachable.
+
+    A wrong password or a missing role fails the test.
+    """
     url = get_settings().postgres_owner_url
     if not can_connect(url):
-        pytest.skip("PostgreSQL owner role unavailable")
+        pytest.skip("PostgreSQL host unreachable (owner URL)")
     return url
 
 
