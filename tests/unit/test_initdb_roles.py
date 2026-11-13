@@ -56,7 +56,9 @@ def test_owner_can_build_and_set_the_function_owner() -> None:
     text = " ".join(_script().split())
     assert "GRANT lawbyai_auth TO lawbyai_owner WITH INHERIT FALSE, SET TRUE;" in text
     assert "GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_owner;" in text
-    assert "GRANT USAGE ON SCHEMA public TO lawbyai_auth;" in text
+    # ALTER FUNCTION ... OWNER TO needs CREATE on the schema for the new owner.
+    assert "GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_auth;" in text
+    assert "GRANT USAGE ON SCHEMA public TO lawbyai_auth;" not in text
 
 
 def test_app_cannot_reach_the_privileged_role() -> None:

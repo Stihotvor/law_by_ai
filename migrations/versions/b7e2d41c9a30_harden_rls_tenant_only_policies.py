@@ -1,4 +1,4 @@
-"""harden RLS: role checks, NO FORCE window, tenant-only policies
+"""harden RLS: role checks, tenant-only policies, auth_lookup_user, grants
 
 Checks that the three rls-201 roles exist and that ``lawbyai_owner`` owns the
 tables and the ``users_bump_session_version`` function; if not, it stops and
@@ -6,6 +6,12 @@ names each problem before it changes anything. The ``tenants`` and ``users``
 policies then match only the tenant in ``app.current_tenant``, so no tenant
 set means zero rows. Every data read of this revision runs inside a
 NO FORCE / FORCE window on ``tenants`` and ``users``, in one transaction.
+
+The only cross-tenant read is ``public.auth_lookup_user``, a SECURITY DEFINER
+function owned by ``lawbyai_auth`` (BYPASSRLS) that only ``lawbyai_app`` may run.
+``lawbyai_app`` gets DML on the four data tables, the ``rejected_document`` id
+sequence and SELECT on ``alembic_version``. The downgrade undoes all of this and
+keeps ``ck_users_email_normalised`` (it belongs to ``77985ac8fa22``).
 
 Revision ID: b7e2d41c9a30
 Revises: 77985ac8fa22
@@ -34,8 +40,32 @@ OWNED_FUNCTIONS = ("users_bump_session_version",)
 FORCED_TABLES = ("tenants", "users")
 # (table, policy name kept from 4439761c5e40, tenant column)
 POLICIES = (("tenants", "tenants_isolation", "id"), ("users", "users_isolation", "tenant_id"))
+APP_ROLE = "lawbyai_app"
+AUTH_ROLE = "lawbyai_auth"
+APP_TABLES = ("tenants", "users", "legal_document", "rejected_document")
+APP_SEQUENCE = "rejected_document_id_seq"
+AUTH_FUNCTION = "public.auth_lookup_user(text)"
+# Exactly the columns auth_lookup_user returns; lawbyai_auth may SELECT only these.
+AUTH_COLUMN_LIST = "id, tenant_id, email, role, name, is_active, password_hash, session_version"
+# Column types as 4439761c5e40 / 77985ac8fa22 created the users table.
+AUTH_FUNCTION_SQL = """
+    CREATE FUNCTION public.auth_lookup_user(p_email text)
+    RETURNS TABLE (
+        id varchar, tenant_id varchar, email varchar, role varchar, name varchar,
+        is_active boolean, password_hash varchar, session_version integer
+    )
+    LANGUAGE sql STABLE STRICT SECURITY DEFINER
+    SET search_path = pg_catalog, pg_temp
+    AS $$
+        SELECT u.id, u.tenant_id, u.email, u.role, u.name,
+               u.is_active, u.password_hash, u.session_version
+        FROM public.users u WHERE u.email = lower(btrim(p_email))
+    $$
+"""
 
 ROLES_SQL = "SELECT rolname FROM pg_roles WHERE rolname = ANY(:names)"
+# ALTER FUNCTION ... OWNER TO lawbyai_auth needs CREATE on the schema for the new owner.
+AUTH_SCHEMA_CREATE_SQL = "SELECT has_schema_privilege(:role, 'public', 'CREATE')"
 TABLE_OWNERS_SQL = """
     SELECT c.relname, pg_get_userbyid(c.relowner)
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -67,14 +97,18 @@ def upgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '5s'")
     _check_prerequisites()
     _set_force_rls(force=False)
-    # The data reads of this revision (added in T4) run here, inside the NO FORCE window.
+    # Any data read of this revision must run here, inside the NO FORCE window.
     _tenant_only_policies()
     _set_force_rls(force=True)
+    _create_auth_lookup_user()
+    _grant_app()
 
 
 def downgrade() -> None:
-    """Downgrade schema: restore the 4439761c5e40 policies."""
+    """Downgrade schema: undo grants and function, restore the 4439761c5e40 policies."""
     op.execute("SET LOCAL lock_timeout = '5s'")
+    _revoke_app()
+    _drop_auth_lookup_user()
     _restore_old_policies()
 
 
@@ -88,6 +122,7 @@ def _check_prerequisites() -> None:
     functions = _owners(bind, FUNCTION_OWNERS_SQL, OWNED_FUNCTIONS)
     problems = _missing_roles(roles) + _owner_problems("table", OWNED_TABLES, tables)
     problems += _owner_problems("function", OWNED_FUNCTIONS, functions)
+    problems += _auth_schema_problems(bind, roles)
     if problems:
         raise RuntimeError("rls-201 prerequisites not met: " + "; ".join(problems))
 
@@ -101,6 +136,15 @@ def _owners(bind: sa.Connection, sql: str, names: Sequence[str]) -> dict[str, st
 def _missing_roles(found: set[str]) -> list[str]:
     """Return one message per required role that does not exist."""
     return [f"role {name} does not exist" for name in REQUIRED_ROLES if name not in found]
+
+
+def _auth_schema_problems(bind: sa.Connection, roles: set[str]) -> list[str]:
+    """Return a message if lawbyai_auth lacks CREATE on schema public (skip if it is missing)."""
+    if AUTH_ROLE not in roles:
+        return []
+    if bind.execute(sa.text(AUTH_SCHEMA_CREATE_SQL), {"role": AUTH_ROLE}).scalar_one():
+        return []
+    return [f"role {AUTH_ROLE} has no CREATE on schema public (needed to own auth_lookup_user)"]
 
 
 def _owner_problems(kind: str, names: Sequence[str], owners: dict[str, str]) -> list[str]:
@@ -137,3 +181,50 @@ def _restore_old_policies() -> None:
     for table, policy, _column in POLICIES:
         using, check = OLD_POLICIES[policy]
         op.execute(f"ALTER POLICY {policy} ON public.{table} USING ({using}) WITH CHECK ({check})")
+
+
+def _create_auth_lookup_user() -> None:
+    """Step 5: the login lookup across tenants, owned by lawbyai_auth.
+
+    REVOKE and GRANT run before ALTER OWNER: lawbyai_owner does not inherit
+    lawbyai_auth, so after the owner change it could not edit the ACL. The ACL
+    moves to the new owner together with the ownership.
+    """
+    op.execute(f"GRANT SELECT ({AUTH_COLUMN_LIST}) ON public.users TO {AUTH_ROLE}")
+    op.execute(AUTH_FUNCTION_SQL)
+    op.execute(f"REVOKE EXECUTE ON FUNCTION {AUTH_FUNCTION} FROM PUBLIC")
+    op.execute(f"GRANT EXECUTE ON FUNCTION {AUTH_FUNCTION} TO {APP_ROLE}")
+    op.execute(f"ALTER FUNCTION {AUTH_FUNCTION} OWNER TO {AUTH_ROLE}")
+
+
+def _grant_app() -> None:
+    """Step 6: table, sequence and revision grants for lawbyai_app; no PUBLIC EXECUTE."""
+    for table in APP_TABLES:
+        op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON public.{table} TO {APP_ROLE}")
+    op.execute(f"GRANT USAGE, SELECT ON SEQUENCE public.{APP_SEQUENCE} TO {APP_ROLE}")
+    op.execute(f"GRANT SELECT ON public.alembic_version TO {APP_ROLE}")
+    op.execute(
+        f"ALTER DEFAULT PRIVILEGES FOR ROLE {OWNER_ROLE} REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC"
+    )
+
+
+def _revoke_app() -> None:
+    """Undo step 6 in reverse order."""
+    op.execute(
+        f"ALTER DEFAULT PRIVILEGES FOR ROLE {OWNER_ROLE} GRANT EXECUTE ON FUNCTIONS TO PUBLIC"
+    )
+    op.execute("REVOKE SELECT ON public.alembic_version FROM lawbyai_app")
+    op.execute("REVOKE USAGE, SELECT ON SEQUENCE public.rejected_document_id_seq FROM lawbyai_app")
+    for table in reversed(APP_TABLES):
+        op.execute(f"REVOKE SELECT, INSERT, UPDATE, DELETE ON public.{table} FROM {APP_ROLE}")
+
+
+def _drop_auth_lookup_user() -> None:
+    """Undo step 5. Only the owner may drop the function, so drop it as lawbyai_auth."""
+    op.execute(f"SET LOCAL ROLE {AUTH_ROLE}")
+    op.execute(f"DROP FUNCTION IF EXISTS {AUTH_FUNCTION}")
+    op.execute("RESET ROLE")
+    op.execute(
+        "REVOKE SELECT (id, tenant_id, email, role, name, is_active, password_hash, "
+        "session_version) ON public.users FROM lawbyai_auth"
+    )

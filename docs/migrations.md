@@ -100,7 +100,7 @@ CREATE ROLE lawbyai_auth
   NOLOGIN NOSUPERUSER BYPASSRLS NOINHERIT NOCREATEDB NOCREATEROLE;
 
 GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_owner;
-GRANT USAGE ON SCHEMA public TO lawbyai_auth;
+GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_auth;
 GRANT lawbyai_auth TO lawbyai_owner WITH INHERIT FALSE, SET TRUE;
 
 -- Give each object to the owner role.

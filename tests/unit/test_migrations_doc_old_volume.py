@@ -67,6 +67,7 @@ def test_block_matches_the_init_script() -> None:
     script = _role_statements(_script_sql())
     assert len(script) == 6
     assert doc == script
+    assert "GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_auth;" in doc
 
 
 def test_block_reads_passwords_from_env() -> None:

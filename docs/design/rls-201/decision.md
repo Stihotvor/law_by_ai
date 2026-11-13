@@ -29,8 +29,8 @@ These items include the fixes from the dba review and the solution-architect rev
 ### Roles (init script `docker/initdb/00-roles.sh`, fresh volumes only)
 - `lawbyai_owner`: LOGIN, NOSUPERUSER, NOBYPASSRLS. It gets `CREATE, USAGE ON SCHEMA public` (PG15+ needs this). It runs migrations and owns every object.
 - `lawbyai_app`: LOGIN, NOSUPERUSER, NOBYPASSRLS, NOINHERIT, NOCREATEDB, NOCREATEROLE. It owns nothing.
-- `lawbyai_auth`: NOLOGIN, BYPASSRLS, NOINHERIT, NOCREATEDB, NOCREATEROLE. It gets USAGE on `public` and column SELECT on `users (id, tenant_id, email, role, name, is_active, password_hash, session_version)` only.
-- `GRANT lawbyai_auth TO lawbyai_owner WITH INHERIT FALSE, SET TRUE`, so the owner can set the function owner. Recorded risk: the owner can `SET ROLE` to a BYPASSRLS role. The app cannot.
+- `lawbyai_auth`: NOLOGIN, BYPASSRLS, NOINHERIT, NOCREATEDB, NOCREATEROLE. It gets CREATE and USAGE on `public` (ALTER FUNCTION ... OWNER needs CREATE for the new owner) and column SELECT on `users (id, tenant_id, email, role, name, is_active, password_hash, session_version)` only.
+- `GRANT lawbyai_auth TO lawbyai_owner WITH INHERIT FALSE, SET TRUE`, so the owner can set the function owner. Recorded risk: the owner can `SET ROLE` to a BYPASSRLS role and create objects that this role owns. The app cannot. A test checks that `lawbyai_auth` owns only `auth_lookup_user`.
 - Passwords come from env. Compose passes them to postgres.
 
 ### Connections and migrations

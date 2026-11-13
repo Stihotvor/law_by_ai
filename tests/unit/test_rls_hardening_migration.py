@@ -1,4 +1,5 @@
-"""Unit checks for the rls-201 revision (T3): role checks, NO FORCE window, policies.
+"""Unit checks for the rls-201 revision (T3, T4): role checks, NO FORCE window,
+policies, ``auth_lookup_user``, grants and the downgrade.
 
 The revision runs against a fake ``op`` and a fake connection that answers the
 catalog queries, so the tests see every SQL statement in order. The live checks
@@ -31,13 +32,17 @@ def _load() -> ModuleType:
 
 
 class _Result:
-    """A query result with only ``all()``."""
+    """A query result with ``all()`` and ``scalar_one()``."""
 
-    def __init__(self, rows: list[tuple[str, ...]]) -> None:
+    def __init__(self, rows: list[tuple[Any, ...]]) -> None:
         self._rows = rows
 
-    def all(self) -> list[tuple[str, ...]]:
+    def all(self) -> list[tuple[Any, ...]]:
         return self._rows
+
+    def scalar_one(self) -> Any:
+        assert len(self._rows) == 1
+        return self._rows[0][0]
 
 
 class _FakeOp:
@@ -48,10 +53,13 @@ class _FakeOp:
         roles: set[str],
         tables: dict[str, str] | None = None,
         functions: dict[str, str] | None = None,
+        *,
+        auth_can_create: bool = True,
     ) -> None:
         self.roles = roles
         self.tables = _good_tables() if tables is None else tables
         self.functions = _good_functions() if functions is None else functions
+        self.auth_can_create = auth_can_create
         self.statements: list[str] = []
 
     def execute(self, sql: Any) -> None:
@@ -67,8 +75,11 @@ class _FakeBind:
     def __init__(self, op: _FakeOp) -> None:
         self._op = op
 
-    def execute(self, sql: Any, params: dict[str, list[str]]) -> _Result:
+    def execute(self, sql: Any, params: dict[str, Any] | None = None) -> _Result:
         text = str(sql)
+        if "has_schema_privilege" in text:
+            return _Result([(self._op.auth_can_create,)])
+        assert params is not None
         names = params["names"]
         if "pg_roles" in text:
             return _Result([(n,) for n in names if n in self._op.roles])
@@ -199,10 +210,7 @@ def test_force_is_on_at_head_for_tenants_and_users_only() -> None:
         _force("tenants", on=True),
         _force("users", on=True),
     ]
-    assert stmts[-1] == _force("users", on=True)
-    joined = "\n".join(stmts)
-    assert "legal_document" not in joined
-    assert "rejected_document" not in joined
+    assert not [s for s in force if "legal_document" in s or "rejected_document" in s]
 
 
 def test_lock_timeout_is_set() -> None:
@@ -223,3 +231,132 @@ def test_downgrade_restores_the_old_policies() -> None:
     assert re.search(pattern, joined)
     assert "OR tenant_id IS NULL" in joined
     assert TENANT not in joined
+
+
+FUNC = "public.auth_lookup_user(text)"
+AUTH_COLUMNS = "id, tenant_id, email, role, name, is_active, password_hash, session_version"
+APP_TABLES = ("tenants", "users", "legal_document", "rejected_document")
+
+
+def _downgrade() -> list[str]:
+    """Run downgrade() against a fake op and return its statements."""
+    module = _load()
+    fake = _FakeOp(ALL_ROLES)
+    setattr(module, "op", fake)  # noqa: B010
+    module.downgrade()
+    return fake.statements
+
+
+def _one(statements: list[str], prefix: str) -> int:
+    """Return the index of the single statement that starts with ``prefix``."""
+    found = [i for i, s in enumerate(statements) if s.startswith(prefix)]
+    assert len(found) == 1, (prefix, statements)
+    return found[0]
+
+
+def test_function_is_defined_as_designed() -> None:
+    """Scenario: Function is defined as designed (prosecdef, proconfig, proowner)."""
+    stmts = _run(_FakeOp(ALL_ROLES)).statements
+    index = _one(stmts, "CREATE FUNCTION public.auth_lookup_user(p_email text)")
+    create = stmts[index].replace("( ", "(").replace(" )", ")")
+    assert (
+        "RETURNS TABLE (id varchar, tenant_id varchar, email varchar, role varchar, "
+        "name varchar, is_active boolean, password_hash varchar, session_version integer)"
+    ) in create
+    for part in ("LANGUAGE sql", "STABLE", "STRICT", "SECURITY DEFINER"):
+        assert part in create
+    assert "SET search_path = pg_catalog, pg_temp" in create
+    assert "FROM public.users u WHERE u.email = lower(btrim(p_email))" in create
+    owner = _one(stmts, f"ALTER FUNCTION {FUNC} OWNER TO lawbyai_auth")
+    assert stmts.index(_force("users", on=True)) < index < owner
+
+
+def test_public_has_no_execute() -> None:
+    """Scenario: PUBLIC has no EXECUTE; lawbyai_app has it.
+
+    REVOKE and GRANT run while lawbyai_owner still owns the function: the owner
+    role does not inherit lawbyai_auth, so it could not change the ACL after
+    ALTER OWNER. The ACL moves to the new owner with the ownership.
+    """
+    stmts = _run(_FakeOp(ALL_ROLES)).statements
+    create = _one(stmts, "CREATE FUNCTION public.auth_lookup_user")
+    revoke = _one(stmts, f"REVOKE EXECUTE ON FUNCTION {FUNC} FROM PUBLIC")
+    grant = _one(stmts, f"GRANT EXECUTE ON FUNCTION {FUNC} TO lawbyai_app")
+    owner = _one(stmts, f"ALTER FUNCTION {FUNC} OWNER TO lawbyai_auth")
+    assert create < revoke < owner
+    assert create < grant < owner
+    assert (
+        "ALTER DEFAULT PRIVILEGES FOR ROLE lawbyai_owner REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC"
+        in stmts
+    )
+
+
+def test_auth_role_has_column_select_on_users() -> None:
+    """Scenario: Auth role has column SELECT on users (exactly the function columns)."""
+    stmts = _run(_FakeOp(ALL_ROLES)).statements
+    grants = [s for s in stmts if s.startswith("GRANT") and "lawbyai_auth" in s]
+    assert grants == [f"GRANT SELECT ({AUTH_COLUMNS}) ON public.users TO lawbyai_auth"]
+
+
+def test_app_can_read_the_revision() -> None:
+    """Scenario: App can read the revision; it also gets DML and the sequence."""
+    stmts = _run(_FakeOp(ALL_ROLES)).statements
+    assert "GRANT SELECT ON public.alembic_version TO lawbyai_app" in stmts
+    for table in APP_TABLES:
+        assert f"GRANT SELECT, INSERT, UPDATE, DELETE ON public.{table} TO lawbyai_app" in stmts
+    assert "GRANT USAGE, SELECT ON SEQUENCE public.rejected_document_id_seq TO lawbyai_app" in stmts
+
+
+def test_downgrade_undoes_upgrade_and_keeps_force_and_check() -> None:
+    """Scenario: Downgrade and upgrade again (statement level; the live run is in T8)."""
+    stmts = _downgrade()
+    assert stmts[0] == "SET LOCAL lock_timeout = '5s'"
+    drop = _one(stmts, f"DROP FUNCTION IF EXISTS {FUNC}")
+    # Only the function owner may drop it; lawbyai_owner does not inherit lawbyai_auth.
+    assert stmts[drop - 1] == "SET LOCAL ROLE lawbyai_auth"
+    assert stmts[drop + 1] == "RESET ROLE"
+    assert (
+        "ALTER DEFAULT PRIVILEGES FOR ROLE lawbyai_owner GRANT EXECUTE ON FUNCTIONS TO PUBLIC"
+        in stmts
+    )
+    upgrade = _run(_FakeOp(ALL_ROLES)).statements
+    for grant in [s for s in upgrade if s.startswith("GRANT") and " ON public." in s]:
+        revoke = grant.replace("GRANT ", "REVOKE ", 1).replace(" TO ", " FROM ")
+        assert revoke in stmts, revoke
+    assert not [s for s in stmts if "FORCE" in s]
+    assert not [s for s in stmts if "ck_users_email_normalised" in s or "CONSTRAINT" in s]
+    policies = [i for i, s in enumerate(stmts) if s.startswith("ALTER POLICY")]
+    assert len(policies) == 2
+    assert drop < min(policies)
+
+
+def test_auth_role_without_schema_create_stops_the_migration() -> None:
+    """Step 1 names a missing CREATE on schema public for lawbyai_auth (ALTER OWNER needs it)."""
+    fake = _FakeOp(ALL_ROLES, auth_can_create=False)
+    with pytest.raises(RuntimeError) as err:
+        _run(fake)
+    assert "lawbyai_auth has no CREATE on schema public" in str(err.value)
+    assert not [s for s in fake.statements if s.startswith(("ALTER", "GRANT", "CREATE"))]
+
+
+def test_missing_auth_role_skips_the_schema_check() -> None:
+    """With no lawbyai_auth role, step 1 names the role and does not query its privilege."""
+    with pytest.raises(RuntimeError) as err:
+        _run(_FakeOp(ALL_ROLES - {"lawbyai_auth"}, auth_can_create=False))
+    assert "no CREATE on schema" not in str(err.value)
+
+
+def test_downgrade_literals_match_the_constants() -> None:
+    """The downgrade spells roles, sequence and columns as literals; they must match."""
+    module = _load()
+    joined = "\n".join(_downgrade())
+    found = {
+        "app": re.findall(r"REVOKE SELECT ON public\.alembic_version FROM (\w+)$", joined, re.M),
+        "seq": re.findall(r"ON SEQUENCE public\.(\w+) FROM (\w+)$", joined, re.M),
+        "cols": re.findall(r"REVOKE SELECT \(([^)]*)\) ON public\.users FROM (\w+)$", joined, re.M),
+        "role": re.findall(r"^SET LOCAL ROLE (\w+)$", joined, re.M),
+    }
+    assert found["app"] == [module.APP_ROLE]
+    assert found["seq"] == [(module.APP_SEQUENCE, module.APP_ROLE)]
+    assert found["cols"] == [(module.AUTH_COLUMN_LIST, module.AUTH_ROLE)]
+    assert found["role"] == [module.AUTH_ROLE]

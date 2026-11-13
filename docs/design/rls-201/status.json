@@ -13,5 +13,9 @@
   "T5": {
     "state": "done",
     "note": "--note live old-volume test blocked by classifier; retry in T8"
+  },
+  "T4": {
+    "state": "done",
+    "note": "--note dba approved after CREATE grant fix; live checks in T8"
   }
 }

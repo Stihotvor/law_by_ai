@@ -41,7 +41,7 @@ CREATE ROLE lawbyai_auth
 
 -- PG15+ no longer grants CREATE on public to PUBLIC.
 GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_owner;
-GRANT USAGE ON SCHEMA public TO lawbyai_auth;
+GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_auth;
 
 -- The owner may SET ROLE lawbyai_auth to make it the function owner,
 -- but does not inherit its BYPASSRLS. lawbyai_app gets no membership.
