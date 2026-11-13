@@ -50,14 +50,21 @@ change the schema. RLS policies for `users`/`tenants` live in the migrations
 The `init` service runs `alembic upgrade head` with the owner connection, then
 runs the bootstrap program. Start it before the app services.
 
-The `test` compose profile (`docker compose --profile test -f
-docker/docker-compose.yml run --rm test`) uses a fresh PostgreSQL volume. The
-`test` service runs `alembic upgrade head` with the owner connection, then runs
-the tests.
+The `test` service runs `alembic upgrade head` with the owner connection, then
+runs the tests. The tests truncate tables. Run them in a separate Compose
+project, so that they use their own volume and not the `pgdata` volume of your
+normal stack:
+
+```bash
+docker compose -p law-by-ai-test --profile test -f docker/docker-compose.yml run --rm test
+docker compose -p law-by-ai-test --profile test -f docker/docker-compose.yml down -v
+```
 
 Existing local databases created before Alembic (tables created via
-`create_all`) can be adopted with `uv run alembic stamp head` once the schema
-matches the initial migration.
+`create_all`) can be adopted. When the schema matches the initial migration,
+stamp the initial revision with `uv run alembic stamp 4439761c5e40`. Then run
+`uv run alembic upgrade head`. Do not stamp `head`, because the later
+revisions would then never run.
 
 ## Upgrade an old volume
 
