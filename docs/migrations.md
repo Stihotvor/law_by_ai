@@ -50,3 +50,72 @@ run.
 Existing local databases created before Alembic (tables created via
 `create_all`) can be adopted with `uv run alembic stamp head` once the schema
 matches the initial migration.
+
+## Upgrade an old volume
+
+The Postgres init script makes the database roles. It runs on a fresh volume
+only. An old volume has one role, the bootstrap superuser (`POSTGRES_USER`),
+and that role owns every object. The new migration stops on such a volume.
+Use this procedure to move an old volume to the new role model.
+
+The procedure makes three roles:
+
+- `lawbyai_owner` runs the migrations and owns every object.
+- `lawbyai_app` is the role that the app, the worker and the tests use. It owns
+  nothing.
+- `lawbyai_auth` cannot log in. It owns the login lookup function only.
+
+You cannot use `REASSIGN OWNED BY` to change the owners. The old owner is the
+bootstrap superuser, and Postgres does not reassign objects that a superuser
+owns. The block changes the owner of each object one at a time.
+
+1. Set `LAWBYAI_OWNER_PASSWORD` and `LAWBYAI_APP_PASSWORD` in the shell. Use
+   the values from the Docker env file. Do not write a password in the SQL.
+2. Run the block below with `psql -v ON_ERROR_STOP=1` as the bootstrap
+   superuser, on the app database. This option stops `psql` at the first
+   error. `psql` reads the two passwords from env with `\getenv`.
+3. Run `uv run alembic upgrade head` with the owner URL. Set `POSTGRES_URL` to
+   a URL with the user `lawbyai_owner` and the owner password.
+
+```sql
+-- Read the passwords from env, so they are not in the SQL text.
+\getenv owner_password LAWBYAI_OWNER_PASSWORD
+\getenv app_password LAWBYAI_APP_PASSWORD
+-- Keep the statement text (with the password) out of the server log on error.
+SET log_min_error_statement = panic;
+SET log_statement = 'none';
+
+BEGIN;
+
+-- The same roles, attributes and grants as the init script.
+CREATE ROLE lawbyai_owner
+  LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE
+  PASSWORD :'owner_password';
+
+CREATE ROLE lawbyai_app
+  LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT NOCREATEDB NOCREATEROLE
+  PASSWORD :'app_password';
+
+CREATE ROLE lawbyai_auth
+  NOLOGIN NOSUPERUSER BYPASSRLS NOINHERIT NOCREATEDB NOCREATEROLE;
+
+GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_owner;
+GRANT USAGE ON SCHEMA public TO lawbyai_auth;
+GRANT lawbyai_auth TO lawbyai_owner WITH INHERIT FALSE, SET TRUE;
+
+-- Give each object to the owner role.
+ALTER TABLE tenants OWNER TO lawbyai_owner;
+ALTER TABLE users OWNER TO lawbyai_owner;
+ALTER TABLE legal_document OWNER TO lawbyai_owner;
+ALTER TABLE rejected_document OWNER TO lawbyai_owner;
+ALTER TABLE alembic_version OWNER TO lawbyai_owner;
+-- The sequence belongs to its table. Keep this line after the table line.
+ALTER SEQUENCE rejected_document_id_seq OWNER TO lawbyai_owner;
+ALTER FUNCTION users_bump_session_version() OWNER TO lawbyai_owner;
+
+COMMIT;
+```
+
+The block runs in one transaction. If a statement fails, no change stays.
+If the database has more objects that the superuser owns, change their owner
+in the same way before you run the migration.
