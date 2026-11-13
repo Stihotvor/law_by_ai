@@ -73,14 +73,9 @@ EXPECTED_ATTRIBUTES = {
 ROLES_SQL = (
     "SELECT rolname, rolsuper, rolbypassrls, rolcanlogin FROM pg_roles WHERE rolname = ANY(:names)"
 )
-MEMBERSHIP_SQL = """
-    SELECT EXISTS (
-        SELECT 1 FROM pg_auth_members m
-        JOIN pg_roles r ON r.oid = m.roleid
-        JOIN pg_roles u ON u.oid = m.member
-        WHERE r.rolname = :role AND u.rolname = :member
-    )
-"""
+# pg_has_role follows indirect membership chains too. It raises on an unknown
+# role, so call it only when both roles exist.
+MEMBERSHIP_SQL = "SELECT pg_has_role(:member, :role, 'MEMBER')"
 # ALTER FUNCTION ... OWNER TO lawbyai_auth needs CREATE on the schema for the new owner.
 AUTH_SCHEMA_CREATE_SQL = "SELECT has_schema_privilege(:role, 'public', 'CREATE')"
 TABLE_OWNERS_SQL = """
@@ -173,7 +168,10 @@ def _attribute_problems(found: dict[str, tuple[bool, ...]]) -> list[str]:
 
 
 def _membership_problems(bind: sa.Connection, roles: set[str]) -> list[str]:
-    """Return a message if lawbyai_app is a member of lawbyai_auth (skip if either is missing)."""
+    """Return a message if lawbyai_app is a direct or indirect member of lawbyai_auth.
+
+    Skip when either role is missing: pg_has_role raises on an unknown role.
+    """
     if not {APP_ROLE, AUTH_ROLE} <= roles:
         return []
     params = {"role": AUTH_ROLE, "member": APP_ROLE}

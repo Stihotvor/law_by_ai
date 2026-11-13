@@ -13,24 +13,13 @@ import uuid
 from collections.abc import Iterator
 
 import pytest
+from factories.db_probe import can_connect
 from sqlalchemy import create_engine, text
 
 from config.settings import get_settings
 from plugins.relational_db.postgres import PostgreSQLStore, StoreDocumentNotFoundError
 
 pytestmark = pytest.mark.integration
-
-
-def _can_connect(url: str) -> bool:
-    """Return True when the database at the URL answers a query."""
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
 
 
 def _audit_rows(document_id: str) -> list[tuple[str, str, str]]:
@@ -51,7 +40,7 @@ def _audit_rows(document_id: str) -> list[tuple[str, str, str]]:
 def source_url() -> Iterator[str]:
     """Unique source URL; its audit rows are removed afterwards."""
     url = get_settings().postgres_url
-    if not _can_connect(url):
+    if not can_connect(url):
         pytest.skip("PostgreSQL unavailable")
     value = f"https://example.invalid/reject92/{uuid.uuid4().hex}"
     yield value

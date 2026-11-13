@@ -12,7 +12,7 @@
 - A Postgres init script in `docker-entrypoint-initdb.d` creates the roles. Passwords come from env.
 - `public.auth_lookup_user(p_email text)`: LANGUAGE sql, STABLE, SECURITY DEFINER, `SET search_path = pg_catalog, pg_temp`, owner `lawbyai_auth`. EXECUTE only for `lawbyai_app`.
 - `PostgreSQLStore.get_login_user` keeps its signature and calls the function.
-- The migration keeps `lock_timeout`. The downgrade restores the old policies and drops the function and the CHECK.
+- The migration keeps `lock_timeout`. The downgrade restores the old policies and drops the function. It keeps `ck_users_email_normalised`, which belongs to revision `77985ac8fa22`.
 
 ## Edge Cases
 - Email `' A@x.PL '` matches the stored `a@x.pl` (lower and trim).

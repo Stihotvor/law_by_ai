@@ -8,8 +8,8 @@ cannot even read ``alembic_version``, so the stop is not asserted here.)
 
 Roles are cluster-wide and the init script already made them, so the block's
 ``CREATE ROLE`` statements (and the psql meta-commands) are skipped here; the
-test checks the role attributes instead. Skipped if PostgreSQL is unreachable
-or the superuser cannot create databases.
+test checks the role attributes instead. Skipped only if the PostgreSQL host is
+unreachable; auth and other database errors fail the test.
 """
 
 from __future__ import annotations
@@ -22,9 +22,10 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from factories.db_probe import is_unreachable
 from factories.scratch_db import superuser_url
 from sqlalchemy import create_engine, make_url, text
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import OperationalError
 
 from config.settings import get_settings
 
@@ -91,8 +92,11 @@ def old_volume(postgres_url: str) -> Iterator[str]:
     admin = superuser_url()
     try:
         _autocommit(admin, f'CREATE DATABASE "{name}"')
-    except DBAPIError:
-        pytest.skip("cannot create a scratch database for the old-volume test")
+    except OperationalError as error:
+        # Only an unreachable host skips; bad bootstrap credentials and SQL errors fail.
+        if is_unreachable(error):
+            pytest.skip("database host unreachable; cannot create the old-volume database")
+        raise
     try:
         command.upgrade(_alembic_config(_with_database(admin, name)), OLD_REVISION)
         yield name

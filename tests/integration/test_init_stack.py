@@ -13,8 +13,8 @@ from collections.abc import Iterator
 
 import pytest
 from factories.bootstrap import FakeBucket, FakeSettings
+from factories.db_probe import can_connect
 from factories.scratch_db import tenant_sql
-from sqlalchemy import create_engine, text
 
 from bootstrap.init_stack import run
 from config.settings import get_settings
@@ -24,24 +24,12 @@ from plugins.relational_db.postgres import PostgreSQLStore
 pytestmark = pytest.mark.integration
 
 
-def _can_connect(url: str) -> bool:
-    """Return True when the database at the URL answers a query."""
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
 @pytest.fixture
 def settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[FakeSettings]:
     """Give settings with a unique tenant and admin, and delete them afterwards."""
     url = get_settings().postgres_url
     owner_url = get_settings().postgres_owner_url
-    if not (_can_connect(url) and _can_connect(owner_url)):
+    if not (can_connect(url) and can_connect(owner_url)):
         pytest.skip("PostgreSQL unavailable")
     monkeypatch.setenv("BCRYPT_ROUNDS", "4")
     suffix = uuid.uuid4().hex[:12]

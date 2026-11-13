@@ -78,6 +78,23 @@ def test_run_passes_the_owner_url_to_upgrade() -> None:
     assert store.upgrade_urls == ["postgresql://owner@db/x"]
 
 
+def test_run_reads_the_revision_with_the_owner_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The default revision read (before and after the upgrade) uses the owner URL."""
+    urls: list[str] = []
+
+    def fake_db_revision(url: str) -> str | None:
+        urls.append(url)
+        return None
+
+    monkeypatch.setattr(init_stack, "db_revision", fake_db_revision)
+    store = FakeStore()
+    settings = FakeSettings(postgres_owner_url="postgresql://owner@db/x")
+    code = run(settings, store, FakeBucket(), upgrade=store.upgrade, sleep=lambda _: None)
+    assert code == 0
+    assert urls
+    assert set(urls) == {"postgresql://owner@db/x"}
+
+
 def test_alembic_upgrade_targets_head_with_the_given_url(monkeypatch: pytest.MonkeyPatch) -> None:
     """The default upgrade runs ``alembic upgrade head`` with the URL it receives."""
     upgrade = MagicMock()

@@ -344,7 +344,7 @@ def run(
         _log.error("step=config result=failed problems=%s", "; ".join(problems))
         return BAD_CONFIG
     s3 = client if client is not None else s3_client(settings)
-    current = revision or (lambda: db_revision(settings.postgres_url))
+    current = revision or (lambda: db_revision(settings.postgres_owner_url))
     tenant = settings.init_tenant_id
     steps: tuple[tuple[str, Callable[[], Result], Transient], ...] = (
         (

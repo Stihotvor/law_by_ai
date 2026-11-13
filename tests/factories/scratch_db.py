@@ -16,9 +16,10 @@ from typing import Any
 
 import pytest
 from sqlalchemy import Engine, Row, create_engine, make_url, text
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import OperationalError
 
 from config.settings import OWNER_ROLE, get_settings
+from factories.db_probe import is_unreachable
 
 TENANT_SQL = "SELECT set_config('app.current_tenant', :tenant, true)"
 # lawbyai_auth must own auth_lookup_user; docker/initdb/00-roles.sh grants this
@@ -69,28 +70,43 @@ def _autocommit(engine: Engine, sql: str) -> None:
 def scratch_database(prefix: str) -> Iterator[ScratchDb]:
     """Create an empty database owned by ``lawbyai_owner``; drop it on exit.
 
-    Skips the test when the superuser cannot create it.
+    Skips the test only when the database host is unreachable. Role, auth and
+    SQL errors are raised.
     """
     settings = get_settings()
     name = f"{prefix}_{uuid.uuid4().hex[:12]}"
     admin = create_engine(superuser_url(), isolation_level="AUTOCOMMIT")
     try:
-        _autocommit(admin, f'CREATE DATABASE "{name}" OWNER {OWNER_ROLE}')
-    except DBAPIError:
-        admin.dispose()
-        pytest.skip("cannot create a scratch database for migration tests")
-    try:
-        db = ScratchDb(
-            name=name,
-            app_url=_with_database(settings.postgres_url, name),
-            owner_url=_with_database(settings.postgres_owner_url, name),
-        )
-        owner = create_engine(db.owner_url, isolation_level="AUTOCOMMIT")
+        _create_or_skip(admin, name)
         try:
-            _autocommit(owner, AUTH_SCHEMA_GRANT)
+            yield _prepare(
+                ScratchDb(
+                    name=name,
+                    app_url=_with_database(settings.postgres_url, name),
+                    owner_url=_with_database(settings.postgres_owner_url, name),
+                )
+            )
         finally:
-            owner.dispose()
-        yield db
+            _autocommit(admin, f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
     finally:
-        _autocommit(admin, f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
         admin.dispose()
+
+
+def _create_or_skip(admin: Engine, name: str) -> None:
+    """Create the scratch database; skip the test if the host is unreachable."""
+    try:
+        _autocommit(admin, f'CREATE DATABASE "{name}" OWNER {OWNER_ROLE}')
+    except OperationalError as error:
+        if is_unreachable(error):
+            pytest.skip("database host unreachable; cannot create a scratch database")
+        raise
+
+
+def _prepare(db: ScratchDb) -> ScratchDb:
+    """Let ``lawbyai_auth`` create in schema public of the scratch database."""
+    owner = create_engine(db.owner_url, isolation_level="AUTOCOMMIT")
+    try:
+        _autocommit(owner, AUTH_SCHEMA_GRANT)
+    finally:
+        owner.dispose()
+    return db

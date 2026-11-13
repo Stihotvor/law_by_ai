@@ -16,9 +16,9 @@ The app has one login role with no bypass. A SECURITY DEFINER function, owned by
 
 ## Migration
 1. Set `lock_timeout`. Check that the roles exist. Check the emails for mixed case and for duplicates.
-2. Add `CHECK (email = lower(btrim(email)))`.
+2. Keep the existing email CHECK `ck_users_email_normalised` (revision `77985ac8fa22`).
 3. Replace the policies with `tenant_id = nullif(current_setting('app.current_tenant', true), '')` (`id` on `tenants`), for USING and for WITH CHECK.
-4. Create the function and the grants. The downgrade restores the old policies and drops the function and the CHECK.
+4. Create the function and the grants. The downgrade restores the old policies and drops the function. It keeps the email CHECK.
 
 ## Code change
 `get_login_user` runs `SELECT * FROM auth_lookup_user(:e)`. The signature stays the same, and `without_tenant()` is no longer needed.

@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
+from factories.db_probe import can_connect
 
 from config.settings import get_settings
 from plugins.relational_db.postgres import PostgreSQLStore
@@ -40,22 +41,8 @@ def plugin(tmp_path):
 @pytest.fixture
 def _postgres_available():
     """Skip the whole module if PostgreSQL is unreachable."""
-    if not _can_connect(get_settings().postgres_url):
+    if not can_connect(get_settings().postgres_url):
         pytest.skip("PostgreSQL unavailable", allow_module_level=True)
-
-
-def _can_connect(url: str) -> bool:
-    """Best-effort probe; never raises (tests skip instead)."""
-    from sqlalchemy import create_engine, text
-
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
 
 
 def test_store_initializes(tmp_path):

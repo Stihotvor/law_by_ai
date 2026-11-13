@@ -90,9 +90,9 @@ class _FakeBind:
         if "has_schema_privilege" in text:
             return _Result([(self._op.auth_can_create,)])
         assert params is not None
-        if "pg_auth_members" in text:
-            assert (params["member"], params["role"]) == ("lawbyai_app", "lawbyai_auth")
-            return _Result([(self._op.app_in_auth,)])
+        assert "pg_auth_members" not in text, "use pg_has_role to catch indirect chains"
+        if "pg_has_role" in text:
+            return self._has_role(params)
         names = params["names"]
         if "pg_roles" in text:
             return _Result([(n, *self._op.attrs[n]) for n in names if n in self._op.roles])
@@ -101,6 +101,14 @@ class _FakeBind:
         if "pg_class" in text:
             return _Result(_rows(names, self._op.tables))
         raise AssertionError(f"unexpected query: {text}")
+
+    def _has_role(self, params: dict[str, Any]) -> _Result:
+        """Answer pg_has_role; like PostgreSQL, fail on a role that does not exist."""
+        member, role = params["member"], params["role"]
+        if not {member, role} <= self._op.roles:
+            raise AssertionError(f"pg_has_role on a missing role: {member}, {role}")
+        assert (member, role) == ("lawbyai_app", "lawbyai_auth")
+        return _Result([(self._op.app_in_auth,)])
 
 
 def _rows(names: list[str], owners: dict[str, str]) -> list[tuple[str, ...]]:
@@ -121,7 +129,7 @@ def _good_functions() -> dict[str, str]:
 def _run(fake: _FakeOp) -> _FakeOp:
     """Run upgrade() against the fake catalog of ``fake`` and return it."""
     module = _load()
-    setattr(module, "op", fake)  # noqa: B010
+    vars(module)["op"] = fake
     module.upgrade()
     return fake
 
@@ -237,7 +245,7 @@ def test_downgrade_restores_the_old_policies() -> None:
     """The downgrade puts back the 4439761c5e40 policy expressions."""
     module = _load()
     fake = _FakeOp(ALL_ROLES)
-    setattr(module, "op", fake)  # noqa: B010
+    vars(module)["op"] = fake
     module.downgrade()
     joined = "\n".join(fake.statements)
     pattern = r"ALTER POLICY tenants_isolation ON public\.tenants USING \(current_setting"
@@ -255,7 +263,7 @@ def _downgrade() -> list[str]:
     """Run downgrade() against a fake op and return its statements."""
     module = _load()
     fake = _FakeOp(ALL_ROLES)
-    setattr(module, "op", fake)  # noqa: B010
+    vars(module)["op"] = fake
     module.downgrade()
     return fake.statements
 
@@ -400,7 +408,7 @@ def test_wrong_role_attributes_are_all_named() -> None:
 
 
 def test_app_member_of_auth_stops_the_migration() -> None:
-    """Step 1 stops when lawbyai_app is a member of lawbyai_auth (pg_auth_members)."""
+    """Step 1 stops when lawbyai_app is a member of lawbyai_auth (pg_has_role)."""
     fake = _FakeOp(ALL_ROLES, app_in_auth=True)
     with pytest.raises(RuntimeError, match="lawbyai_app is a member of lawbyai_auth"):
         _run(fake)
@@ -424,9 +432,22 @@ def test_membership_and_attribute_problems_join_other_problems() -> None:
 
 
 def test_missing_app_role_skips_the_membership_check() -> None:
-    """With no lawbyai_app role, step 1 names the role and does not query pg_auth_members."""
+    """With no lawbyai_app role, step 1 names the role and does not call pg_has_role."""
     with pytest.raises(RuntimeError) as err:
         _run(_FakeOp(ALL_ROLES - {"lawbyai_app"}, app_in_auth=True))
     message = str(err.value)
     assert "role lawbyai_app does not exist" in message
     assert "member of" not in message
+
+
+def test_membership_check_uses_pg_has_role_member() -> None:
+    """The membership check follows indirect chains: pg_has_role with MEMBER."""
+    sql = " ".join(_load().MEMBERSHIP_SQL.split())
+    assert sql == "SELECT pg_has_role(:member, :role, 'MEMBER')"
+
+
+def test_missing_auth_role_skips_the_membership_check() -> None:
+    """With no lawbyai_auth role, step 1 does not call pg_has_role (it would raise)."""
+    with pytest.raises(RuntimeError) as err:
+        _run(_FakeOp(ALL_ROLES - {"lawbyai_auth"}, app_in_auth=True))
+    assert "member of" not in str(err.value)

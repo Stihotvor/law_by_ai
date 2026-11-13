@@ -5,7 +5,7 @@ downgrade the schema, so they never touch the configured database: the
 test-only superuser creates a dedicated scratch database (``mig92_<hex>``) and
 drops it afterwards. ``POSTGRES_URL`` and ``POSTGRES_OWNER_URL`` point at it;
 the owner migrates it and writes rows below head, the app role asserts.
-Skipped if PostgreSQL is unreachable or the superuser cannot create databases.
+Skipped only if the PostgreSQL host is unreachable; other database errors fail.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
+from factories.db_probe import can_connect
 from factories.scratch_db import ScratchDb, scratch_database
 from sqlalchemy import Engine, create_engine, inspect, make_url, text
 from sqlalchemy.exc import IntegrityError
@@ -43,18 +44,6 @@ INSERT_DOC_WITH_STATUS = text(
 )
 
 
-def _can_connect(url: str) -> bool:
-    """Return True when the database at the URL answers a query."""
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
 def _alembic_config() -> Config:
     cfg = Config(str(REPO_ROOT / "alembic.ini"))
     cfg.set_main_option("script_location", str(REPO_ROOT / "migrations"))
@@ -64,7 +53,7 @@ def _alembic_config() -> Config:
 @pytest.fixture(scope="module")
 def scratch() -> Iterator[ScratchDb]:
     """Throwaway database at head, migrated by the owner; the env URLs point at it."""
-    if not _can_connect(get_settings().postgres_url):
+    if not can_connect(get_settings().postgres_url):
         pytest.skip("PostgreSQL unavailable")
     with scratch_database("mig92") as db, pytest.MonkeyPatch.context() as mp:
         mp.setenv("POSTGRES_URL", db.app_url)

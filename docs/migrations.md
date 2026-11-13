@@ -2,9 +2,9 @@
 
 PostgreSQL schema is managed with **Alembic**. Models live in
 `plugins/relational_db/postgres.py` (`Base.metadata`); migration scripts live
-in `migrations/versions/`. The migration environment reads the database URL
-from `config.settings` (`POSTGRES_URL` or `POSTGRES_*`), so it matches how the
-application connects.
+in `migrations/versions/`. The migration environment reads the owner database
+URL from `config.settings` (`POSTGRES_OWNER_URL`, or `LAWBYAI_OWNER_PASSWORD`
+and `POSTGRES_*`).
 
 ## Commands
 
@@ -36,16 +36,24 @@ Run through **uv** (the project's package manager):
 
 ## Migrations in the data store
 
-`PostgreSQLStore.initialize()` runs `alembic upgrade head` automatically before
-serving, so the app always brings its schema up to date on startup. RLS
-policies for `users`/`tenants` live in the migrations (ADR-0003).
+The app does not apply migrations on startup. `PostgreSQLStore.initialize()`
+only reads the revision of the database. If the revision is not the head
+revision, it raises `SchemaNotAtHeadError`.
+
+Migrations run with the owner connection (`POSTGRES_OWNER_URL`, user
+`lawbyai_owner`). The app role (`POSTGRES_URL`, user `lawbyai_app`) cannot
+change the schema. RLS policies for `users`/`tenants` live in the migrations
+(ADR-0003).
 
 ## Docker / test compose
 
+The `init` service runs `alembic upgrade head` with the owner connection, then
+runs the bootstrap program. Start it before the app services.
+
 The `test` compose profile (`docker compose --profile test -f
-docker/docker-compose.yml run --rm test`) boots a fresh PostgreSQL volume;
-`PostgreSQLStore.initialize()` applies the migrations before integration tests
-run.
+docker/docker-compose.yml run --rm test`) uses a fresh PostgreSQL volume. The
+`test` service runs `alembic upgrade head` with the owner connection, then runs
+the tests.
 
 Existing local databases created before Alembic (tables created via
 `create_all`) can be adopted with `uv run alembic stamp head` once the schema
