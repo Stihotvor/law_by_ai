@@ -60,8 +60,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in docker/.env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
       POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in docker/.env}
+      # Login passwords for the roles that docker/initdb/00-roles.sh creates.
+      LAWBYAI_OWNER_PASSWORD: ${LAWBYAI_OWNER_PASSWORD:?set LAWBYAI_OWNER_PASSWORD in docker/.env}
+      LAWBYAI_APP_PASSWORD: ${LAWBYAI_APP_PASSWORD:?set LAWBYAI_APP_PASSWORD in docker/.env}
     volumes:
       - pgdata:/var/lib/postgresql
+      # Runs once, on an empty volume only. The entrypoint sources the script.
+      - ./initdb:/docker-entrypoint-initdb.d:ro
     tmpfs:
       - /tmp
       - /var/run/postgresql:uid=70,gid=70
