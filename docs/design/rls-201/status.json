@@ -24,5 +24,9 @@
   "T7": {
     "state": "done",
     "note": "--note Docker suite runs in CI after push"
+  },
+  "T8": {
+    "state": "done",
+    "note": "--note collected; first live run in CI"
   }
 }
