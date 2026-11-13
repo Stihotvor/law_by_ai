@@ -61,10 +61,20 @@ docker compose -p law-by-ai-test --profile test -f docker/docker-compose.yml dow
 ```
 
 Existing local databases created before Alembic (tables created via
-`create_all`) can be adopted. When the schema matches the initial migration,
-stamp the initial revision with `uv run alembic stamp 4439761c5e40`. Then run
-`uv run alembic upgrade head`. Do not stamp `head`, because the later
-revisions would then never run.
+`create_all`) can be adopted when the schema matches the initial migration.
+On such a volume `lawbyai_owner` does not exist yet. Do these steps in order:
+
+1. Stamp the initial revision with the bootstrap superuser connection. This
+   creates the `alembic_version` table:
+   `POSTGRES_OWNER_URL=<superuser URL> uv run alembic stamp 4439761c5e40`.
+2. Upgrade to the revision before the RLS hardening, with the same
+   connection. This creates the objects that the next step expects:
+   `POSTGRES_OWNER_URL=<superuser URL> uv run alembic upgrade 77985ac8fa22`.
+3. Do steps 1 and 2 of "Upgrade an old volume" below. They create the roles
+   and give every object, `alembic_version` included, to `lawbyai_owner`.
+4. Run `uv run alembic upgrade head` with the owner connection (step 3 below).
+
+Do not stamp `head`, because the later revisions would then never run.
 
 ## Upgrade an old volume
 
