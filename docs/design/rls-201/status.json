@@ -20,5 +20,9 @@
   },
   "T6": {
     "state": "done"
+  },
+  "T7": {
+    "state": "done",
+    "note": "--note Docker suite runs in CI after push"
   }
 }

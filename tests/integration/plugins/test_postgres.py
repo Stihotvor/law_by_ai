@@ -23,12 +23,13 @@ pytestmark = [
 
 @pytest.fixture
 def plugin(tmp_path):
-    """Fresh store whose schema is brought up by migrations on initialize()."""
+    """Fresh store as the app role (schema at head); the owner empties legal_document."""
     from sqlalchemy import create_engine, text
 
     p = PostgreSQLStore()
     p.initialize()
-    engine = create_engine(get_settings().postgres_url, future=True)
+    # TRUNCATE needs the owner: lawbyai_app has DML grants only.
+    engine = create_engine(get_settings().postgres_owner_url, future=True)
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE legal_document"))
     engine.dispose()
@@ -171,7 +172,7 @@ def test_update_missing_raises_keyerror(plugin):
 
 
 def test_store_reinitializes_idempotently(plugin):
-    """initialize() runs migrations again without error (already at head)."""
+    """initialize() checks the head again without error (already at head)."""
     plugin.initialize()
     assert plugin._initialized is True
 

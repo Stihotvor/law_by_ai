@@ -1,10 +1,11 @@
 """Document status column and reject audit table migration (issue #92).
 
 Marked ``integration``: runs Alembic against a live PostgreSQL. The tests
-downgrade the schema, so they never touch the configured database: the module
-creates a dedicated scratch database (``mig92_<hex>``), points ``POSTGRES_URL``
-at it, and drops it afterwards. Skipped if PostgreSQL is unreachable or the
-role cannot create databases.
+downgrade the schema, so they never touch the configured database: the
+test-only superuser creates a dedicated scratch database (``mig92_<hex>``) and
+drops it afterwards. ``POSTGRES_URL`` and ``POSTGRES_OWNER_URL`` point at it;
+the owner migrates it and writes rows below head, the app role asserts.
+Skipped if PostgreSQL is unreachable or the superuser cannot create databases.
 """
 
 from __future__ import annotations
@@ -18,8 +19,9 @@ from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
+from factories.scratch_db import ScratchDb, scratch_database
 from sqlalchemy import Engine, create_engine, inspect, make_url, text
-from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 from config.settings import get_settings
 from data.models import Base
@@ -60,34 +62,26 @@ def _alembic_config() -> Config:
 
 
 @pytest.fixture(scope="module")
-def scratch_url() -> Iterator[str]:
-    """URL of a throwaway database at head; ``POSTGRES_URL`` points at it."""
-    base_url = get_settings().postgres_url
-    if not _can_connect(base_url):
+def scratch() -> Iterator[ScratchDb]:
+    """Throwaway database at head, migrated by the owner; the env URLs point at it."""
+    if not _can_connect(get_settings().postgres_url):
         pytest.skip("PostgreSQL unavailable")
-    name = f"mig92_{uuid.uuid4().hex[:12]}"
-    admin = create_engine(base_url, isolation_level="AUTOCOMMIT")
-    try:
-        with admin.connect() as conn:
-            conn.execute(text(f'CREATE DATABASE "{name}"'))
-    except DBAPIError:
-        admin.dispose()
-        pytest.skip("cannot create a scratch database for migration tests")
-    url = make_url(base_url).set(database=name).render_as_string(hide_password=False)
-    try:
-        with pytest.MonkeyPatch.context() as mp:
-            mp.setenv("POSTGRES_URL", url)
-            command.upgrade(_alembic_config(), "head")
-            yield url
-    finally:
-        with admin.connect() as conn:
-            conn.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
-        admin.dispose()
+    with scratch_database("mig92") as db, pytest.MonkeyPatch.context() as mp:
+        mp.setenv("POSTGRES_URL", db.app_url)
+        mp.setenv("POSTGRES_OWNER_URL", db.owner_url)
+        command.upgrade(_alembic_config(), "head")
+        yield db
+
+
+@pytest.fixture(scope="module")
+def scratch_url(scratch: ScratchDb) -> str:
+    """App-role URL of the scratch database."""
+    return scratch.app_url
 
 
 @pytest.fixture
 def engine(scratch_url: str) -> Iterator[Engine]:
-    """Engine on the scratch database; the schema is back at head afterwards."""
+    """App-role engine on the scratch database; the schema is back at head afterwards."""
     eng = create_engine(scratch_url, future=True)
     yield eng
     eng.dispose()
@@ -110,12 +104,17 @@ def test_scratch_database_is_not_the_configured_one(scratch_url: str) -> None:
     assert get_settings().postgres_url == scratch_url
 
 
-def test_existing_rows_backfilled_to_approved(engine: Engine) -> None:
+def test_existing_rows_backfilled_to_approved(engine: Engine, scratch: ScratchDb) -> None:
     cfg = _alembic_config()
     command.downgrade(cfg, PREVIOUS_REVISION)
     doc_id = _doc_id()
-    with engine.begin() as conn:
-        conn.execute(INSERT_DOC, {"id": doc_id})
+    # Below head lawbyai_app has no grants: the owner writes the row.
+    owner = create_engine(scratch.owner_url, future=True)
+    try:
+        with owner.begin() as conn:
+            conn.execute(INSERT_DOC, {"id": doc_id})
+    finally:
+        owner.dispose()
 
     command.upgrade(cfg, "head")
 

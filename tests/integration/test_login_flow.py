@@ -1,20 +1,23 @@
 """Login flow against a live PostgreSQL: real ``PostgreSQLStore``, fake browser cookie.
 
-Marked ``integration``. A browser reload is a new ``AppTest`` session that sends
-the cookie the first session set. Skipped if PostgreSQL is unreachable.
+Marked ``integration``. The store runs as ``lawbyai_app``; the owner
+``lawbyai_owner`` changes and deletes rows inside ``TENANT``. A browser reload
+is a new ``AppTest`` session that sends the cookie the first session set.
+Skipped if PostgreSQL is unreachable.
 """
 
 from __future__ import annotations
 
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 from factories.auth import COOKIE, KEY, FakeCookie
-from sqlalchemy import create_engine, text
 from streamlit.testing.v1 import AppTest
 
+from core.security import tenant_context
 from plugins.relational_db.postgres import PostgreSQLStore
 from ui.components import auth
 
@@ -22,10 +25,13 @@ pytestmark = pytest.mark.integration
 
 TENANT = "login-flow-test"
 PLAIN = "secret-pass"
+OwnerSql = Callable[..., list[Any]]
 
 
 @pytest.fixture
-def store(postgres_url: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[PostgreSQLStore]:
+def store(
+    postgres_url: str, owner_sql: OwnerSql, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[PostgreSQLStore]:
     """Real store behind the auth adapter; deletes the test users afterwards."""
     monkeypatch.setenv("AUTH_COOKIE_KEY", KEY)
     monkeypatch.delenv("AUTH_COOKIE_NAME", raising=False)
@@ -41,20 +47,13 @@ def store(postgres_url: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[Postgr
     ):
         yield s
     s.close()
-    _sql(postgres_url, "DELETE FROM users WHERE tenant_id = :t", t=TENANT)
-
-
-def _sql(url: str, sql: str, **params: str) -> None:
-    engine = create_engine(url, future=True)
-    with engine.begin() as conn:
-        conn.execute(text("SELECT set_config('app.current_tenant', '', true)"))
-        conn.execute(text(sql), params)
-    engine.dispose()
+    owner_sql(TENANT, "DELETE FROM users WHERE tenant_id = :t", t=TENANT)
 
 
 def _admin(store: PostgreSQLStore) -> str:
     email = f"admin-{uuid.uuid4().hex[:12]}@example.com"
-    store.create_user(email=email, password=PLAIN, role="admin", tenant_id=TENANT)
+    with tenant_context(TENANT):
+        store.create_user(email=email, password=PLAIN, role="admin", tenant_id=TENANT)
     return email
 
 
@@ -100,10 +99,10 @@ def test_wrong_password_sets_nothing(store: PostgreSQLStore) -> None:
     assert FakeCookie.jar == {}
 
 
-def test_deactivated_user_loses_live_session(store: PostgreSQLStore, postgres_url: str) -> None:
+def test_deactivated_user_loses_live_session(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
     email = _admin(store)
     at = _login(email)
-    _sql(postgres_url, "UPDATE users SET is_active = false WHERE email = :e", e=email)
+    owner_sql(TENANT, "UPDATE users SET is_active = false WHERE email = :e", e=email)
 
     at.run()
 
@@ -111,10 +110,10 @@ def test_deactivated_user_loses_live_session(store: PostgreSQLStore, postgres_ur
     assert "user" not in at.session_state
 
 
-def test_password_change_rejects_copied_cookie(store: PostgreSQLStore, postgres_url: str) -> None:
+def test_password_change_rejects_copied_cookie(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
     email = _admin(store)
     _login(email)
-    _sql(postgres_url, "UPDATE users SET password_hash = 'x' WHERE email = :e", e=email)
+    owner_sql(TENANT, "UPDATE users SET password_hash = 'x' WHERE email = :e", e=email)
 
     at = _reload()
 
