@@ -61,8 +61,15 @@ docker compose -p law-by-ai-test --profile test -f docker/docker-compose.yml dow
 ```
 
 Existing local databases created before Alembic (tables created via
-`create_all`) can be adopted when the schema matches the initial migration.
-On such a volume `lawbyai_owner` does not exist yet. Do these steps in order:
+`create_all`) usually hold only local test data. Prefer a fresh volume for
+them. `create_all` does not create the RLS policies of the initial migration,
+and the later revisions change those policies, so the upgrade stops without
+them.
+
+Adopt such a database only when it matches the initial migration in full:
+the tables, the `users_isolation` and `tenants_isolation` policies, and
+ENABLE and FORCE ROW LEVEL SECURITY on `users` and `tenants`. On such a
+volume `lawbyai_owner` does not exist yet. Do these steps in order:
 
 1. Stamp the initial revision with the bootstrap superuser connection. This
    creates the `alembic_version` table:
