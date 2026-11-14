@@ -75,7 +75,7 @@ volume `lawbyai_owner` does not exist yet. Do these steps in order:
    query with `psql` as the bootstrap superuser, on the app database:
 
    ```sql
-   SELECT c.relname, c.relrowsecurity, p.polname
+   SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity, p.polname
    FROM pg_class c
    JOIN pg_namespace n ON n.oid = c.relnamespace
    LEFT JOIN pg_policy p
@@ -83,10 +83,10 @@ volume `lawbyai_owner` does not exist yet. Do these steps in order:
    WHERE n.nspname = 'public' AND c.relname IN ('tenants', 'users');
    ```
 
-   The result must have two rows. In each row, `relrowsecurity` must be `t`
-   and `polname` must be `tenants_isolation` or `users_isolation`. If a row
-   is missing, `relrowsecurity` is `f` or `polname` is empty, do not adopt
-   the database. Use a fresh volume.
+   The result must have two rows. In each row, `relrowsecurity` and
+   `relforcerowsecurity` must be `t`, and `polname` must be
+   `tenants_isolation` or `users_isolation`. If a row is missing, a flag is
+   `f` or `polname` is empty, do not adopt the database. Use a fresh volume.
 2. Stamp the initial revision with the bootstrap superuser connection. This
    creates the `alembic_version` table:
    `POSTGRES_OWNER_URL=<superuser URL> uv run alembic stamp 4439761c5e40`.
