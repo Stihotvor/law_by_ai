@@ -2,19 +2,27 @@
 
 from __future__ import annotations
 
+import logging
+import time
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import Any, NoReturn
 
 import jwt
+import redis
 import streamlit as st
+from redis.exceptions import RedisError
 from sqlalchemy.exc import SQLAlchemyError
 from streamlit_authenticator.models import CookieModel
 
 from config.settings import get_settings
+from core.security.login_throttle import LoginThrottle, normalise_email
 from core.security.passwords import DUMMY_HASH, check_password
 from core.security.rbac import is_admin, valid_role
 from core.security.tenant import reset_current_tenant, set_current_tenant
 from plugins.relational_db.postgres import PostgreSQLStore
+
+logger = logging.getLogger(__name__)
 
 # Session key that holds the signed-in user dict. Only login_form and require_auth
 # write it, and only from the database row. Role and tenant never come from form
@@ -28,6 +36,8 @@ EXPIRES_KEY = "auth_expires"
 _PUBLIC_FIELDS = ("id", "tenant_id", "email", "name", "role")
 # Session flag set when logout cleared this session but could not revoke other copies.
 LOGOUT_WARNING_KEY = "logout_warning"
+# Unix times of this session's failed logins (per-session limit against email spraying).
+LOGIN_FAILURES_KEY = "login_failures"
 _LOGIN_FAILED = "Invalid email or password."
 _LOGOUT_WARNING = (
     "You are logged out here, but the server could not revoke other copies of your session. "
@@ -38,6 +48,13 @@ _LOGOUT_WARNING = (
 @st.cache_resource
 def _store() -> PostgreSQLStore:
     return PostgreSQLStore()
+
+
+@st.cache_resource
+def _redis_client() -> redis.Redis:
+    return redis.Redis.from_url(
+        get_settings().redis_url, socket_timeout=1, socket_connect_timeout=1
+    )
 
 
 def _cookie_sent(name: str) -> bool:
@@ -78,8 +95,72 @@ def authenticate(email: str, password: str) -> dict[str, Any] | None:
     return _public(row) if row is not None else None
 
 
+def _throttle_call[T](call: Callable[[str], T], email: str) -> T:
+    """Run one throttle call; show "Login unavailable" and stop when Redis is down."""
+    try:
+        return call(email)
+    except RedisError:
+        st.error("Login unavailable. Try again later.")
+        st.stop()
+
+
+def _throttle() -> LoginThrottle:
+    s = get_settings()
+    return LoginThrottle(
+        _redis_client(), s.login_max_failures, s.login_window_seconds, s.login_lockout_seconds
+    )
+
+
+def _session_failures() -> list[float]:
+    """Return this session's failure times inside the window (older ones are dropped)."""
+    since = time.time() - get_settings().login_window_seconds
+    recent = [t for t in st.session_state.get(LOGIN_FAILURES_KEY, []) if t > since]
+    st.session_state[LOGIN_FAILURES_KEY] = recent
+    return recent
+
+
+def _safe(email: str) -> str:
+    """Return the email for logs: at most 254 chars, control characters escaped."""
+    return email[:254].encode("unicode_escape").decode()
+
+
+# Known limit: is_locked and record_failure are separate Redis calls, so parallel
+# requests for one email can exceed max_failures by the number of requests in flight.
+def _rejected(email: str) -> bool:
+    """Return True when this session or the email is locked; checked before any lookup."""
+    locked = len(_session_failures()) >= get_settings().login_max_failures
+    if locked or _throttle_call(_throttle().is_locked, email):
+        logger.warning("login_rejected_locked", extra={"email": _safe(email)})
+        return True
+    return False
+
+
+def _record_failure(email: str) -> None:
+    _session_failures().append(time.time())
+    logger.warning("login_failed", extra={"email": _safe(email)})
+    if _throttle_call(_throttle().record_failure, email):
+        logger.warning("login_locked", extra={"email": _safe(email)})
+
+
+def _attempt(email: str, password: str) -> dict[str, Any] | None:
+    """Return the login row, or None after a rejection, a failure or a lock."""
+    email = normalise_email(email)
+    if _rejected(email):
+        return None
+    row = _verify(email, password)
+    if row is None:
+        _record_failure(email)
+        return None
+    _throttle_call(_throttle().reset, email)
+    return row
+
+
 def login_form(cookie: CookieModel) -> None:
-    """Show the login form; on success store the user, set the cookie and rerun."""
+    """Show the login form; on success store the user, set the cookie and rerun.
+
+    The session limit and the email lock run before the lookup and bcrypt. Every
+    rejection shows the same generic message.
+    """
     if st.session_state.pop(LOGOUT_WARNING_KEY, False):
         st.warning(_LOGOUT_WARNING)
     with st.form("login"):
@@ -88,7 +169,7 @@ def login_form(cookie: CookieModel) -> None:
         submitted = st.form_submit_button("Log in")
     if not submitted:
         return
-    row = _verify(email, password)
+    row = _attempt(email, password)
     if row is None:
         st.error(_LOGIN_FAILED)
         return

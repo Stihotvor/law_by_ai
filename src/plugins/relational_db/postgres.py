@@ -34,6 +34,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from config.settings import get_settings
 from core.security import get_current_tenant, hash_password
+from core.security.login_throttle import normalise_email
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
 
 # ``Base`` and ``LegalDocument`` live in ``data.models`` (issue #16); re-exported
@@ -408,7 +409,7 @@ class PostgreSQLStore:
         """
         self._ensure_initialized()
         with Session(self._engine) as session:
-            result = session.execute(_AUTH_LOOKUP_SQL, {"email": email.strip().lower()})
+            result = session.execute(_AUTH_LOOKUP_SQL, {"email": normalise_email(email)})
             row = result.mappings().one_or_none()
             return {key: row[key] for key in _LOGIN_KEYS} if row is not None else None
 

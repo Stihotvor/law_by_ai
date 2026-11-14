@@ -18,6 +18,7 @@ import jwt
 import pytest
 import streamlit as st
 from factories.auth import COOKIE, KEY, FakeCookie, make_token
+from fakes.valkey import FakeRedis
 from freezegun import freeze_time
 from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 from streamlit.testing.v1 import AppTest
@@ -152,6 +153,7 @@ def env(monkeypatch: pytest.MonkeyPatch) -> Iterator[Env]:
     FakeCookie.reset()
     with (
         patch.object(auth, "_store", lambda: store),
+        patch.object(auth, "_redis_client", FakeRedis),
         patch.object(auth, "CookieModel", FakeCookie),
         patch.object(auth, "_cookie_sent", lambda name: name in FakeCookie.jar),
         patch.object(auth, "set_current_tenant") as set_tenant,
