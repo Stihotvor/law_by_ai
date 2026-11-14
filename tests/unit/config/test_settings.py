@@ -15,7 +15,10 @@ _ENV_KEYS = (
     "POSTGRES_PASSWORD",
     "POSTGRES_PORT",
     "POSTGRES_URL",
+    "POSTGRES_OWNER_URL",
     "POSTGRES_USER",
+    "LAWBYAI_APP_PASSWORD",
+    "LAWBYAI_OWNER_PASSWORD",
     "REDIS_DB",
     "REDIS_HOST",
     "REDIS_PASSWORD",
@@ -49,7 +52,10 @@ def test_defaults_when_no_environment(monkeypatch):
     assert settings.postgres_db == "lawbyai"
     assert settings.postgres_host == "localhost"
     assert settings.postgres_port == "5432"
-    assert settings.postgres_url == "postgresql+psycopg://lawbyai:lawbyai@localhost:5432/lawbyai"
+    assert settings.postgres_url == "postgresql+psycopg://lawbyai_app:@localhost:5432/lawbyai"
+    assert (
+        settings.postgres_owner_url == "postgresql+psycopg://lawbyai_owner:@localhost:5432/lawbyai"
+    )
     assert settings.redis_user == ""
     assert settings.redis_password == ""
     assert settings.redis_host == "localhost"
@@ -83,8 +89,9 @@ def test_environment_overrides(monkeypatch):
 
 def test_database_url_assembled_from_postgres_parts(monkeypatch):
     _clear_env(monkeypatch)
-    monkeypatch.setenv("POSTGRES_USER", "admin")
-    monkeypatch.setenv("POSTGRES_PASSWORD", "p@ss:word")  # needs URL quoting
+    monkeypatch.setenv("POSTGRES_USER", "admin")  # bootstrap superuser: not in the app URL
+    monkeypatch.setenv("POSTGRES_PASSWORD", "superuser-secret")
+    monkeypatch.setenv("LAWBYAI_APP_PASSWORD", "p@ss:word")  # needs URL quoting
     monkeypatch.setenv("POSTGRES_DB", "legal")
     monkeypatch.setenv("POSTGRES_HOST", "db.internal")
     monkeypatch.setenv("POSTGRES_PORT", "5433")
@@ -92,8 +99,41 @@ def test_database_url_assembled_from_postgres_parts(monkeypatch):
     settings = Settings()
 
     assert (
-        settings.postgres_url == "postgresql+psycopg://admin:p%40ss%3Aword@db.internal:5433/legal"
+        settings.postgres_url
+        == "postgresql+psycopg://lawbyai_app:p%40ss%3Aword@db.internal:5433/legal"
     )
+
+
+def test_settings_owner_url_comes_from_env(monkeypatch):
+    """Scenario: Owner URL comes from env."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("LAWBYAI_OWNER_PASSWORD", "own/er@pw")  # needs URL quoting
+    monkeypatch.setenv("LAWBYAI_APP_PASSWORD", "app-pw")
+    monkeypatch.setenv("POSTGRES_USER", "superuser")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "superuser-secret")
+    monkeypatch.setenv("POSTGRES_HOST", "db")
+
+    settings = Settings()
+
+    owner = settings.postgres_owner_url
+    assert owner == "postgresql+psycopg://lawbyai_owner:own%2Fer%40pw@db:5432/lawbyai"
+    assert owner != settings.postgres_url
+    assert settings.postgres_url == "postgresql+psycopg://lawbyai_app:app-pw@db:5432/lawbyai"
+    assert "superuser" not in owner + settings.postgres_url
+
+
+def test_settings_url_overrides_win(monkeypatch):
+    """Scenario: URL override wins."""
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("LAWBYAI_OWNER_PASSWORD", "owner-pw")
+    monkeypatch.setenv("LAWBYAI_APP_PASSWORD", "app-pw")
+    monkeypatch.setenv("POSTGRES_OWNER_URL", "postgresql://o:p@db:5432/x")
+    monkeypatch.setenv("POSTGRES_URL", "postgresql://a:p@db:5432/x")
+
+    settings = Settings()
+
+    assert settings.postgres_owner_url == "postgresql://o:p@db:5432/x"
+    assert settings.postgres_url == "postgresql://a:p@db:5432/x"
 
 
 def test_redis_url_assembled_from_parts(monkeypatch):

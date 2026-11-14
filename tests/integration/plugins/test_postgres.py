@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
+from factories.db_probe import can_connect
 
 from config.settings import get_settings
 from plugins.relational_db.postgres import PostgreSQLStore
@@ -23,12 +24,13 @@ pytestmark = [
 
 @pytest.fixture
 def plugin(tmp_path):
-    """Fresh store whose schema is brought up by migrations on initialize()."""
+    """Fresh store as the app role (schema at head); the owner empties legal_document."""
     from sqlalchemy import create_engine, text
 
     p = PostgreSQLStore()
     p.initialize()
-    engine = create_engine(get_settings().postgres_url, future=True)
+    # TRUNCATE needs the owner: lawbyai_app has DML grants only.
+    engine = create_engine(get_settings().postgres_owner_url, future=True)
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE legal_document"))
     engine.dispose()
@@ -39,22 +41,8 @@ def plugin(tmp_path):
 @pytest.fixture
 def _postgres_available():
     """Skip the whole module if PostgreSQL is unreachable."""
-    if not _can_connect(get_settings().postgres_url):
+    if not can_connect(get_settings().postgres_url):
         pytest.skip("PostgreSQL unavailable", allow_module_level=True)
-
-
-def _can_connect(url: str) -> bool:
-    """Best-effort probe; never raises (tests skip instead)."""
-    from sqlalchemy import create_engine, text
-
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
 
 
 def test_store_initializes(tmp_path):
@@ -171,7 +159,7 @@ def test_update_missing_raises_keyerror(plugin):
 
 
 def test_store_reinitializes_idempotently(plugin):
-    """initialize() runs migrations again without error (already at head)."""
+    """initialize() checks the head again without error (already at head)."""
     plugin.initialize()
     assert plugin._initialized is True
 
