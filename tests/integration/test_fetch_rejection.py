@@ -9,6 +9,7 @@ import uuid
 from collections.abc import Iterator
 
 import pytest
+from factories.db_probe import can_connect
 from fakes.fetch import FAKE_BODY, FAKE_SOURCE, FAKE_STRATEGY, FakeSource, FakeStrategy
 from sqlalchemy import create_engine, text
 
@@ -26,18 +27,6 @@ pytestmark = pytest.mark.integration
 _BASE = "https://example.invalid/fetch10"
 
 
-def _can_connect(url: str) -> bool:
-    """Return True when the database at the URL answers a query."""
-    try:
-        engine = create_engine(url, future=True)
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        engine.dispose()
-        return True
-    except Exception:
-        return False
-
-
 @pytest.fixture(autouse=True)
 def registries(monkeypatch: pytest.MonkeyPatch) -> None:
     """Swap in local registries holding the shared fakes."""
@@ -53,7 +42,7 @@ def registries(monkeypatch: pytest.MonkeyPatch) -> None:
 def source_url() -> Iterator[str]:
     """Unique source URL; its audit rows are removed afterwards."""
     url = get_settings().postgres_url
-    if not _can_connect(url):
+    if not can_connect(url):
         pytest.skip("PostgreSQL unavailable")
     value = f"{_BASE}/{uuid.uuid4().hex}"
     yield value

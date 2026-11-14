@@ -3,6 +3,11 @@
 Steps run in order: schema, bucket, tenant, admin. Each step checks state
 first, so a second run creates nothing. Existing data is never changed.
 
+The schema step runs ``alembic upgrade head`` with the owner URL
+(``lawbyai_owner``); the store then only checks the head as ``lawbyai_app``.
+RLS fails closed, so the tenant and admin steps run in the ``INIT_TENANT_ID``
+tenant context. The admin is found through ``auth_lookup_user``.
+
 Exit codes: 0 done, 2 invalid configuration, 3 Postgres or S3 unreachable
 after retries, 4 a step failed. Logs never hold secrets or URLs.
 """
@@ -12,9 +17,12 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Literal, Protocol
 
 import urllib3
+from alembic import command
+from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from minio import Minio
 from minio.error import S3Error, ServerError
@@ -22,7 +30,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError, OperationalError
 
 from config.settings import get_settings
-from core.security import ADMIN
+from core.security import ADMIN, tenant_context
 from plugins.relational_db.postgres import PostgreSQLStore
 
 _log = logging.getLogger(__name__)
@@ -36,8 +44,11 @@ Transient = tuple[type[Exception], ...]
 PG_DOWN: Transient = (OperationalError,)
 S3_DOWN: Transient = (urllib3.exceptions.HTTPError, ServerError)
 
+MIGRATIONS = Path(__file__).resolve().parents[2] / "migrations"
+
 Result = Literal["created", "exists"]
 Sleep = Callable[[float], None]
+Upgrade = Callable[[str], None]
 
 
 class Unreachable(Exception):
@@ -58,8 +69,23 @@ class InitSettings(Protocol):
         ...
 
     @property
+    def postgres_owner_password(self) -> str:
+        """Return the ``lawbyai_owner`` password."""
+        ...
+
+    @property
+    def postgres_app_password(self) -> str:
+        """Return the ``lawbyai_app`` password."""
+        ...
+
+    @property
     def postgres_url(self) -> str:
-        """Return the Postgres connection URL."""
+        """Return the app Postgres connection URL (``lawbyai_app``)."""
+        ...
+
+    @property
+    def postgres_owner_url(self) -> str:
+        """Return the migration Postgres connection URL (``lawbyai_owner``)."""
         ...
 
     @property
@@ -117,19 +143,19 @@ class Store(Protocol):
     """Store calls that the init program uses."""
 
     def initialize(self) -> None:
-        """Bring the database schema up to date."""
+        """Connect and check that the database schema is at head."""
         ...
 
     def list_tenants(self) -> list[dict[str, Any]]:
-        """Return all tenants."""
+        """Return the tenants visible in the current tenant context."""
         ...
 
     def create_tenant(self, name: str, tenant_id: str | None = None) -> dict[str, Any]:
         """Create a tenant and return it."""
         ...
 
-    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
-        """Return the user with this email, or None."""
+    def get_login_user(self, email: str) -> dict[str, Any] | None:
+        """Return the login row for this email in any tenant, or None."""
         ...
 
     def create_user(
@@ -164,6 +190,8 @@ def validate_config(s: InitSettings) -> list[str]:
     secrets = {
         "INIT_ADMIN_PASSWORD": s.init_admin_password,
         "POSTGRES_PASSWORD": s.postgres_password,
+        "LAWBYAI_OWNER_PASSWORD": s.postgres_owner_password,
+        "LAWBYAI_APP_PASSWORD": s.postgres_app_password,
         "MINIO_SECRET_KEY": s.minio_secret_key,
         "REDIS_PASSWORD": s.redis_password,
     }
@@ -201,9 +229,20 @@ def db_revision(url: str) -> str | None:
         engine.dispose()
 
 
-def ensure_schema(store: Store, revision: Callable[[], str | None]) -> Result:
-    """Apply the database migrations and report whether the schema changed."""
+def alembic_upgrade(url: str) -> None:
+    """Run ``alembic upgrade head`` against *url* (the owner URL)."""
+    cfg = Config()
+    cfg.set_main_option("script_location", str(MIGRATIONS))
+    cfg.set_main_option("sqlalchemy.url", url.replace("%", "%%"))
+    command.upgrade(cfg, "head")
+
+
+def ensure_schema(
+    store: Store, revision: Callable[[], str | None], upgrade: Callable[[], None]
+) -> Result:
+    """Migrate as the owner, check the head as the app, report whether the schema changed."""
     before = revision()
+    upgrade()
     store.initialize()
     return "created" if revision() != before else "exists"
 
@@ -233,8 +272,8 @@ def ensure_tenant(store: Store, tenant_id: str, name: str) -> Result:
 
 
 def ensure_admin(store: Store, s: InitSettings) -> Result:
-    """Create the first admin user if no user has that email yet."""
-    user = store.get_user_by_email(s.init_admin_email)
+    """Create the first admin user if no user in any tenant has that email yet."""
+    user = store.get_login_user(s.init_admin_email)
     if user is not None:
         if user["role"] != ADMIN or not user["is_active"]:
             _log.warning("step=admin existing user is not an active admin; not changed")
@@ -250,6 +289,16 @@ def ensure_admin(store: Store, s: InitSettings) -> Result:
     except IntegrityError:
         return "exists"
     return "created"
+
+
+def _in_tenant(tenant_id: str, step: Callable[[], Result]) -> Callable[[], Result]:
+    """Wrap *step* so that it runs in the *tenant_id* tenant context."""
+
+    def scoped() -> Result:
+        with tenant_context(tenant_id):
+            return step()
+
+    return scoped
 
 
 def _run_step(name: str, step: Callable[[], Result], transient: Transient, sleep: Sleep) -> int:
@@ -287,6 +336,7 @@ def run(
     client: Bucket | None = None,
     *,
     revision: Callable[[], str | None] | None = None,
+    upgrade: Upgrade = alembic_upgrade,
     sleep: Sleep = time.sleep,
 ) -> int:
     """Run every step in order and return the exit code."""
@@ -294,16 +344,21 @@ def run(
         _log.error("step=config result=failed problems=%s", "; ".join(problems))
         return BAD_CONFIG
     s3 = client if client is not None else s3_client(settings)
-    current = revision or (lambda: db_revision(settings.postgres_url))
+    current = revision or (lambda: db_revision(settings.postgres_owner_url))
+    tenant = settings.init_tenant_id
     steps: tuple[tuple[str, Callable[[], Result], Transient], ...] = (
-        ("schema", lambda: ensure_schema(store, current), PG_DOWN),
+        (
+            "schema",
+            lambda: ensure_schema(store, current, lambda: upgrade(settings.postgres_owner_url)),
+            PG_DOWN,
+        ),
         ("bucket", lambda: ensure_bucket(s3, settings.minio_bucket), S3_DOWN),
         (
             "tenant",
-            lambda: ensure_tenant(store, settings.init_tenant_id, settings.init_tenant_name),
+            _in_tenant(tenant, lambda: ensure_tenant(store, tenant, settings.init_tenant_name)),
             PG_DOWN,
         ),
-        ("admin", lambda: ensure_admin(store, settings), PG_DOWN),
+        ("admin", _in_tenant(tenant, lambda: ensure_admin(store, settings)), PG_DOWN),
     )
     for name, step, transient in steps:
         if code := _run_step(name, step, transient, sleep):

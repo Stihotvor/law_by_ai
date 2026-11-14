@@ -7,10 +7,15 @@ from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
+from core.security import get_current_tenant
+
 STRONG = "a-long-admin-secret"
 STRONG_PG = "pg-strong-secret"
 STRONG_S3 = "s3-strong-secret"
 STRONG_REDIS = "redis-strong-secret"
+STRONG_OWNER = "owner-strong-secret"
+STRONG_APP = "app-strong-secret"
+OWNER_URL = "postgresql+psycopg://lawbyai_owner@db/lawbyai"
 
 
 @dataclass
@@ -19,7 +24,10 @@ class FakeSettings:
 
     postgres_password: str = STRONG_PG
     redis_password: str = STRONG_REDIS
+    postgres_owner_password: str = STRONG_OWNER
+    postgres_app_password: str = STRONG_APP
     postgres_url: str = "sqlite://"
+    postgres_owner_url: str = OWNER_URL
     minio_endpoint: str = "s3:8333"
     minio_access_key: str = "init-access"
     minio_secret_key: str = STRONG_S3
@@ -51,10 +59,13 @@ class FakeStore:
     errors: dict[str, list[Exception]] = field(default_factory=dict)
     revision_errors: list[Exception] = field(default_factory=list)
     calls: list[str] = field(default_factory=list)
+    tenant_seen: dict[str, str | None] = field(default_factory=dict)
+    upgrade_urls: list[str] = field(default_factory=list)
 
     def _call(self, name: str) -> None:
-        """Record the call and raise its planned error, if any."""
+        """Record the call and the current tenant, then raise its planned error, if any."""
         self.calls.append(name)
+        self.tenant_seen[name] = get_current_tenant()
         if name in self.fail:
             raise self.fail[name]
         if self.errors.get(name):
@@ -67,10 +78,15 @@ class FakeStore:
             raise self.revision_errors.pop(0)
         return self.revision
 
-    def initialize(self) -> None:
-        """Record the call and set the schema to the latest revision."""
-        self._call("initialize")
+    def upgrade(self, url: str) -> None:
+        """Stand in for ``alembic upgrade head``: record the URL, set the latest revision."""
+        self._call("upgrade")
+        self.upgrade_urls.append(url)
         self.revision = "head"
+
+    def initialize(self) -> None:
+        """Record the call (the real store only checks the head)."""
+        self._call("initialize")
 
     def list_tenants(self) -> list[dict[str, Any]]:
         """Return the stored tenants."""
@@ -83,10 +99,10 @@ class FakeStore:
         self.tenants[str(tenant_id)] = name
         return {"id": tenant_id, "name": name}
 
-    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+    def get_login_user(self, email: str) -> dict[str, Any] | None:
         """Return the stored user with this email, or None."""
-        self._call("get_user_by_email")
-        return self.users.get(email)
+        self._call("get_login_user")
+        return self.users.get(email.strip().lower())
 
     def create_user(
         self, *, email: str, password: str, role: str, tenant_id: str, name: str = ""

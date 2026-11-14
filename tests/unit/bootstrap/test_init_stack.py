@@ -40,7 +40,12 @@ def go(
     """Run the init program with fakes and no real sleeps."""
     sleep = (sleeps if sleeps is not None else []).append
     return run(
-        settings or FakeSettings(), store, client, revision=store.current_revision, sleep=sleep
+        settings or FakeSettings(),
+        store,
+        client,
+        revision=store.current_revision,
+        upgrade=store.upgrade,
+        sleep=sleep,
     )
 
 
@@ -157,11 +162,11 @@ def test_retry_recovers_after_short_gap() -> None:
 @pytest.mark.parametrize(
     ("store", "client", "sleeps"),
     [
-        (FakeStore(errors={"initialize": [pg_down()]}), FakeBucket(), [1.0]),
+        (FakeStore(errors={"upgrade": [pg_down()]}), FakeBucket(), [1.0]),
         (FakeStore(), FakeBucket(make_errors=[ServerError("busy", 503)] * 2), [1.0, 2.0]),
         (FakeStore(errors={"list_tenants": [pg_down()]}), FakeBucket(), [1.0]),
         (FakeStore(errors={"create_tenant": [pg_down()] * 3}), FakeBucket(), [1.0, 2.0, 4.0]),
-        (FakeStore(errors={"get_user_by_email": [pg_down()]}), FakeBucket(), [1.0]),
+        (FakeStore(errors={"get_login_user": [pg_down()]}), FakeBucket(), [1.0]),
         (FakeStore(errors={"create_user": [pg_down()]}), FakeBucket(), [1.0]),
     ],
 )

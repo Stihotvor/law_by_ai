@@ -10,9 +10,10 @@ x-hardening: &hardening
   cap_drop: [ALL]
   read_only: true
 
+# Services connect as lawbyai_app. The bootstrap superuser (POSTGRES_USER,
+# POSTGRES_PASSWORD) goes to the postgres service and the test service only.
 x-db-env: &db-env
-  POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in docker/.env}
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
+  LAWBYAI_APP_PASSWORD: ${LAWBYAI_APP_PASSWORD:?set LAWBYAI_APP_PASSWORD in docker/.env}
   POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in docker/.env}
   POSTGRES_HOST: postgres
   POSTGRES_PORT: "5432"
@@ -60,8 +61,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in docker/.env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
       POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in docker/.env}
+      # Login passwords for the roles that docker/initdb/00-roles.sh creates.
+      LAWBYAI_OWNER_PASSWORD: ${LAWBYAI_OWNER_PASSWORD:?set LAWBYAI_OWNER_PASSWORD in docker/.env}
+      LAWBYAI_APP_PASSWORD: ${LAWBYAI_APP_PASSWORD:?set LAWBYAI_APP_PASSWORD in docker/.env}
     volumes:
       - pgdata:/var/lib/postgresql
+      # Runs once, on an empty volume only. The entrypoint sources the script.
+      - ./initdb:/docker-entrypoint-initdb.d:ro
     tmpfs:
       - /tmp
       - /var/run/postgresql:uid=70,gid=70
@@ -138,9 +144,12 @@ services:
       dockerfile: docker/Dockerfile
       target: runtime
     user: "10001:10001"
-    command: ["python", "-m", "bootstrap"]
+    # Migrate as lawbyai_owner (migrations/env.py uses the owner URL), then run
+    # the bootstrap with the app URL.
+    command: ["sh", "-c", "alembic upgrade head && exec python -m bootstrap"]
     environment:
       <<: [*db-env, *s3-env]
+      LAWBYAI_OWNER_PASSWORD: ${LAWBYAI_OWNER_PASSWORD:?set LAWBYAI_OWNER_PASSWORD in docker/.env}
       HOME: /tmp
       INIT_TENANT_ID:
       INIT_TENANT_NAME:
@@ -279,7 +288,12 @@ services:
       # included). Empty URLs fall back to the POSTGRES_* and REDIS_* values.
       <<: *app-env
       POSTGRES_URL: ""
+      POSTGRES_OWNER_URL: ""
       REDIS_URL: ""
+      LAWBYAI_OWNER_PASSWORD: ${LAWBYAI_OWNER_PASSWORD:?set LAWBYAI_OWNER_PASSWORD in docker/.env}
+      # Test-only scratch database fixture: CREATE and DROP DATABASE.
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in docker/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in docker/.env}
     # Drop Celery URLs from docker/.env: settings then build the broker URL from
     # REDIS_* (URL-quoted), the same way as for the worker.
     entrypoint: ["env", "-u", "CELERY_BROKER_URL", "-u", "CELERY_RESULT_BACKEND_URL"]
@@ -293,7 +307,8 @@ services:
       redis:
         condition: service_healthy
     networks: [backend]
-    command: ["pytest", "-q", "-p", "no:cacheprovider"]
+    # initialize() no longer migrates: migrate as lawbyai_owner before pytest.
+    command: ["sh", "-c", "alembic upgrade head && exec pytest -q -p no:cacheprovider"]
 
 volumes:
   pgdata:
