@@ -142,6 +142,15 @@ def test_success_resets_failures(env: Env) -> None:
     assert env.redis.values == {}
 
 
+def test_success_clears_session_failures(env: Env) -> None:
+    at = AppTest.from_function(_script).run()
+    for i in range(MAX - 1):
+        at = _login(f"spray{i}@x.com", "wrong", at)
+    at = _login("a@x.com", PLAIN, at)
+    assert _logged_in(at)
+    assert auth.LOGIN_FAILURES_KEY not in at.session_state
+
+
 def test_lock_expires(env: Env) -> None:
     with freeze_time("2026-01-01") as frozen:
         _fail_in_new_sessions("a@x.com")
@@ -204,6 +213,7 @@ def test_failure_log_escapes_control_characters(env: Env, caplog: pytest.LogCapt
     records = [r for r in caplog.records if r.name == auth.__name__]
     assert [getattr(r, "email", None) for r in records] == ["a\\nb@x"]
     assert all("\n" not in str(getattr(r, "email", "")) for r in records)
+    assert all("\n" not in r.getMessage() for r in records)
 
 
 def test_logs_have_email_and_no_password(env: Env, caplog: pytest.LogCaptureFixture) -> None:
@@ -212,7 +222,8 @@ def test_logs_have_email_and_no_password(env: Env, caplog: pytest.LogCaptureFixt
         _login(" A@X.com ", SECRET)
     records = [r for r in caplog.records if r.name == auth.__name__]
     events = [r.getMessage() for r in records]
-    assert events == ["login_failed"] * MAX + ["login_locked", "login_rejected_locked"]
+    names = ["login_failed"] * MAX + ["login_locked", "login_rejected_locked"]
+    assert events == [f"{name} email=a@x.com" for name in names]
     assert {getattr(r, "email", None) for r in records} == {"a@x.com"}
     assert SECRET not in caplog.text
     assert all(SECRET not in str(r.__dict__) for r in caplog.records)

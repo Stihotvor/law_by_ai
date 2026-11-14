@@ -130,16 +130,18 @@ def _rejected(email: str) -> bool:
     """Return True when this session or the email is locked; checked before any lookup."""
     locked = len(_session_failures()) >= get_settings().login_max_failures
     if locked or _throttle_call(_throttle().is_locked, email):
-        logger.warning("login_rejected_locked", extra={"email": _safe(email)})
+        logger.warning(
+            "login_rejected_locked email=%s", _safe(email), extra={"email": _safe(email)}
+        )
         return True
     return False
 
 
 def _record_failure(email: str) -> None:
     _session_failures().append(time.time())
-    logger.warning("login_failed", extra={"email": _safe(email)})
+    logger.warning("login_failed email=%s", _safe(email), extra={"email": _safe(email)})
     if _throttle_call(_throttle().record_failure, email):
-        logger.warning("login_locked", extra={"email": _safe(email)})
+        logger.warning("login_locked email=%s", _safe(email), extra={"email": _safe(email)})
 
 
 def _attempt(email: str, password: str) -> dict[str, Any] | None:
@@ -152,6 +154,7 @@ def _attempt(email: str, password: str) -> dict[str, Any] | None:
         _record_failure(email)
         return None
     _throttle_call(_throttle().reset, email)
+    st.session_state.pop(LOGIN_FAILURES_KEY, None)
     return row
 
 
