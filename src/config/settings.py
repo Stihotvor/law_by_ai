@@ -64,6 +64,9 @@ Variable               Purpose                                Default
 ``AUTH_COOKIE_KEY``       auth cookie signing key (32+ chars)     *(required)*
 ``AUTH_COOKIE_NAME``      auth cookie name                        ``law_by_ai_auth``
 ``AUTH_COOKIE_EXPIRY_DAYS``  auth cookie lifetime in days         ``30``
+``LOGIN_MAX_FAILURES``    failed logins that lock further logins  ``5``
+``LOGIN_WINDOW_SECONDS``  seconds in which failures are counted   ``900``
+``LOGIN_LOCKOUT_SECONDS``  seconds an email stays locked          ``900``
 =====================  =====================================  ================================
 
 Usage::
@@ -470,6 +473,22 @@ class Settings:
     def auth_cookie_expiry_days(self) -> int:
         """Days before the auth cookie expires."""
         return _positive("AUTH_COOKIE_EXPIRY_DAYS", "30", int)
+
+    # --- Login throttle ----------------------------------------------------------
+    @property
+    def login_max_failures(self) -> int:
+        """Failed logins (per email and per session) that lock further attempts."""
+        return _positive("LOGIN_MAX_FAILURES", "5", int)
+
+    @property
+    def login_window_seconds(self) -> int:
+        """Seconds in which failed logins are counted."""
+        return _positive("LOGIN_WINDOW_SECONDS", "900", int)
+
+    @property
+    def login_lockout_seconds(self) -> int:
+        """Seconds an email stays locked after the failure that reaches the limit."""
+        return _positive("LOGIN_LOCKOUT_SECONDS", "900", int)
 
 
 @lru_cache(maxsize=1)
