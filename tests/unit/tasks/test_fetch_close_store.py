@@ -16,6 +16,7 @@ import pytest
 from celery.signals import worker_process_shutdown
 
 from tasks import fetch
+from tasks.celery_app import FETCH_DOCUMENT, app
 
 CLOSE_FAILED = "store close failed"
 
@@ -156,6 +157,8 @@ def test_qa_014_import_builds_no_store(monkeypatch: pytest.MonkeyPatch) -> None:
     assert spec is not None
     assert spec.loader is not None
     copy = importlib.util.module_from_spec(spec)
+    # The copy re-registers the task under the same name; restore the original after.
+    original_task = app.tasks[FETCH_DOCUMENT]
 
     try:
         spec.loader.exec_module(copy)
@@ -163,6 +166,7 @@ def test_qa_014_import_builds_no_store(monkeypatch: pytest.MonkeyPatch) -> None:
         assert copy._store is None
     finally:
         worker_process_shutdown.disconnect(copy._close_store)
+        app.tasks[FETCH_DOCUMENT] = original_task
 
 
 def test_qa_016_migration_comment_says_init_service() -> None:
