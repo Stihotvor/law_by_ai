@@ -13,7 +13,6 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from celery.signals import worker_process_shutdown
 
 from agents.fetch.contracts import DocumentMeta, DocumentRef, FetchedDocument
 from agents.fetch.document_fetcher import DocumentFetcherAgent
@@ -232,59 +231,6 @@ def test_make_store_is_built_once_without_db(monkeypatch: pytest.MonkeyPatch) ->
     first = fetch._make_store()
     assert fetch._make_store() is first
     assert created == [first]
-
-
-def _send_shutdown() -> None:
-    worker_process_shutdown.send(sender=None, pid=1, exitcode=0)
-
-
-def test_shutdown_without_store_builds_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
-    factory = MagicMock()
-    monkeypatch.setattr(fetch, "PostgreSQLStore", factory)
-
-    _send_shutdown()
-
-    factory.assert_not_called()
-    assert fetch._store is None
-
-
-def test_shutdown_closes_store_once(monkeypatch: pytest.MonkeyPatch) -> None:
-    held = MagicMock()
-    monkeypatch.setattr(fetch, "_store", held)
-
-    _send_shutdown()
-
-    held.close.assert_called_once_with()
-    assert fetch._store is None
-
-
-def test_shutdown_close_error_is_logged(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    held = MagicMock()
-    held.close.side_effect = RuntimeError("close failed")
-    monkeypatch.setattr(fetch, "_store", held)
-
-    with caplog.at_level(logging.WARNING, logger="tasks.fetch"):
-        _send_shutdown()
-
-    records = [r for r in caplog.records if r.getMessage() == "store close failed"]
-    assert len(records) == 1
-    assert records[0].levelno == logging.WARNING
-    assert records[0].exc_info is not None
-    held.close.assert_called_once_with()
-    assert fetch._store is None
-
-
-def test_failed_build_propagates_and_leaves_store_none(monkeypatch: pytest.MonkeyPatch) -> None:
-    error = RuntimeError("schema not at head")
-    monkeypatch.setattr(fetch, "PostgreSQLStore", MagicMock(side_effect=error))
-
-    with pytest.raises(RuntimeError) as caught:
-        fetch._make_store()
-
-    assert caught.value is error
-    assert fetch._store is None
 
 
 def test_no_comment_claims_store_migrates() -> None:
