@@ -5,8 +5,10 @@ Unit tests: ``PostgreSQLStore`` is mocked, so no database or network is needed.
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 from collections.abc import Iterator
+from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -97,3 +99,74 @@ def test_shutdown_signal_closes_store(factory: MagicMock) -> None:
 
     store.close.assert_called_once_with()
     assert fetch._store is None
+
+
+def test_qa_005_store_dropped_when_close_fails(factory: MagicMock) -> None:
+    _built_store().close.side_effect = RuntimeError("socket gone")
+    fetch._close_store()
+
+    fetch._make_store()
+
+    assert factory.call_count == 2
+
+
+def test_qa_008_failed_build_is_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    good = MagicMock()
+    monkeypatch.setattr(
+        fetch, "PostgreSQLStore", MagicMock(side_effect=[RuntimeError("not at head"), good])
+    )
+    with pytest.raises(RuntimeError):
+        fetch._make_store()
+
+    assert fetch._make_store() is good
+    assert fetch._store is good
+
+
+def test_qa_009_shutdown_after_failed_build_closes_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fetch, "PostgreSQLStore", MagicMock(side_effect=RuntimeError("x")))
+    with pytest.raises(RuntimeError):
+        fetch._make_store()
+
+    fetch._close_store()
+
+    assert fetch._store is None
+
+
+def test_qa_013_repeated_shutdown_closes_once(factory: MagicMock) -> None:
+    store = _built_store()
+
+    worker_process_shutdown.send(sender=None)
+    worker_process_shutdown.send(sender=None)
+
+    store.close.assert_called_once_with()
+
+
+def test_qa_015_extra_signal_arguments(factory: MagicMock) -> None:
+    store = _built_store()
+
+    worker_process_shutdown.send(sender="ForkPoolWorker-3", pid=4242, exitcode=0)
+
+    store.close.assert_called_once_with()
+
+
+def test_qa_014_import_builds_no_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    source_class = MagicMock()
+    monkeypatch.setattr("plugins.relational_db.postgres.PostgreSQLStore", source_class)
+    spec = importlib.util.spec_from_file_location("tasks._fetch_import_copy", fetch.__file__)
+    assert spec is not None
+    assert spec.loader is not None
+    copy = importlib.util.module_from_spec(spec)
+
+    try:
+        spec.loader.exec_module(copy)
+        source_class.assert_not_called()
+        assert copy._store is None
+    finally:
+        worker_process_shutdown.disconnect(copy._close_store)
+
+
+def test_qa_016_migration_comment_says_init_service() -> None:
+    lines = [ln for ln in Path(fetch.__file__).read_text().splitlines() if "migrat" in ln]
+
+    assert lines
+    assert all("init service" in ln or "never migrate" in ln.lower() for ln in lines)
