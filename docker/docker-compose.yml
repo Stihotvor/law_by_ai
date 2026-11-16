@@ -27,6 +27,8 @@ x-s3-env: &s3-env
 
 x-app-env: &app-env
   <<: *db-env
+  POSTGRES_POOL_SIZE:
+  POSTGRES_MAX_OVERFLOW:
   REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in docker/.env}
   REDIS_HOST: redis
   REDIS_PORT: "6379"
@@ -249,6 +251,8 @@ services:
       TAVILY_TIMEOUT:
       TAVILY_MAX_PAGES:
       SEJM_MIN_INTERVAL:
+      WORKER_POSTGRES_POOL_SIZE:
+      WORKER_POSTGRES_MAX_OVERFLOW:
     tmpfs:
       - /tmp
     mem_limit: 304m
