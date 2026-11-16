@@ -26,16 +26,25 @@ import logging
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Engine, String, create_engine, delete, event, exists, select, text, update
-from sqlalchemy.orm import Mapped, Session, mapped_column
+from sqlalchemy import create_engine, delete, event, exists, select, text, update
+from sqlalchemy.orm import Session
 
 from config.settings import PoolConfig, get_settings
 from core.security import get_current_tenant, hash_password
 from core.security.login_throttle import normalise_email
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
+from plugins.relational_db.mappers import apply_update as _apply_update
+from plugins.relational_db.mappers import doc_to_dict as _doc_to_dict
+from plugins.relational_db.mappers import login_user_to_dict as _login_user_to_dict  # noqa: F401 (re-export)
+from plugins.relational_db.mappers import parse_dt as _parse_dt
+from plugins.relational_db.mappers import tenant_to_dict as _tenant_to_dict
+from plugins.relational_db.mappers import user_to_dict as _user_to_dict
+from plugins.relational_db.mappers import validate_status as _validate_status
+from plugins.relational_db.schema_check import SchemaNotAtHeadError
+from plugins.relational_db.schema_check import check_schema_head as _check_schema_head
+from plugins.relational_db.tenant_models import Tenant, User
 
 # ``Base`` and ``LegalDocument`` live in ``data.models`` (issue #16); re-exported
 # here so existing imports (e.g. ``migrations/env.py``) keep working.
@@ -66,46 +75,6 @@ class StoreDocumentNotFoundError(LookupError):
     """No ``legal_document`` row has the given id."""
 
 
-class SchemaNotAtHeadError(RuntimeError):
-    """The database revision differs from the Alembic head; run the migrations."""
-
-    def __init__(self, current: str | None, head: str | None) -> None:
-        self.current, self.head = current, head
-        super().__init__(
-            f"database schema is at revision {current or '<none>'}, "
-            f"expected head {head or '<none>'}: run 'alembic upgrade head' as lawbyai_owner"
-        )
-
-
-# ---------------------------------------------------------------------------
-# ORM models
-# ---------------------------------------------------------------------------
-
-
-class Tenant(Base):
-    """A tenant (workspace) row. ``id`` doubles as the tenant key everywhere."""
-
-    __tablename__ = "tenants"
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    name: Mapped[str] = mapped_column(String(256))
-
-
-class User(Base):
-    """A platform user row (ADR-0013). Email is unique across tenants."""
-
-    __tablename__ = "users"
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    tenant_id: Mapped[str] = mapped_column(String(64), index=True)
-    email: Mapped[str] = mapped_column(String(256), unique=True)
-    password_hash: Mapped[str] = mapped_column(String(256))
-    role: Mapped[str] = mapped_column(String(32))
-    name: Mapped[str] = mapped_column(String(256), default="")
-    is_active: Mapped[bool] = mapped_column(default=True)
-    session_version: Mapped[int] = mapped_column(server_default=text("0"))
-
-
 # ---------------------------------------------------------------------------
 # RLS helpers
 # ---------------------------------------------------------------------------
@@ -130,41 +99,9 @@ def _set_tenant_setting(conn) -> None:
     )
 
 
-def _alembic_head() -> str | None:
-    """Return the head revision of the repo's ``migrations/`` scripts."""
-    from alembic.config import Config
-    from alembic.script import ScriptDirectory
-
-    cfg = Config()
-    cfg.set_main_option("script_location", str(Path(__file__).resolve().parents[3] / "migrations"))
-    return ScriptDirectory.from_config(cfg).get_current_head()
-
-
-def _check_schema_head(engine: Engine) -> None:
-    """Raise :class:`SchemaNotAtHeadError` unless the DB is at head. Never migrates."""
-    from alembic.runtime.migration import MigrationContext
-
-    head = _alembic_head()
-    with engine.connect() as conn:
-        current = MigrationContext.configure(conn).get_current_revision()
-    if current != head:
-        raise SchemaNotAtHeadError(current, head)
-
-
 # ---------------------------------------------------------------------------
 # Data store class
 # ---------------------------------------------------------------------------
-
-
-def _apply_update(row: LegalDocument, document: dict[str, Any]) -> None:
-    """Merge ``document`` fields into a loaded row, in the caller's session."""
-    for key, value in document.items():
-        if key == "metadata":
-            row.metadata_ = value
-        elif key == "last_updated":
-            row.last_updated = _parse_dt(value)
-        elif key != "id" and hasattr(row, key):
-            setattr(row, key, value)
 
 
 class PostgreSQLStore:
@@ -465,63 +402,3 @@ class PostgreSQLStore:
         with Session(self._engine) as session:
             rows = session.execute(select(Tenant).order_by(Tenant.name)).scalars().all()
             return [_tenant_to_dict(r) for r in rows]
-
-
-# ---------------------------------------------------------------------------
-# Serialization helpers
-# ---------------------------------------------------------------------------
-
-
-def _validate_status(value: Any) -> str:
-    """Return *value* as a :class:`DocumentStatus` string; ``ValueError`` if unknown."""
-    try:
-        return DocumentStatus(value).value
-    except ValueError:
-        allowed = ", ".join(s.value for s in DocumentStatus)
-        raise ValueError(f"Unknown document status {value!r}; expected one of: {allowed}") from None
-
-
-def _parse_dt(value: Any, *, default: datetime | None = None) -> datetime:
-    if value is None:
-        return default or datetime.now(UTC)
-    if isinstance(value, datetime):
-        return value
-    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-
-
-def _doc_to_dict(row: LegalDocument) -> dict[str, Any]:
-    return {
-        "id": row.id,
-        "title": row.title,
-        "content": row.content,
-        "source": row.source,
-        "source_url": row.source_url,
-        "last_updated": row.last_updated.isoformat(),
-        "metadata": row.metadata_,
-        "is_processed": row.is_processed,
-        "tenant_id": row.tenant_id,
-        "status": row.status,
-    }
-
-
-def _user_to_dict(row: User) -> dict[str, Any]:
-    return {
-        "id": row.id,
-        "tenant_id": row.tenant_id,
-        "email": row.email,
-        "role": row.role,
-        "name": row.name,
-        "is_active": row.is_active,
-    }
-
-
-def _login_user_to_dict(row: User) -> dict[str, Any]:
-    return {
-        **_user_to_dict(row),
-        "password_hash": row.password_hash,
-        "session_version": row.session_version,
-    }
-
-
-def _tenant_to_dict(row: Tenant) -> dict[str, Any]:
-    return {"id": row.id, "name": row.name}
