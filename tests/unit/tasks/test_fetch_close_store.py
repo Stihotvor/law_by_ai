@@ -30,7 +30,7 @@ def reset_store() -> Iterator[None]:
 
 @pytest.fixture
 def factory(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
-    mock = MagicMock(side_effect=lambda: MagicMock())
+    mock = MagicMock(side_effect=lambda **_: MagicMock())
     monkeypatch.setattr(fetch, "PostgreSQLStore", mock)
     return mock
 
