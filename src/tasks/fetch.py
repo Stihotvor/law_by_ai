@@ -10,9 +10,10 @@ This module wires the fetcher to the store; ``agents.fetch`` never imports the s
 
 from __future__ import annotations
 
-import functools
 import logging
 from typing import Any
+
+from celery.signals import worker_process_shutdown
 
 from agents.fetch.contracts import DocumentRef, FetchedDocument
 from agents.fetch.document_fetcher import DocumentFetcherAgent, RejectionChecker
@@ -24,13 +25,33 @@ from tasks.celery_app import FETCH_DOCUMENT, app
 _log = logging.getLogger(__name__)
 
 
-@functools.cache
+_store: PostgreSQLStore | None = None
+
+
 def _make_store() -> PostgreSQLStore:
     """Return this worker process's store, built on first call."""
-    # One store per worker process: the store runs Alembic migrations on first use,
-    # so a new store per task would migrate on every task run.
+    # One store per worker process. Workers never migrate: the init service runs
+    # `alembic upgrade head`, and the store only checks the schema head.
+    # A failed build leaves _store as None, so the next task tries again.
     # Call only inside a task: never at import time or in the parent (pre-fork) process.
-    return PostgreSQLStore()
+    global _store
+    if _store is None:
+        _store = PostgreSQLStore()
+    return _store
+
+
+@worker_process_shutdown.connect
+def _close_store(**_: object) -> None:
+    """Close this worker process's store at child exit; build nothing if there is none."""
+    global _store
+    if _store is None:
+        return
+    try:
+        _store.close()
+    except Exception:
+        _log.warning("store close failed", exc_info=True)
+    finally:
+        _store = None
 
 
 def _make_agent(rejection: RejectionChecker) -> DocumentFetcherAgent:

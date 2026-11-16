@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterator
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -45,6 +46,11 @@ def eager() -> Iterator[None]:
     app.conf.task_eager_propagates = True
     yield
     app.conf.task_always_eager, app.conf.task_eager_propagates = old
+
+
+@pytest.fixture(autouse=True)
+def reset_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(fetch, "_store", None)
 
 
 @pytest.fixture
@@ -222,10 +228,17 @@ def test_make_store_is_built_once_without_db(monkeypatch: pytest.MonkeyPatch) ->
             created.append(self)
 
     monkeypatch.setattr(fetch, "PostgreSQLStore", _Store)
-    fetch._make_store.cache_clear()
-    try:
-        first = fetch._make_store()
-        assert fetch._make_store() is first
-        assert created == [first]
-    finally:
-        fetch._make_store.cache_clear()
+    first = fetch._make_store()
+    assert fetch._make_store() is first
+    assert created == [first]
+
+
+def test_no_comment_claims_store_migrates() -> None:
+    lines = Path(fetch.__file__).read_text(encoding="utf-8").splitlines()
+    migrat = [line for line in lines if "migrat" in line.lower()]
+
+    assert migrat, "the module should say that workers never migrate"
+    for line in migrat:
+        assert "runs Alembic migrations" not in line
+        assert "would migrate" not in line
+        assert "store runs" not in line

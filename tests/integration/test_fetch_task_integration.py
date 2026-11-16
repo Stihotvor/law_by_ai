@@ -75,16 +75,12 @@ def store(source_url: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[PostgreS
     """Real store that the task gets from ``_make_store``."""
     s = PostgreSQLStore()
     s.initialize()
-    original = fetch._make_store
-    original.cache_clear()
+    monkeypatch.setattr(fetch, "_store", None)
     monkeypatch.setattr(fetch, "_make_store", lambda: s)
     try:
         yield s
     finally:
-        try:
-            s.close()
-        finally:
-            original.cache_clear()
+        s.close()
 
 
 def _run(source_url: str, tenant_id: str | None = None) -> Any:
