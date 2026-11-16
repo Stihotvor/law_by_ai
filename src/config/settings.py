@@ -67,6 +67,10 @@ Variable               Purpose                                Default
 ``LOGIN_MAX_FAILURES``    failed logins that lock further logins  ``5``
 ``LOGIN_WINDOW_SECONDS``  seconds in which failures are counted   ``900``
 ``LOGIN_LOCKOUT_SECONDS``  seconds an email stays locked          ``900``
+``POSTGRES_POOL_SIZE``    app DB pool size (min 1)                ``5``
+``POSTGRES_MAX_OVERFLOW``  app DB pool overflow (min 0)           ``10``
+``WORKER_POSTGRES_POOL_SIZE``  worker DB pool size (min 1)        ``1``
+``WORKER_POSTGRES_MAX_OVERFLOW``  worker DB pool overflow (min 0)  ``1``
 =====================  =====================================  ================================
 
 Usage::
@@ -82,6 +86,7 @@ Usage::
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
@@ -115,6 +120,39 @@ def _positive[N: (int, float)](name: str, default: str, kind: type[N]) -> N:
     if not 0 < value < float("inf"):
         raise ValueError(f"{name} must be positive and finite, got {raw!r}")
     return value
+
+
+def _int_at_least(name: str, default: int, minimum: int) -> int:
+    """Read env ``name`` as an integer of at least ``minimum`` or raise ``ValueError``.
+
+    An unset or empty value gives ``default``. This differs from
+    :func:`_positive`, which raises on an empty value.
+    """
+    raw = os.getenv(name, "")
+    if raw == "":
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be an integer, got {raw!r}") from None
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}, got {raw!r}")
+    return value
+
+
+@dataclass(frozen=True)
+class PoolConfig:
+    """SQLAlchemy ``QueuePool`` sizing for one process role."""
+
+    size: int
+    max_overflow: int
+
+    def __post_init__(self) -> None:
+        """Reject a pool size below 1 or a negative overflow."""
+        if self.size < 1:
+            raise ValueError(f"pool size must be at least 1, got {self.size}")
+        if self.max_overflow < 0:
+            raise ValueError(f"pool max_overflow must be at least 0, got {self.max_overflow}")
 
 
 class Settings:
@@ -191,6 +229,34 @@ class Settings:
         user = quote(role, safe="")
         secret = quote(password, safe="")
         return f"postgresql+psycopg://{user}:{secret}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+
+    @property
+    def postgres_pool_size(self) -> int:
+        """App DB pool size (``POSTGRES_POOL_SIZE``, at least 1)."""
+        return _int_at_least("POSTGRES_POOL_SIZE", 5, 1)
+
+    @property
+    def postgres_max_overflow(self) -> int:
+        """App DB pool overflow (``POSTGRES_MAX_OVERFLOW``, at least 0)."""
+        return _int_at_least("POSTGRES_MAX_OVERFLOW", 10, 0)
+
+    @property
+    def worker_postgres_pool_size(self) -> int:
+        """Worker DB pool size (``WORKER_POSTGRES_POOL_SIZE``, at least 1)."""
+        return _int_at_least("WORKER_POSTGRES_POOL_SIZE", 1, 1)
+
+    @property
+    def worker_postgres_max_overflow(self) -> int:
+        """Worker DB pool overflow (``WORKER_POSTGRES_MAX_OVERFLOW``, at least 0)."""
+        return _int_at_least("WORKER_POSTGRES_MAX_OVERFLOW", 1, 0)
+
+    def app_pool_config(self) -> PoolConfig:
+        """Return the app DB pool config; ``ValueError`` names a bad variable."""
+        return PoolConfig(self.postgres_pool_size, self.postgres_max_overflow)
+
+    def worker_pool_config(self) -> PoolConfig:
+        """Return the worker DB pool config; ``ValueError`` names a bad variable."""
+        return PoolConfig(self.worker_postgres_pool_size, self.worker_postgres_max_overflow)
 
     # --- Redis / Celery ------------------------------------------------------
     @property
@@ -499,6 +565,7 @@ def get_settings() -> Settings:
 
 __all__ = [
     "ROOT_DIR",
+    "PoolConfig",
     "Settings",
     "get_settings",
     "load_env",
