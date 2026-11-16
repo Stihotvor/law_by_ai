@@ -5,7 +5,7 @@
       "title": "Integration tests first (red): 2 concurrent upgrades, blocking while lock held, no lock left at head",
       "size": "M",
       "depends_on": [],
-      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py collects 3 tests (concurrent_upgrades_apply_once, upgrade_blocks_while_lock_held, no_lock_left_at_head); before T2 the blocking test fails, after T2 all 3 pass",
+      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py collects 4 tests (test_concurrent_upgrades_apply_once, test_upgrade_blocks_while_lock_held, test_failed_upgrade_releases_lock, test_offline_sql_ignores_held_lock); before T2 the blocking test fails",
       "files": [
         "tests/integration/test_migration_lock.py"
       ],
@@ -18,7 +18,7 @@
       "depends_on": [
         "T1"
       ],
-      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py passes 3 of 3 (2 concurrent runs exit 0 with exactly 1 alembic_version row equal to head; second run still running after 2 s while the key is held and exits 0 after release; no advisory lock in pg_locks after a run at head); alembic upgrade <first revision> --sql still runs with no connection",
+      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py passes 4 of 4 (2 concurrent runs exit 0 with exactly 1 alembic_version row equal to head; a run waits on the held key in pg_locks and exits 0 after release; a failed upgrade names its error and leaves the key free; alembic upgrade <first revision> --sql runs while the key is held)",
       "files": [
         "migrations/env.py"
       ],
@@ -43,7 +43,7 @@
         "T2",
         "T3"
       ],
-      "done_when": ".venv/bin/ruff check, ruff format --check, pyright and pytest -m 'not integration' all exit 0, and the Docker suite passes with test_migration_lock.py showing 3 PASSED",
+      "done_when": ".venv/bin/ruff check, ruff format --check, pyright and pytest -m 'not integration' all exit 0, and the Docker suite passes with test_migration_lock.py showing 4 PASSED",
       "files": [],
       "agent": "python-lead"
     }
