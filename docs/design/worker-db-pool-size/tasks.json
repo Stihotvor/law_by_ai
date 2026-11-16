@@ -1,0 +1,69 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Settings: _int_at_least helper, PoolConfig, 4 pool properties, app/worker_pool_config, docstring table, __all__",
+      "size": "M",
+      "depends_on": [],
+      "done_when": ".venv/bin/pytest tests/unit/config -k pool passes with at least 12 cases (default, valid override, rejected value for each of the 4 settings, empty uses default, non-integer error names the variable, PoolConfig rejects size<1 and max_overflow<0)",
+      "files": [
+        "src/config/settings.py",
+        "tests/unit/config/test_settings_pool.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T2",
+      "title": "PostgreSQLStore: keyword-only pool param, resolve pool before create_engine, pool_pre_ping, pool_timeout=30",
+      "size": "S",
+      "depends_on": [
+        "T1"
+      ],
+      "done_when": ".venv/bin/pytest tests/unit/plugins/test_postgres_pool.py passes: worker PoolConfig(1,1) engine has pool.size()==1 and overflow 1, default app engine has pool.size()==5 and overflow 10, bad app setting raises ValueError before any engine exists",
+      "files": [
+        "src/plugins/relational_db/postgres.py",
+        "tests/unit/plugins/test_postgres_pool.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T3",
+      "title": "fetch._make_store uses worker_pool_config; integration test fetch_document with 1+1 pool; test that fetch gets its store only from _make_store",
+      "size": "M",
+      "depends_on": [
+        "T2"
+      ],
+      "done_when": "Docker suite integration test test_fetch_document_worker_pool passes (pool 1+1, at most 2 connections per child) and unit test asserting bad WORKER_* value raises ValueError in _make_store with _store still None passes",
+      "files": [
+        "src/tasks/fetch.py",
+        "tests/integration/test_fetch_worker_pool.py",
+        "tests/unit/tasks/test_fetch_store.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T4",
+      "title": "Compose and .env.example: pass POSTGRES_* in x-app-env, WORKER_POSTGRES_* on celery-worker, list four vars commented with defaults",
+      "size": "S",
+      "depends_on": [],
+      "done_when": "grep of docker/docker-compose.yml shows bare keys POSTGRES_POOL_SIZE and POSTGRES_MAX_OVERFLOW in x-app-env, WORKER_POSTGRES_POOL_SIZE and WORKER_POSTGRES_MAX_OVERFLOW on celery-worker; with all four exported, docker compose config shows them in the expected services; the example env file lists all four names",
+      "files": [
+        "docker/docker-compose.yml",
+        "docker/.env.example"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T5",
+      "title": "Quality gate on the whole change",
+      "size": "S",
+      "depends_on": [
+        "T3",
+        "T4"
+      ],
+      "done_when": "ruff check, ruff format --check, pyright, pytest -m 'not integration' all exit 0, diff-cover reports 90% or more on changed lines, and the Docker suite passes, and its output shows test_fetch_document_worker_pool PASSED",
+      "files": [],
+      "agent": "py-gate"
+    }
+  ]
+}
