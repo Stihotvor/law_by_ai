@@ -2,8 +2,8 @@
 
 ## Business Goals
 - Each Celery worker child releases its PostgreSQL connections when it exits, so restarts and autoscale do not leave idle connections on a 4-6 GB host.
-- The code and comments match #209: workers never migrate. The `init` service runs `alembic upgrade head` as `lawbyai_owner`.
-- Decided: migration work is dropped from #189. The issue text is updated to say #209 delivered it.
+- The code and comments match the RLS hardening change: workers never migrate. The `init` service runs `alembic upgrade head` as `lawbyai_owner`.
+- Decided: migration work is dropped from the worker lifecycle issue. The issue text is updated to say the RLS hardening change delivered it.
 
 ## Technical Constraints
 - Python 3.13, Celery prefork pool, SQLAlchemy engine inside `PostgreSQLStore`.

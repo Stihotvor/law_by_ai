@@ -1,7 +1,7 @@
 # worker-189 decision
 
 ## Context
-#189 asked workers to migrate once and close the store on exit. #209 already moved migrations to the compose `init` service (`lawbyai_owner`). Workers only check the schema head. The open gap: no code closes the per-child `PostgreSQLStore` in `src/tasks/fetch.py`, and a comment there still says the store migrates.
+The worker lifecycle issue asked workers to migrate once and close the store on exit. The RLS hardening change already moved migrations to the compose `init` service (`lawbyai_owner`). Workers only check the schema head. The open gap: no code closes the per-child `PostgreSQLStore` in `src/tasks/fetch.py`, and a comment there still says the store migrates.
 
 ## Options
 - P1 local handler: module-level `_store` and a `worker_process_shutdown` handler in `fetch.py`. Effort S.
@@ -23,4 +23,4 @@ P1, chosen by the user.
 - The signal fires only in prefork children (also on `max_tasks_per_child` recycle). The solo pool, the threads pool and eager mode never fire it. Celery does not guarantee it, and a cold shutdown or hard kill can skip or cut it. Process exit then frees the sockets. Accepted risk.
 - A future task module with its own store needs its own handler. Extract a shared provider (P4) when a second consumer exists.
 - The dba review is light: no schema, migration or role change.
-- The #189 issue text must be updated to drop the migration scope.
+- The worker lifecycle issue text must be updated to drop the migration scope.
