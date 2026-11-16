@@ -38,7 +38,8 @@ Not built: all agents (`src/agents/` is empty), Qdrant, Neo4j, ETL sources, embe
 
 ## Work hierarchy
 ADR > milestone > issue > branch > PR. An ADR records a decision. A milestone groups the issues that deliver it. An issue is one task. A branch is named after its issue. A PR closes the issue (`Closes #N`). Status, phase, priority and size live on the board (Project 5).
-Do not write issue or PR numbers in docs, code comments or this file. Do not add other planning layers (plans, DAGs, ticket files, custom ids) to the repo.
+Do not write issue or PR numbers in docs, code comments or this file.
+The only planning layer in the repo is the design record of a task, in `docs/design/<slug>/` (requirements, design paths, decision, tasks, specs, QA cases and results). Commit it with the task. The slug names the topic and has no issue number (for example `worker-store-close`). Older slugs keep their names. Do not add other planning layers (plan files, ticket files, custom ids).
 The MVP planning date is 2027-02-28. Rerank is local (Cohere dropped), and an eval picks the model.
 
 ## Known drift (verify before work)

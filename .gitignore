@@ -34,3 +34,6 @@ mutants/
 /.idea
 /.claude/*
 !/.claude/quality-gates.json
+
+# SDLC tooling lock files
+docs/design/**/.status.lock
