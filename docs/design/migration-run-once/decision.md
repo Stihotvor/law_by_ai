@@ -3,6 +3,8 @@
 ## Context
 The one-shot `init` service already runs `alembic upgrade head` before the app and the worker start, and the stores only check the schema head. Two upgrade runs can still overlap: an operator by hand, a second stack, or the `test` service. Overlapping runs fail with "already exists" errors.
 
+The issue asks for a test that starts two stores on an empty database. That test no longer applies, because `PostgreSQLStore.initialize()` does not migrate. It only checks the head and raises `SchemaNotAtHeadError`. The acceptance evidence is `test_concurrent_upgrades_apply_once`: two `alembic upgrade head` runs on an empty database, and both reach head.
+
 ## Options
 - Path 1: a session-level `pg_advisory_lock` in `migrations/env.py`, on the same connection as the DDL. It covers every caller.
 - Path 2: a `bootstrap.migrate` wrapper with the lock on a second connection. It changes `init`, and the plain `alembic` CLI skips the lock.
