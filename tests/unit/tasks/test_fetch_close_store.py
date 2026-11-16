@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import importlib.util
 import logging
-from collections.abc import Iterator
 from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock
@@ -18,19 +17,14 @@ from celery.signals import worker_process_shutdown
 from tasks import fetch
 from tasks.celery_app import FETCH_DOCUMENT, app
 
+pytestmark = pytest.mark.usefixtures("reset_store")
+
 CLOSE_FAILED = "store close failed"
-
-
-@pytest.fixture(autouse=True)
-def reset_store() -> Iterator[None]:
-    fetch._store = None
-    yield
-    fetch._store = None
 
 
 @pytest.fixture
 def factory(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
-    mock = MagicMock(side_effect=lambda: MagicMock())
+    mock = MagicMock(side_effect=lambda **_: MagicMock())
     monkeypatch.setattr(fetch, "PostgreSQLStore", mock)
     return mock
 

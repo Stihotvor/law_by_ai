@@ -18,6 +18,7 @@ from celery.signals import worker_process_shutdown
 from agents.fetch.contracts import DocumentRef, FetchedDocument
 from agents.fetch.document_fetcher import DocumentFetcherAgent, RejectionChecker
 from agents.fetch.errors import DocumentRejectedError, InvalidReferenceError
+from config.settings import get_settings
 from data.models import DocumentStatus
 from plugins.relational_db.postgres import PostgreSQLStore
 from tasks.celery_app import FETCH_DOCUMENT, app
@@ -32,11 +33,13 @@ def _make_store() -> PostgreSQLStore:
     """Return this worker process's store, built on first call."""
     # One store per worker process. Workers never migrate: the init service runs
     # `alembic upgrade head`, and the store only checks the schema head.
+    # The worker pool (WORKER_POSTGRES_*) is resolved here, before initialize();
+    # a bad value raises ValueError.
     # A failed build leaves _store as None, so the next task tries again.
     # Call only inside a task: never at import time or in the parent (pre-fork) process.
     global _store
     if _store is None:
-        _store = PostgreSQLStore()
+        _store = PostgreSQLStore(pool=get_settings().worker_pool_config())
     return _store
 
 

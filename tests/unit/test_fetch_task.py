@@ -224,7 +224,7 @@ def test_make_store_is_built_once_without_db(monkeypatch: pytest.MonkeyPatch) ->
     created: list[object] = []
 
     class _Store:
-        def __init__(self) -> None:
+        def __init__(self, **_: object) -> None:
             created.append(self)
 
     monkeypatch.setattr(fetch, "PostgreSQLStore", _Store)

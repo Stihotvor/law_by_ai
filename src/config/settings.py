@@ -6,68 +6,82 @@ settings derived from environment variables with sensible defaults.
 Environment variable scheme — consistent *component prefix* + *subject*,
 with connection strings ending in ``_URL``:
 
-=====================  =====================================  ================================
-Variable               Purpose                                Default
-=====================  =====================================  ================================
-``POSTGRES_URL``       App URL (role ``lawbyai_app``)         assembled from ``POSTGRES_*``
-``POSTGRES_OWNER_URL``  Migration URL (role ``lawbyai_owner``)  assembled from ``POSTGRES_*``
-``LAWBYAI_APP_PASSWORD``  ``lawbyai_app`` password            *(empty)*
-``LAWBYAI_OWNER_PASSWORD``  ``lawbyai_owner`` password        *(empty)*
-``POSTGRES_USER``      bootstrap superuser (postgres only)    ``lawbyai``
-``POSTGRES_PASSWORD``  bootstrap superuser password           ``lawbyai``
-``POSTGRES_DB``        PostgreSQL database name               ``lawbyai``
-``POSTGRES_HOST``      PostgreSQL host                        ``localhost``
-``POSTGRES_PORT``      PostgreSQL port                        ``5432``
-``REDIS_URL``          Full Redis URL                         assembled from ``REDIS_*``
-``REDIS_USER``         Redis user                             *(empty)*
-``REDIS_PASSWORD``     Redis password                         *(empty)*
-``REDIS_HOST``         Redis host                             ``localhost``
-``REDIS_PORT``         Redis port                             ``6379``
-``REDIS_DB``           Redis database number                  ``0``
-``CELERY_BROKER_URL``  Celery broker URL                      ``REDIS_URL``
-``CELERY_RESULT_BACKEND_URL``  Celery result backend URL      ``REDIS_URL``
-``APP_PORT``           Streamlit port                         ``8501``
-``APP_NAME``           Application name                       ``law-by-ai``
-``LLM_BASE_URL``          OpenAI-compatible LLM/SLM base URL      ``http://localhost:11434/v1``
-``LLM_API_KEY``           LLM API key (empty for local)           ``(empty)``
-``LLM_MODEL``             default model (all agents unless overridden)  ``(empty)``
-``LLM_MODEL_<AGENT>``     per-agent model override (``LLM_MODEL_LEGAL_RESEARCH``)  ``(LLM_MODEL)``
-``EMBEDDING_BASE_URL``    embedding provider base URL             ``http://localhost:11434/v1``
-``EMBEDDING_API_KEY``     embedding API key (empty for local)     ``(empty)``
-``EMBEDDING_MODEL``       embedding model name                    ``nomic-embed-text``
-``RERANK_BASE_URL``       reranking provider base URL             ``https://api.cohere.com/v1``
-``RERANK_API_KEY``        reranking API key                       ``(empty)``
-``RERANK_MODEL``          reranking model name                    ``rerank-v3.5``
-``OCR_ENABLED``           send documents to the OCR provider      ``false``
-``MISTRAL_API_KEY``       Mistral API key (OCR)                   ``(empty)``
-``MISTRAL_BASE_URL``      Mistral API base URL                    ``https://api.mistral.ai/v1``
-``MISTRAL_OCR_MODEL``     Mistral OCR model name                  ``mistral-ocr-latest``
-``OCR_TIMEOUT``           total seconds per OCR request           ``120.0``
-``OCR_MAX_BYTES``         max OCR input size in bytes             ``20971520``
-``FETCH_HTTP_TIMEOUT``    total seconds per fetch HTTP request    ``10.0``
-``FETCH_TOTAL_TIMEOUT``   total seconds to read one body          ``60.0``
-``FETCH_MAX_BYTES``       max fetched body size in bytes          ``52428800``
-``MINIO_ENDPOINT``        MinIO ``host:port`` (no scheme)         ``localhost:9000``
-``MINIO_ACCESS_KEY``      MinIO access key                        *(empty)*
-``MINIO_SECRET_KEY``      MinIO secret key                        *(empty)*
-``MINIO_BUCKET``          MinIO bucket for legal documents        ``legal-documents``
-``MINIO_SECURE``          use TLS for MinIO                       ``true``
-``TAVILY_API_KEY``        Tavily API key                          *(empty)*
-``TAVILY_TIMEOUT``        seconds per Tavily request              ``60.0``
-``TAVILY_MAX_PAGES``      pages per Tavily map call               ``20``
-``SEJM_MIN_INTERVAL``     seconds between Sejm requests           ``0.5``
-``INIT_TENANT_ID``        first tenant id (init program)          ``platform``
-``INIT_TENANT_NAME``      first tenant name (init program)        ``Platform``
-``INIT_ADMIN_EMAIL``      first admin email (init program)        *(empty)*
-``INIT_ADMIN_NAME``       first admin display name                ``Admin``
-``INIT_ADMIN_PASSWORD``   first admin password (init program)     *(empty)*
-``AUTH_COOKIE_KEY``       auth cookie signing key (32+ chars)     *(required)*
-``AUTH_COOKIE_NAME``      auth cookie name                        ``law_by_ai_auth``
-``AUTH_COOKIE_EXPIRY_DAYS``  auth cookie lifetime in days         ``30``
-``LOGIN_MAX_FAILURES``    failed logins that lock further logins  ``5``
-``LOGIN_WINDOW_SECONDS``  seconds in which failures are counted   ``900``
-``LOGIN_LOCKOUT_SECONDS``  seconds an email stays locked          ``900``
-=====================  =====================================  ================================
+================================  ==================================  =============================
+Variable                          Purpose                             Default
+================================  ==================================  =============================
+``POSTGRES_URL``                  App URL (role ``lawbyai_app``)      assembled from ``POSTGRES_*``
+``POSTGRES_OWNER_URL``            Migration URL (role                 assembled from ``POSTGRES_*``
+                                  ``lawbyai_owner``)
+``LAWBYAI_APP_PASSWORD``          ``lawbyai_app`` password            *(empty)*
+``LAWBYAI_OWNER_PASSWORD``        ``lawbyai_owner`` password          *(empty)*
+``POSTGRES_USER``                 bootstrap superuser (postgres       ``lawbyai``
+                                  only)
+``POSTGRES_PASSWORD``             bootstrap superuser password        ``lawbyai``
+``POSTGRES_DB``                   PostgreSQL database name            ``lawbyai``
+``POSTGRES_HOST``                 PostgreSQL host                     ``localhost``
+``POSTGRES_PORT``                 PostgreSQL port                     ``5432``
+``REDIS_URL``                     Full Redis URL                      assembled from ``REDIS_*``
+``REDIS_USER``                    Redis user                          *(empty)*
+``REDIS_PASSWORD``                Redis password                      *(empty)*
+``REDIS_HOST``                    Redis host                          ``localhost``
+``REDIS_PORT``                    Redis port                          ``6379``
+``REDIS_DB``                      Redis database number               ``0``
+``CELERY_BROKER_URL``             Celery broker URL                   ``REDIS_URL``
+``CELERY_RESULT_BACKEND_URL``     Celery result backend URL           ``REDIS_URL``
+``APP_PORT``                      Streamlit port                      ``8501``
+``APP_NAME``                      Application name                    ``law-by-ai``
+``LLM_BASE_URL``                  OpenAI-compatible LLM/SLM base URL  ``http://localhost:11434/v1``
+``LLM_API_KEY``                   LLM API key (empty for local)       ``(empty)``
+``LLM_MODEL``                     default model (all agents unless    ``(empty)``
+                                  overridden)
+``LLM_MODEL_<AGENT>``             per-agent model override            ``(LLM_MODEL)``
+                                  (``LLM_MODEL_LEGAL_RESEARCH``)
+``EMBEDDING_BASE_URL``            embedding provider base URL         ``http://localhost:11434/v1``
+``EMBEDDING_API_KEY``             embedding API key (empty for        ``(empty)``
+                                  local)
+``EMBEDDING_MODEL``               embedding model name                ``nomic-embed-text``
+``RERANK_BASE_URL``               reranking provider base URL         ``https://api.cohere.com/v1``
+``RERANK_API_KEY``                reranking API key                   ``(empty)``
+``RERANK_MODEL``                  reranking model name                ``rerank-v3.5``
+``OCR_ENABLED``                   send documents to the OCR provider  ``false``
+``MISTRAL_API_KEY``               Mistral API key (OCR)               ``(empty)``
+``MISTRAL_BASE_URL``              Mistral API base URL                ``https://api.mistral.ai/v1``
+``MISTRAL_OCR_MODEL``             Mistral OCR model name              ``mistral-ocr-latest``
+``OCR_TIMEOUT``                   total seconds per OCR request       ``120.0``
+``OCR_MAX_BYTES``                 max OCR input size in bytes         ``20971520``
+``FETCH_HTTP_TIMEOUT``            total seconds per fetch HTTP        ``10.0``
+                                  request
+``FETCH_TOTAL_TIMEOUT``           total seconds to read one body      ``60.0``
+``FETCH_MAX_BYTES``               max fetched body size in bytes      ``52428800``
+``MINIO_ENDPOINT``                MinIO ``host:port`` (no scheme)     ``localhost:9000``
+``MINIO_ACCESS_KEY``              MinIO access key                    *(empty)*
+``MINIO_SECRET_KEY``              MinIO secret key                    *(empty)*
+``MINIO_BUCKET``                  MinIO bucket for legal documents    ``legal-documents``
+``MINIO_SECURE``                  use TLS for MinIO                   ``true``
+``TAVILY_API_KEY``                Tavily API key                      *(empty)*
+``TAVILY_TIMEOUT``                seconds per Tavily request          ``60.0``
+``TAVILY_MAX_PAGES``              pages per Tavily map call           ``20``
+``SEJM_MIN_INTERVAL``             seconds between Sejm requests       ``0.5``
+``INIT_TENANT_ID``                first tenant id (init program)      ``platform``
+``INIT_TENANT_NAME``              first tenant name (init program)    ``Platform``
+``INIT_ADMIN_EMAIL``              first admin email (init program)    *(empty)*
+``INIT_ADMIN_NAME``               first admin display name            ``Admin``
+``INIT_ADMIN_PASSWORD``           first admin password (init          *(empty)*
+                                  program)
+``AUTH_COOKIE_KEY``               auth cookie signing key (32+        *(required)*
+                                  chars)
+``AUTH_COOKIE_NAME``              auth cookie name                    ``law_by_ai_auth``
+``AUTH_COOKIE_EXPIRY_DAYS``       auth cookie lifetime in days        ``30``
+``LOGIN_MAX_FAILURES``            failed logins that lock further     ``5``
+                                  logins
+``LOGIN_WINDOW_SECONDS``          seconds in which failures are       ``900``
+                                  counted
+``LOGIN_LOCKOUT_SECONDS``         seconds an email stays locked       ``900``
+``POSTGRES_POOL_SIZE``            app DB pool size (min 1)            ``5``
+``POSTGRES_MAX_OVERFLOW``         app DB pool overflow (min 0)        ``10``
+``WORKER_POSTGRES_POOL_SIZE``     worker DB pool size (min 1)         ``1``
+``WORKER_POSTGRES_MAX_OVERFLOW``  worker DB pool overflow (min 0)     ``1``
+================================  ==================================  =============================
 
 Usage::
 
@@ -82,6 +96,7 @@ Usage::
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
@@ -115,6 +130,39 @@ def _positive[N: (int, float)](name: str, default: str, kind: type[N]) -> N:
     if not 0 < value < float("inf"):
         raise ValueError(f"{name} must be positive and finite, got {raw!r}")
     return value
+
+
+def _int_at_least(name: str, default: int, minimum: int) -> int:
+    """Read env ``name`` as an integer of at least ``minimum`` or raise ``ValueError``.
+
+    An unset or empty value gives ``default``. This differs from
+    :func:`_positive`, which raises on an empty value.
+    """
+    raw = os.getenv(name, "")
+    if raw == "":
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValueError(f"{name} must be an integer, got {raw!r}") from None
+    if value < minimum:
+        raise ValueError(f"{name} must be at least {minimum}, got {raw!r}")
+    return value
+
+
+@dataclass(frozen=True)
+class PoolConfig:
+    """SQLAlchemy ``QueuePool`` sizing for one process role."""
+
+    size: int
+    max_overflow: int
+
+    def __post_init__(self) -> None:
+        """Reject a pool size below 1 or a negative overflow."""
+        if self.size < 1:
+            raise ValueError(f"pool size must be at least 1, got {self.size}")
+        if self.max_overflow < 0:
+            raise ValueError(f"pool max_overflow must be at least 0, got {self.max_overflow}")
 
 
 class Settings:
@@ -191,6 +239,34 @@ class Settings:
         user = quote(role, safe="")
         secret = quote(password, safe="")
         return f"postgresql+psycopg://{user}:{secret}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+
+    @property
+    def postgres_pool_size(self) -> int:
+        """App DB pool size (``POSTGRES_POOL_SIZE``, at least 1)."""
+        return _int_at_least("POSTGRES_POOL_SIZE", 5, 1)
+
+    @property
+    def postgres_max_overflow(self) -> int:
+        """App DB pool overflow (``POSTGRES_MAX_OVERFLOW``, at least 0)."""
+        return _int_at_least("POSTGRES_MAX_OVERFLOW", 10, 0)
+
+    @property
+    def worker_postgres_pool_size(self) -> int:
+        """Worker DB pool size (``WORKER_POSTGRES_POOL_SIZE``, at least 1)."""
+        return _int_at_least("WORKER_POSTGRES_POOL_SIZE", 1, 1)
+
+    @property
+    def worker_postgres_max_overflow(self) -> int:
+        """Worker DB pool overflow (``WORKER_POSTGRES_MAX_OVERFLOW``, at least 0)."""
+        return _int_at_least("WORKER_POSTGRES_MAX_OVERFLOW", 1, 0)
+
+    def app_pool_config(self) -> PoolConfig:
+        """Return the app DB pool config; ``ValueError`` names a bad variable."""
+        return PoolConfig(self.postgres_pool_size, self.postgres_max_overflow)
+
+    def worker_pool_config(self) -> PoolConfig:
+        """Return the worker DB pool config; ``ValueError`` names a bad variable."""
+        return PoolConfig(self.worker_postgres_pool_size, self.worker_postgres_max_overflow)
 
     # --- Redis / Celery ------------------------------------------------------
     @property
@@ -499,6 +575,7 @@ def get_settings() -> Settings:
 
 __all__ = [
     "ROOT_DIR",
+    "PoolConfig",
     "Settings",
     "get_settings",
     "load_env",

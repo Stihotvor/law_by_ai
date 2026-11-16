@@ -32,7 +32,7 @@ from typing import Any
 from sqlalchemy import Engine, String, create_engine, delete, event, exists, select, text, update
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
-from config.settings import get_settings
+from config.settings import PoolConfig, get_settings
 from core.security import get_current_tenant, hash_password
 from core.security.login_throttle import normalise_email
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
@@ -53,6 +53,8 @@ __all__ = [
 
 # Session setting used by the RLS policies. Empty string == no rows (fail closed).
 TENANT_SETTING = "app.current_tenant"
+# Seconds a caller waits for a free pool connection before the pool raises.
+POOL_TIMEOUT_SECONDS = 30
 # Login lookup (SECURITY DEFINER): the login columns of one user in any tenant.
 _AUTH_LOOKUP_SQL = text("SELECT * FROM public.auth_lookup_user(:email)")
 _LOGIN_KEYS = ("id", "tenant_id", "email", "role", "name", "is_active")
@@ -154,6 +156,17 @@ def _check_schema_head(engine: Engine) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _apply_update(row: LegalDocument, document: dict[str, Any]) -> None:
+    """Merge ``document`` fields into a loaded row, in the caller's session."""
+    for key, value in document.items():
+        if key == "metadata":
+            row.metadata_ = value
+        elif key == "last_updated":
+            row.last_updated = _parse_dt(value)
+        elif key != "id" and hasattr(row, key):
+            setattr(row, key, value)
+
+
 class PostgreSQLStore:
     """Direct PostgreSQL data store (ADR-0014, replaces the old plugin).
 
@@ -163,20 +176,39 @@ class PostgreSQLStore:
     - PostgreSQL row-level security (ADR-0003)
     """
 
-    def __init__(self, on_document_deleted: Callable[[str], None] | None = None) -> None:
+    def __init__(
+        self,
+        on_document_deleted: Callable[[str], None] | None = None,
+        *,
+        pool: PoolConfig | None = None,
+    ) -> None:
         self._engine = None
         self._initialized = False
         # Called once with the document id after a reject commits (issue #92).
         # Errors it raises are logged, not re-raised.
         self._on_document_deleted = on_document_deleted
+        # None means the app pool, read from the settings in initialize().
+        self._pool = pool
 
     # --- lifecycle ----------------------------------------------------------
 
     def initialize(self) -> None:
-        """Connect and check the Alembic head; raise SchemaNotAtHeadError if not at head."""
+        """Connect and check the Alembic head; raise SchemaNotAtHeadError if not at head.
+
+        A bad app pool setting raises ``ValueError`` before any engine exists.
+        """
         if self._initialized:
             return
-        engine = create_engine(get_settings().postgres_url, future=True)
+        settings = get_settings()
+        cfg = self._pool or settings.app_pool_config()
+        engine = create_engine(
+            settings.postgres_url,
+            future=True,
+            pool_size=cfg.size,
+            max_overflow=cfg.max_overflow,
+            pool_pre_ping=True,
+            pool_timeout=POOL_TIMEOUT_SECONDS,
+        )
         try:
             _check_schema_head(engine)
         except Exception:
@@ -233,7 +265,7 @@ class PostgreSQLStore:
                     )
                 )
             else:
-                self.update_document(doc_id, document, tenant_id=tenant)
+                _apply_update(row, document)
             session.commit()
         return doc_id
 
@@ -300,13 +332,7 @@ class PostgreSQLStore:
             row = session.get(LegalDocument, document_id)
             if row is None:
                 raise KeyError(f"Document not found: {document_id}")
-            for key, value in document.items():
-                if key == "metadata":
-                    row.metadata_ = value
-                elif key == "last_updated":
-                    row.last_updated = _parse_dt(value)
-                elif key != "id" and hasattr(row, key):
-                    setattr(row, key, value)
+            _apply_update(row, document)
             session.commit()
 
     # --- reject (issue #92) -------------------------------------------------
