@@ -4,8 +4,8 @@ from config.settings import PoolConfig, Settings
 
 # env name -> (property, default, a valid override, a rejected value)
 FIELDS: dict[str, tuple[str, int, str, str]] = {
-    "POSTGRES_POOL_SIZE": ("postgres_pool_size", 5, "1", "0"),
-    "POSTGRES_MAX_OVERFLOW": ("postgres_max_overflow", 10, "0", "-1"),
+    "POSTGRES_POOL_SIZE": ("postgres_pool_size", 3, "1", "0"),
+    "POSTGRES_MAX_OVERFLOW": ("postgres_max_overflow", 2, "0", "-1"),
     "WORKER_POSTGRES_POOL_SIZE": ("worker_postgres_pool_size", 1, "2", "abc"),
     "WORKER_POSTGRES_MAX_OVERFLOW": ("worker_postgres_max_overflow", 1, "0", "-1"),
 }
@@ -14,7 +14,7 @@ FIELDS: dict[str, tuple[str, int, str, str]] = {
 # Scenario: Defaults
 def test_defaults(clean_pool_env: pytest.MonkeyPatch) -> None:
     settings = Settings()
-    assert settings.app_pool_config() == PoolConfig(5, 10)
+    assert settings.app_pool_config() == PoolConfig(3, 2)
     assert settings.worker_pool_config() == PoolConfig(1, 1)
 
 
@@ -30,7 +30,7 @@ def test_valid_override(clean_pool_env: pytest.MonkeyPatch) -> None:
 # Scenario: Empty value uses the default
 def test_empty_value_uses_default(clean_pool_env: pytest.MonkeyPatch) -> None:
     clean_pool_env.setenv("POSTGRES_POOL_SIZE", "")
-    assert Settings().postgres_pool_size == 5
+    assert Settings().postgres_pool_size == 3
 
 
 # Scenario Outline: Rejected value
