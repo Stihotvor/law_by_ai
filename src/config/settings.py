@@ -77,8 +77,8 @@ Variable                          Purpose                             Default
 ``LOGIN_WINDOW_SECONDS``          seconds in which failures are       ``900``
                                   counted
 ``LOGIN_LOCKOUT_SECONDS``         seconds an email stays locked       ``900``
-``POSTGRES_POOL_SIZE``            app DB pool size (min 1)            ``5``
-``POSTGRES_MAX_OVERFLOW``         app DB pool overflow (min 0)        ``10``
+``POSTGRES_POOL_SIZE``            app DB pool size (min 1)            ``3``
+``POSTGRES_MAX_OVERFLOW``         app DB pool overflow (min 0)        ``2``
 ``WORKER_POSTGRES_POOL_SIZE``     worker DB pool size (min 1)         ``1``
 ``WORKER_POSTGRES_MAX_OVERFLOW``  worker DB pool overflow (min 0)     ``1``
 ================================  ==================================  =============================
@@ -243,12 +243,12 @@ class Settings:
     @property
     def postgres_pool_size(self) -> int:
         """App DB pool size (``POSTGRES_POOL_SIZE``, at least 1)."""
-        return _int_at_least("POSTGRES_POOL_SIZE", 5, 1)
+        return _int_at_least("POSTGRES_POOL_SIZE", 3, 1)
 
     @property
     def postgres_max_overflow(self) -> int:
         """App DB pool overflow (``POSTGRES_MAX_OVERFLOW``, at least 0)."""
-        return _int_at_least("POSTGRES_MAX_OVERFLOW", 10, 0)
+        return _int_at_least("POSTGRES_MAX_OVERFLOW", 2, 0)
 
     @property
     def worker_postgres_pool_size(self) -> int:

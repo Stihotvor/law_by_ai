@@ -65,8 +65,8 @@ def test_default_app_pool(engine_calls: list[dict[str, Any]]) -> None:
 
     store.initialize()
 
-    assert _pool(store).size() == 5
-    assert engine_calls[0]["max_overflow"] == 10
+    assert _pool(store).size() == 3
+    assert engine_calls[0]["max_overflow"] == 2
     store.close()
 
 

@@ -102,8 +102,8 @@ def test_compose_init_gets_no_pool_variables(pool_env_names: tuple[str, ...]) ->
 def test_env_example_lists_pool_variables() -> None:
     lines = (ROOT / "docker" / ".env.example").read_text().splitlines()
     for line in (
-        "# POSTGRES_POOL_SIZE=5",
-        "# POSTGRES_MAX_OVERFLOW=10",
+        "# POSTGRES_POOL_SIZE=3",
+        "# POSTGRES_MAX_OVERFLOW=2",
         "# WORKER_POSTGRES_POOL_SIZE=1",
         "# WORKER_POSTGRES_MAX_OVERFLOW=1",
     ):
@@ -114,8 +114,8 @@ def test_env_example_lists_pool_variables() -> None:
 def test_settings_docs_table_lists_pool_defaults() -> None:
     doc = settings_module.__doc__ or ""
     for name, default in (
-        ("POSTGRES_POOL_SIZE", "5"),
-        ("POSTGRES_MAX_OVERFLOW", "10"),
+        ("POSTGRES_POOL_SIZE", "3"),
+        ("POSTGRES_MAX_OVERFLOW", "2"),
         ("WORKER_POSTGRES_POOL_SIZE", "1"),
         ("WORKER_POSTGRES_MAX_OVERFLOW", "1"),
     ):
