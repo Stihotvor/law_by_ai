@@ -32,7 +32,7 @@ from typing import Any
 from sqlalchemy import Engine, String, create_engine, delete, event, exists, select, text, update
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
-from config.settings import get_settings
+from config.settings import PoolConfig, get_settings
 from core.security import get_current_tenant, hash_password
 from core.security.login_throttle import normalise_email
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
@@ -163,20 +163,39 @@ class PostgreSQLStore:
     - PostgreSQL row-level security (ADR-0003)
     """
 
-    def __init__(self, on_document_deleted: Callable[[str], None] | None = None) -> None:
+    def __init__(
+        self,
+        on_document_deleted: Callable[[str], None] | None = None,
+        *,
+        pool: PoolConfig | None = None,
+    ) -> None:
         self._engine = None
         self._initialized = False
         # Called once with the document id after a reject commits (issue #92).
         # Errors it raises are logged, not re-raised.
         self._on_document_deleted = on_document_deleted
+        # None means the app pool, read from the settings in initialize().
+        self._pool = pool
 
     # --- lifecycle ----------------------------------------------------------
 
     def initialize(self) -> None:
-        """Connect and check the Alembic head; raise SchemaNotAtHeadError if not at head."""
+        """Connect and check the Alembic head; raise SchemaNotAtHeadError if not at head.
+
+        A bad app pool setting raises ``ValueError`` before any engine exists.
+        """
         if self._initialized:
             return
-        engine = create_engine(get_settings().postgres_url, future=True)
+        settings = get_settings()
+        cfg = self._pool or settings.app_pool_config()
+        engine = create_engine(
+            settings.postgres_url,
+            future=True,
+            pool_size=cfg.size,
+            max_overflow=cfg.max_overflow,
+            pool_pre_ping=True,
+            pool_timeout=30,
+        )
         try:
             _check_schema_head(engine)
         except Exception:
