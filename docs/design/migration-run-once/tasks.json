@@ -1,0 +1,51 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Integration tests first (red): 2 concurrent upgrades, blocking while lock held, no lock left at head",
+      "size": "M",
+      "depends_on": [],
+      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py collects 3 tests (concurrent_upgrades_apply_once, upgrade_blocks_while_lock_held, no_lock_left_at_head); before T2 the blocking test fails, after T2 all 3 pass",
+      "files": [
+        "tests/integration/test_migration_lock.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T2",
+      "title": "migrations/env.py: session-level pg_advisory_lock (key 0x6C61775F6D6967), commit, then configure and migrate; finally rollback, unlock, commit; offline takes no lock",
+      "size": "S",
+      "depends_on": [
+        "T1"
+      ],
+      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py passes 3 of 3 (2 concurrent runs exit 0 with exactly 1 alembic_version row equal to head; second run still running after 2 s while the key is held and exits 0 after release; no advisory lock in pg_locks after a run at head); alembic upgrade head --sql still runs with no connection",
+      "files": [
+        "migrations/env.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T3",
+      "title": "docs/migrations.md: note on the advisory lock, wait without limit, lock_timeout caveat",
+      "size": "S",
+      "depends_on": [],
+      "done_when": "grep -n 'advisory' docs/migrations.md shows the new section, and it names the key, the unlimited wait and the lock_timeout caveat",
+      "files": [
+        "docs/migrations.md"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T4",
+      "title": "Quality gate on the whole change",
+      "size": "S",
+      "depends_on": [
+        "T2",
+        "T3"
+      ],
+      "done_when": ".venv/bin/ruff check, ruff format --check, pyright and pytest -m 'not integration' all exit 0, and the Docker suite passes with test_migration_lock.py showing 3 PASSED",
+      "files": [],
+      "agent": "python-lead"
+    }
+  ]
+}

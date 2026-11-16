@@ -45,6 +45,19 @@ Migrations run with the owner connection (`POSTGRES_OWNER_URL`, user
 change the schema. RLS policies for `users`/`tenants` live in the migrations
 (ADR-0003).
 
+## Overlapping upgrade runs
+
+Each online run of `alembic upgrade head` takes a session-level
+`pg_advisory_lock` with the key `0x6C61775F6D6967` ("law_mig") before it reads
+`alembic_version`. When two runs overlap, the second run waits. It then sees
+head and applies nothing, so each migration runs once.
+
+- A waiting run has no time limit. A hung run shows in `pg_locks`.
+- If a role or the server sets `lock_timeout` or `statement_timeout`, the
+  waiting run fails with a timeout error.
+- When a process dies, PostgreSQL ends its session and frees the lock.
+- Offline mode (`--sql`) takes no lock.
+
 ## Docker / test compose
 
 The `init` service runs `alembic upgrade head` with the owner connection, then
