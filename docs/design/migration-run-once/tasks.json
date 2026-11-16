@@ -18,7 +18,7 @@
       "depends_on": [
         "T1"
       ],
-      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py passes 3 of 3 (2 concurrent runs exit 0 with exactly 1 alembic_version row equal to head; second run still running after 2 s while the key is held and exits 0 after release; no advisory lock in pg_locks after a run at head); alembic upgrade head --sql still runs with no connection",
+      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py passes 3 of 3 (2 concurrent runs exit 0 with exactly 1 alembic_version row equal to head; second run still running after 2 s while the key is held and exits 0 after release; no advisory lock in pg_locks after a run at head); alembic upgrade <first revision> --sql still runs with no connection",
       "files": [
         "migrations/env.py"
       ],

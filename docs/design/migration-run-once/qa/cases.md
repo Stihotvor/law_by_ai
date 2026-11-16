@@ -96,14 +96,14 @@
 - Covers: Technical Constraint "Offline mode", T2
 - Type: functional
 - Given no database is reachable and the connection URL points to a closed port
-- When `alembic upgrade head --sql` runs
+- When `alembic upgrade <first revision> --sql` runs
 - Then it prints the SQL script, exits with code 0, and the script has no `pg_advisory_lock` statement
 
 ### QA-015 Offline run does not wait on a held lock
 - Covers: Technical Constraint "Offline mode"
 - Type: edge
 - Given a separate session holds the lock key on a scratch database
-- When `alembic upgrade head --sql` runs
+- When `alembic upgrade <first revision> --sql` runs
 - Then it exits with code 0 within 2 s
 
 ### QA-016 Different key does not block
