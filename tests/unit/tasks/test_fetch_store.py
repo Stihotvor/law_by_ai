@@ -76,8 +76,9 @@ def test_bad_worker_value_raises_and_leaves_store_none(
 
 
 def test_retry_after_bad_value(
-    factory: MagicMock, invalid_agent: MagicMock, monkeypatch: pytest.MonkeyPatch
+    factory: MagicMock, invalid_agent: MagicMock, clean_pool_env: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch = clean_pool_env
     monkeypatch.setenv(POOL_SIZE, "0")
     with pytest.raises(ValueError, match=POOL_SIZE):
         fetch._make_store()

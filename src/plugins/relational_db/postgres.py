@@ -156,6 +156,17 @@ def _check_schema_head(engine: Engine) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _apply_update(row: LegalDocument, document: dict[str, Any]) -> None:
+    """Merge ``document`` fields into a loaded row, in the caller's session."""
+    for key, value in document.items():
+        if key == "metadata":
+            row.metadata_ = value
+        elif key == "last_updated":
+            row.last_updated = _parse_dt(value)
+        elif key != "id" and hasattr(row, key):
+            setattr(row, key, value)
+
+
 class PostgreSQLStore:
     """Direct PostgreSQL data store (ADR-0014, replaces the old plugin).
 
@@ -254,7 +265,7 @@ class PostgreSQLStore:
                     )
                 )
             else:
-                self.update_document(doc_id, document, tenant_id=tenant)
+                _apply_update(row, document)
             session.commit()
         return doc_id
 
@@ -321,13 +332,7 @@ class PostgreSQLStore:
             row = session.get(LegalDocument, document_id)
             if row is None:
                 raise KeyError(f"Document not found: {document_id}")
-            for key, value in document.items():
-                if key == "metadata":
-                    row.metadata_ = value
-                elif key == "last_updated":
-                    row.last_updated = _parse_dt(value)
-                elif key != "id" and hasattr(row, key):
-                    setattr(row, key, value)
+            _apply_update(row, document)
             session.commit()
 
     # --- reject (issue #92) -------------------------------------------------
