@@ -13,18 +13,21 @@ from typing import Any
 
 import pytest
 from fakes.fetch import FAKE_SOURCE, FAKE_STRATEGY, FakeSource, FakeStrategy
-from sqlalchemy import create_engine, text
+from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.pool import QueuePool
 
 from agents.fetch.registry import Registry
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
+from config.settings import PoolConfig
+from plugins.relational_db import postgres
 from tasks import fetch
 from tasks.celery_app import app
 
 pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("eager_celery")]
 
 _BASE = FakeSource.base_url
+WORKER_POOL = PoolConfig(size=1, max_overflow=1)
 
 
 def _row_count(postgres_url: str, source_url: str) -> int:
@@ -62,13 +65,24 @@ def source_url(postgres_url: str) -> Iterator[str]:
 
 
 @pytest.fixture
-def worker_pool(source_url: str, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    """Worker pool 1 + 1 and no cached store; the store the task builds is closed after."""
-    monkeypatch.setenv("WORKER_POSTGRES_POOL_SIZE", "1")
-    monkeypatch.setenv("WORKER_POSTGRES_MAX_OVERFLOW", "1")
+def engine_kwargs(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[dict[str, Any]]]:
+    """Worker pool ``WORKER_POOL`` and no cached store; record ``create_engine`` kwargs.
+
+    The store the task builds is closed after the test.
+    """
+    monkeypatch.setenv("WORKER_POSTGRES_POOL_SIZE", str(WORKER_POOL.size))
+    monkeypatch.setenv("WORKER_POSTGRES_MAX_OVERFLOW", str(WORKER_POOL.max_overflow))
     monkeypatch.setattr(fetch, "_store", None)
+    calls: list[dict[str, Any]] = []
+    real_create_engine = postgres.create_engine
+
+    def spy(url: str, **kwargs: Any) -> Engine:
+        calls.append(kwargs)
+        return real_create_engine(url, **kwargs)
+
+    monkeypatch.setattr(postgres, "create_engine", spy)
     try:
-        yield
+        yield calls
     finally:
         fetch._close_store()
 
@@ -78,8 +92,9 @@ def _run(source_url: str) -> Any:
     return app.tasks["fetch_document"].delay(FAKE_SOURCE, external_id).get()
 
 
-@pytest.mark.usefixtures("worker_pool")
-def test_fetch_document_worker_pool(postgres_url: str, source_url: str) -> None:
+def test_fetch_document_worker_pool(
+    postgres_url: str, source_url: str, engine_kwargs: list[dict[str, Any]]
+) -> None:
     result = _run(source_url)
 
     assert result["status"] == "saved"
@@ -90,7 +105,7 @@ def test_fetch_document_worker_pool(postgres_url: str, source_url: str) -> None:
     assert engine is not None
     pool = engine.pool
     assert isinstance(pool, QueuePool)
-    assert pool.size() == 1
-    assert pool._max_overflow == 1
+    assert pool.size() == WORKER_POOL.size
+    assert [kw["max_overflow"] for kw in engine_kwargs] == [WORKER_POOL.max_overflow]
     assert pool.checkedout() == 0
-    assert pool.checkedin() <= 2
+    assert pool.checkedin() <= WORKER_POOL.size + WORKER_POOL.max_overflow

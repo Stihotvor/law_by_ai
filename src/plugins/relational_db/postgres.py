@@ -53,6 +53,8 @@ __all__ = [
 
 # Session setting used by the RLS policies. Empty string == no rows (fail closed).
 TENANT_SETTING = "app.current_tenant"
+# Seconds a caller waits for a free pool connection before the pool raises.
+POOL_TIMEOUT_SECONDS = 30
 # Login lookup (SECURITY DEFINER): the login columns of one user in any tenant.
 _AUTH_LOOKUP_SQL = text("SELECT * FROM public.auth_lookup_user(:email)")
 _LOGIN_KEYS = ("id", "tenant_id", "email", "role", "name", "is_active")
@@ -194,7 +196,7 @@ class PostgreSQLStore:
             pool_size=cfg.size,
             max_overflow=cfg.max_overflow,
             pool_pre_ping=True,
-            pool_timeout=30,
+            pool_timeout=POOL_TIMEOUT_SECONDS,
         )
         try:
             _check_schema_head(engine)

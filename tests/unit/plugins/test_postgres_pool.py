@@ -1,4 +1,4 @@
-"""PostgreSQLStore takes its pool from the caller (worker-db-pool-size T2).
+"""PostgreSQLStore sizes its pool from the caller's PoolConfig or the app settings.
 
 ``create_engine`` does not connect, so a fake PostgreSQL URL gives a real
 ``QueuePool`` without a live database. The schema head check is replaced with
@@ -19,20 +19,13 @@ from plugins.relational_db import postgres
 from plugins.relational_db.postgres import PostgreSQLStore
 
 FAKE_URL = "postgresql+psycopg://user:pw@127.0.0.1:1/none"
-POOL_VARS = (
-    "POSTGRES_POOL_SIZE",
-    "POSTGRES_MAX_OVERFLOW",
-    "WORKER_POSTGRES_POOL_SIZE",
-    "WORKER_POSTGRES_MAX_OVERFLOW",
-)
 
 
 @pytest.fixture
-def engine_calls(monkeypatch: pytest.MonkeyPatch) -> Iterator[list[dict[str, Any]]]:
+def engine_calls(clean_pool_env: pytest.MonkeyPatch) -> Iterator[list[dict[str, Any]]]:
     """Fake URL, no pool variables, no head check; record create_engine kwargs."""
+    monkeypatch = clean_pool_env
     monkeypatch.setenv("POSTGRES_URL", FAKE_URL)
-    for name in POOL_VARS:
-        monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(postgres, "_check_schema_head", lambda _engine: None)
     calls: list[dict[str, Any]] = []
     real_create_engine = postgres.create_engine
@@ -61,9 +54,8 @@ def test_worker_pool(engine_calls: list[dict[str, Any]]) -> None:
 
     store.initialize()
 
-    pool = _pool(store)
-    assert pool.size() == 1
-    assert pool._max_overflow == 1
+    assert _pool(store).size() == 1
+    assert engine_calls[0]["max_overflow"] == 1
     store.close()
 
 
@@ -73,9 +65,8 @@ def test_default_app_pool(engine_calls: list[dict[str, Any]]) -> None:
 
     store.initialize()
 
-    pool = _pool(store)
-    assert pool.size() == 5
-    assert pool._max_overflow == 10
+    assert _pool(store).size() == 5
+    assert engine_calls[0]["max_overflow"] == 10
     store.close()
 
 
@@ -88,7 +79,7 @@ def test_engine_options(engine_calls: list[dict[str, Any]], pool: PoolConfig | N
 
     assert len(engine_calls) == 1
     assert engine_calls[0]["pool_pre_ping"] is True
-    assert engine_calls[0]["pool_timeout"] == 30
+    assert engine_calls[0]["pool_timeout"] == postgres.POOL_TIMEOUT_SECONDS == 30
     store.close()
 
 

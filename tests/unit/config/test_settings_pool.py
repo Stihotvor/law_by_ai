@@ -11,34 +11,25 @@ FIELDS: dict[str, tuple[str, int, str, str]] = {
 }
 
 
-@pytest.fixture
-def clean(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
-    # Keep a developer's local env file out of these tests.
-    monkeypatch.setattr("config.settings.load_env", lambda *a, **k: None)
-    for name in FIELDS:
-        monkeypatch.delenv(name, raising=False)
-    return monkeypatch
-
-
 # Scenario: Defaults
-def test_defaults(clean: pytest.MonkeyPatch) -> None:
+def test_defaults(clean_pool_env: pytest.MonkeyPatch) -> None:
     settings = Settings()
     assert settings.app_pool_config() == PoolConfig(5, 10)
     assert settings.worker_pool_config() == PoolConfig(1, 1)
 
 
 # Scenario: Valid override
-def test_valid_override(clean: pytest.MonkeyPatch) -> None:
-    clean.setenv("WORKER_POSTGRES_POOL_SIZE", "2")
-    clean.setenv("POSTGRES_MAX_OVERFLOW", "0")
+def test_valid_override(clean_pool_env: pytest.MonkeyPatch) -> None:
+    clean_pool_env.setenv("WORKER_POSTGRES_POOL_SIZE", "2")
+    clean_pool_env.setenv("POSTGRES_MAX_OVERFLOW", "0")
     settings = Settings()
     assert settings.worker_postgres_pool_size == 2
     assert settings.postgres_max_overflow == 0
 
 
 # Scenario: Empty value uses the default
-def test_empty_value_uses_default(clean: pytest.MonkeyPatch) -> None:
-    clean.setenv("POSTGRES_POOL_SIZE", "")
+def test_empty_value_uses_default(clean_pool_env: pytest.MonkeyPatch) -> None:
+    clean_pool_env.setenv("POSTGRES_POOL_SIZE", "")
     assert Settings().postgres_pool_size == 5
 
 
@@ -52,8 +43,8 @@ def test_empty_value_uses_default(clean: pytest.MonkeyPatch) -> None:
         ("WORKER_POSTGRES_MAX_OVERFLOW", "-1"),
     ],
 )
-def test_rejected_value(clean: pytest.MonkeyPatch, name: str, value: str) -> None:
-    clean.setenv(name, value)
+def test_rejected_value(clean_pool_env: pytest.MonkeyPatch, name: str, value: str) -> None:
+    clean_pool_env.setenv(name, value)
     with pytest.raises(ValueError, match=name):
         _ = getattr(Settings(), FIELDS[name][0])
 
@@ -67,7 +58,7 @@ def test_pool_config_validates_itself(size: int, max_overflow: int) -> None:
 
 # Per-setting coverage: default, valid override, rejected value.
 @pytest.mark.parametrize("name", FIELDS)
-def test_each_default(clean: pytest.MonkeyPatch, name: str) -> None:
+def test_each_default(clean_pool_env: pytest.MonkeyPatch, name: str) -> None:
     attr, default, _, _ = FIELDS[name]
     value = getattr(Settings(), attr)
     assert value == default
@@ -75,15 +66,15 @@ def test_each_default(clean: pytest.MonkeyPatch, name: str) -> None:
 
 
 @pytest.mark.parametrize("name", FIELDS)
-def test_each_override(clean: pytest.MonkeyPatch, name: str) -> None:
+def test_each_override(clean_pool_env: pytest.MonkeyPatch, name: str) -> None:
     attr, _, override, _ = FIELDS[name]
-    clean.setenv(name, override)
+    clean_pool_env.setenv(name, override)
     assert getattr(Settings(), attr) == int(override)
 
 
 @pytest.mark.parametrize("name", FIELDS)
 @pytest.mark.parametrize("value", ["-5", "1.5", "x"])
-def test_each_rejects(clean: pytest.MonkeyPatch, name: str, value: str) -> None:
-    clean.setenv(name, value)
+def test_each_rejects(clean_pool_env: pytest.MonkeyPatch, name: str, value: str) -> None:
+    clean_pool_env.setenv(name, value)
     with pytest.raises(ValueError, match=name):
         _ = getattr(Settings(), FIELDS[name][0])

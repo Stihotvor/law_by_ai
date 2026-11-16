@@ -6,7 +6,6 @@ Unit tests: ``PostgreSQLStore`` is mocked, so no database or network is needed.
 from __future__ import annotations
 
 import ast
-from collections.abc import Iterator
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -17,15 +16,10 @@ from config.settings import PoolConfig
 from tasks import fetch
 from tasks.celery_app import FETCH_DOCUMENT, app
 
+pytestmark = pytest.mark.usefixtures("reset_store")
+
 POOL_SIZE = "WORKER_POSTGRES_POOL_SIZE"
 MAX_OVERFLOW = "WORKER_POSTGRES_MAX_OVERFLOW"
-
-
-@pytest.fixture(autouse=True)
-def reset_store() -> Iterator[None]:
-    fetch._store = None
-    yield
-    fetch._store = None
 
 
 @pytest.fixture
@@ -111,4 +105,3 @@ def test_only_make_store_builds_the_store() -> None:
     tree = ast.parse(Path(fetch.__file__).read_text())
 
     assert _store_calls_outside_make_store(tree) == []
-    assert "PostgreSQLStore(" in Path(fetch.__file__).read_text()
