@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -26,15 +27,60 @@ def parse_dt(value: Any, *, default: datetime | None = None) -> datetime:
     return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
 
 
-def apply_update(row: LegalDocument, document: dict[str, Any]) -> None:
-    """Merge ``document`` fields into a loaded row, in the caller's session."""
+def _set_title(row: LegalDocument, value: Any) -> None:
+    row.title = value
+
+
+def _set_content(row: LegalDocument, value: Any) -> None:
+    row.content = value
+
+
+def _set_source(row: LegalDocument, value: Any) -> None:
+    row.source = value
+
+
+def _set_source_url(row: LegalDocument, value: Any) -> None:
+    row.source_url = value
+
+
+def _set_is_processed(row: LegalDocument, value: Any) -> None:
+    row.is_processed = value
+
+
+def _set_metadata(row: LegalDocument, value: Any) -> None:
+    row.metadata_ = value
+
+
+def _set_last_updated(row: LegalDocument, value: Any) -> None:
+    row.last_updated = parse_dt(value)
+
+
+# Fixed allowlist: payload key -> setter. Keys are never used as attribute names.
+_EDITABLE: dict[str, Callable[[LegalDocument, Any], None]] = {
+    "title": _set_title,
+    "content": _set_content,
+    "source": _set_source,
+    "source_url": _set_source_url,
+    "is_processed": _set_is_processed,
+    "metadata": _set_metadata,
+    "last_updated": _set_last_updated,
+}
+
+
+def apply_update(row: LegalDocument, document: dict[str, Any]) -> list[str]:
+    """Copy allowlisted ``document`` fields into a loaded row, in the caller's session.
+
+    Returns the sorted names of the dropped keys (``status``, ``tenant_id``,
+    unknown keys); ``id`` is ignored and not reported. ``document`` is not changed.
+    """
+    dropped: list[str] = []
     for key, value in document.items():
-        if key == "metadata":
-            row.metadata_ = value
-        elif key == "last_updated":
-            row.last_updated = parse_dt(value)
-        elif key != "id" and hasattr(row, key):
-            setattr(row, key, value)
+        setter = _EDITABLE.get(key)
+        if setter is not None:
+            setter(row, value)
+        elif key != "id":
+            dropped.append(key)
+    return sorted(dropped)
 
 
 def doc_to_dict(row: LegalDocument) -> dict[str, Any]:
