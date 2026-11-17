@@ -28,6 +28,6 @@
 ## Success Metrics
 - An integration test holds the key on a second connection, sets the deadline to 2 s, and checks that the run fails in 2 s to 5 s with the key and the holder pid in the message.
 - The same test checks that `alembic_version` has 0 changed rows.
-- The 4 existing tests in `tests/integration/test_migration_lock.py` pass unchanged.
+- 3 of the 4 existing tests in `tests/integration/test_migration_lock.py` pass unchanged. `test_upgrade_blocks_while_lock_held` detects the wait from the wait log line or a still-running process, because polling leaves no not-granted row in `pg_locks`.
 - Unit tests cover the setting: default 300, valid value, and 3 invalid values (`0`, `-5`, `abc`).
 - Quality gate: ruff check, ruff format --check, pyright and pytest all pass. Coverage and mutation gates of CONTRIBUTING.md pass.

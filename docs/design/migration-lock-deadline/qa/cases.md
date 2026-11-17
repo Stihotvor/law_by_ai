@@ -168,7 +168,7 @@
 - When the operator runs `alembic upgrade head --sql`
 - Then the SQL script prints and the exit code is 0
 
-### QA-025 Existing lock tests unchanged
+### QA-025 Existing lock tests pass (one adapted to polling)
 - Covers: Success Metrics (4 existing tests)
 - Type: functional
 - Given the 4 existing tests in the migration lock integration test file, with no edit

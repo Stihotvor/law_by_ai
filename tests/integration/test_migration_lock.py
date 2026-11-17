@@ -1,4 +1,7 @@
-"""Migrations run once (migration-run-once T1): the advisory lock in ``migrations/env.py``.
+"""Migrations run once (migration-run-once T1, migration-lock-deadline T3).
+
+Covers the advisory lock in ``migrations/env.py`` and its
+``MIGRATION_LOCK_TIMEOUT_S`` deadline.
 
 Marked ``integration``. Each test gets a scratch database (``miglock_<hex>``)
 made by the test-only bootstrap superuser and owned by ``lawbyai_owner``; it is
@@ -23,7 +26,7 @@ import pytest
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 from factories.scratch_db import ScratchDb, scratch_database
-from sqlalchemy import Connection, create_engine, text
+from sqlalchemy import create_engine, text
 
 pytestmark = pytest.mark.integration
 
@@ -31,8 +34,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 LOCK_KEY = 0x6C61775F6D6967
 WAIT_SECONDS = 60
 OFFLINE_WAIT_SECONDS = 30
-BLOCK_WAIT_SECONDS = 10
-POLL_INTERVAL = 0.2
+# Held long enough to span more than one 1 s poll of pg_try_advisory_lock.
+BLOCK_HOLD_SECONDS = 3
+TIMEOUT_ENV = "MIGRATION_LOCK_TIMEOUT_S"
+SHORT_TIMEOUT = "2"
+MIN_TIMEOUT_ELAPSED = 2.0
+MAX_TIMEOUT_ELAPSED = 5.0
+# Nothing listens here, so a connection attempt fails at once.
+UNREACHABLE_URL = "postgresql+psycopg://nobody:nopass@127.0.0.1:1/nodb"
 BAD_REVISION = "0000deadbeef"
 URL_ENV = "MIGLOCK_TEST_URL"
 REVISION_ENV = "MIGLOCK_TEST_REVISION"
@@ -46,13 +55,6 @@ cfg = Config({str(REPO_ROOT / "alembic.ini")!r})
 cfg.set_main_option("script_location", {str(REPO_ROOT / "migrations")!r})
 cfg.set_main_option("sqlalchemy.url", os.environ[{URL_ENV!r}].replace("%", "%%"))
 command.upgrade(cfg, os.environ[{REVISION_ENV!r}], sql=os.environ[{SQL_ENV!r}] == "1")
-"""
-# A waiting (not granted) session advisory lock on LOCK_KEY in the named database.
-WAITING_SQL = """
-    SELECT count(*) FROM pg_locks
-    WHERE locktype = 'advisory' AND NOT granted
-      AND database = (SELECT oid FROM pg_database WHERE datname = :name)
-      AND ((classid::bigint << 32) | objid::bigint) = :key
 """
 
 
@@ -80,9 +82,16 @@ def _base() -> str:
     return _scripts().get_bases()[0]
 
 
-def _start_upgrade(url: str, revision: str = "head", *, sql: bool = False) -> subprocess.Popen[str]:
+def _start_upgrade(
+    url: str,
+    revision: str = "head",
+    *,
+    sql: bool = False,
+    extra_env: dict[str, str] | None = None,
+) -> subprocess.Popen[str]:
     """Start ``alembic upgrade <revision>`` (``--sql`` if *sql*) against *url* in a new process."""
     env = dict(os.environ)
+    env.update(extra_env or {})
     env[URL_ENV] = url
     env[REVISION_ENV] = revision
     env[SQL_ENV] = "1" if sql else "0"
@@ -111,23 +120,18 @@ def _kill(procs: list[subprocess.Popen[str]]) -> None:
             proc.communicate()
 
 
-def _run_upgrade(url: str, revision: str = "head", *, sql: bool = False) -> tuple[int, str]:
-    proc = _start_upgrade(url, revision, sql=sql)
+def _run_upgrade(
+    url: str,
+    revision: str = "head",
+    *,
+    sql: bool = False,
+    extra_env: dict[str, str] | None = None,
+) -> tuple[int, str]:
+    proc = _start_upgrade(url, revision, sql=sql, extra_env=extra_env)
     try:
         return _finish(proc, OFFLINE_WAIT_SECONDS if sql else WAIT_SECONDS)
     finally:
         _kill([proc])
-
-
-def _wait_for_waiter(holder: Connection, name: str) -> bool:
-    """Poll pg_locks until a session waits on LOCK_KEY in *name*, up to BLOCK_WAIT_SECONDS."""
-    deadline = time.monotonic() + BLOCK_WAIT_SECONDS
-    while time.monotonic() < deadline:
-        count = holder.execute(text(WAITING_SQL), {"name": name, "key": LOCK_KEY}).scalar_one()
-        if count:
-            return True
-        time.sleep(POLL_INTERVAL)
-    return False
 
 
 def _rows(url: str, sql: str, **params: Any) -> list[tuple[object, ...]]:
@@ -154,20 +158,25 @@ def test_concurrent_upgrades_apply_once(scratch: ScratchDb) -> None:
 
 
 def test_upgrade_blocks_while_lock_held(scratch: ScratchDb) -> None:
-    """Scenario: Upgrade blocks while the key is held."""
+    """Scenario: Upgrade waits while the key is held, then runs once it is free.
+
+    The lock is polled with ``pg_try_advisory_lock``, which leaves no waiting row
+    in ``pg_locks``; the wait shows as a process still running while the key is held.
+    """
     engine = create_engine(scratch.owner_url, isolation_level="AUTOCOMMIT")
     procs: list[subprocess.Popen[str]] = []
     try:
         with engine.connect() as holder:
             holder.execute(text("SELECT pg_advisory_lock(:key)"), {"key": LOCK_KEY})
             procs.append(_start_upgrade(scratch.owner_url))
-            waiting = _wait_for_waiter(holder, scratch.name)
+            time.sleep(BLOCK_HOLD_SECONDS)
             still_running = procs[0].poll() is None
             holder.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": LOCK_KEY})
-        assert waiting, "upgrade never waited on the advisory lock"
         assert still_running, "upgrade did not wait for the advisory lock"
         code, output = _finish(procs[0])
         assert code == 0, output
+        rows = _rows(scratch.owner_url, "SELECT version_num FROM alembic_version")
+        assert rows == [(_head(),)]
     finally:
         _kill(procs)
         engine.dispose()
@@ -204,5 +213,61 @@ def test_offline_sql_ignores_held_lock(scratch: ScratchDb) -> None:
                 holder.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": LOCK_KEY})
     finally:
         engine.dispose()
+    assert code == 0, output
+    assert "CREATE TABLE" in output, output
+
+
+def _timed_upgrade_while_held(url: str) -> tuple[int, str, float, int]:
+    """Run an upgrade to head with a 2 s deadline while a second session holds the key.
+
+    Return (exit code, output, elapsed seconds, holder backend pid).
+    """
+    engine = create_engine(url, isolation_level="AUTOCOMMIT")
+    try:
+        with engine.connect() as holder:
+            holder_pid = int(holder.execute(text("SELECT pg_backend_pid()")).scalar_one())
+            holder.execute(text("SELECT pg_advisory_lock(:key)"), {"key": LOCK_KEY})
+            try:
+                started = time.monotonic()
+                code, output = _run_upgrade(url, extra_env={TIMEOUT_ENV: SHORT_TIMEOUT})
+                elapsed = time.monotonic() - started
+            finally:
+                holder.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": LOCK_KEY})
+    finally:
+        engine.dispose()
+    return code, output, elapsed, holder_pid
+
+
+def test_upgrade_times_out_while_lock_held(scratch: ScratchDb) -> None:
+    """Scenario: timeout with a held key."""
+    code, output = _run_upgrade(scratch.owner_url, _base())
+    assert code == 0, output
+    version_sql = "SELECT version_num FROM alembic_version"
+    before = _rows(scratch.owner_url, version_sql)
+    assert before == [(_base(),)]
+
+    code, output, elapsed, holder_pid = _timed_upgrade_while_held(scratch.owner_url)
+
+    assert code != 0, output
+    assert MIN_TIMEOUT_ELAPSED <= elapsed <= MAX_TIMEOUT_ELAPSED, (elapsed, output)
+    assert f"0x{LOCK_KEY:X}" in output, output
+    assert f"held by backend pid {holder_pid}" in output, output
+    assert _rows(scratch.owner_url, version_sql) == before
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "abc"])
+def test_invalid_timeout_fails_before_connect(value: str) -> None:
+    """Scenario Outline: invalid deadline fails before any connection is tried."""
+    code, output = _run_upgrade(UNREACHABLE_URL, extra_env={TIMEOUT_ENV: value})
+    assert code != 0, output
+    assert TIMEOUT_ENV in output, output
+    assert "OperationalError" not in output, output
+
+
+def test_offline_sql_ignores_invalid_timeout(scratch: ScratchDb) -> None:
+    """Scenario: offline mode reads no deadline."""
+    code, output = _run_upgrade(
+        scratch.owner_url, _base(), sql=True, extra_env={TIMEOUT_ENV: "abc"}
+    )
     assert code == 0, output
     assert "CREATE TABLE" in output, output
