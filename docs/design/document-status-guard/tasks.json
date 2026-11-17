@@ -1,0 +1,45 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "mappers.apply_update: copy only the allowlist (title, content, source, source_url, is_processed, metadata, last_updated), return dropped key names except id; rewrite status unit tests",
+      "size": "S",
+      "depends_on": [],
+      "done_when": ".venv/bin/pytest tests/unit/plugins/test_postgres_status.py passes: status, tenant_id and unknown keys are not copied and are returned as dropped, id is not returned, allowed keys are copied, the input dict is unchanged",
+      "files": [
+        "src/plugins/relational_db/mappers.py",
+        "tests/unit/plugins/test_postgres_status.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T2",
+      "title": "postgres.save_document/update_document: insert with constant needs_review, one warning per call with dropped key names only, remove validate_status and its import; integration tests for update, insert and upsert",
+      "size": "S",
+      "depends_on": [
+        "T1"
+      ],
+      "done_when": "Docker suite: pytest tests/integration/plugins passes new tests: update_document(doc_id, {\"status\": \"approved\", \"title\": \"x\"}) leaves needs_review and changes the title, save_document of a new payload with status approved stores needs_review, upsert of an existing approved row keeps approved, warning log has key names and no values; grep -rn validate_status src returns nothing; git status --porcelain migrations/versions is empty",
+      "files": [
+        "src/plugins/relational_db/postgres.py",
+        "src/plugins/relational_db/mappers.py",
+        "tests/integration/plugins/test_postgres_status_guard.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T3",
+      "title": "fetch.py _to_document stops sending status; fetch task integration test: ingest stores needs_review, logs no status warning and the task returns saved",
+      "size": "S",
+      "depends_on": [
+        "T2"
+      ],
+      "done_when": "Docker suite: pytest tests/integration/test_fetch_task_integration.py passes the new test (payload has no status key, row has needs_review, no status warning logged, task returns saved) and the existing tests unchanged; ruff check, ruff format --check, pyright and pytest -m \"not integration\" pass",
+      "files": [
+        "src/tasks/fetch.py",
+        "tests/integration/test_fetch_task_integration.py"
+      ],
+      "agent": "py-coder"
+    }
+  ]
+}
