@@ -256,3 +256,34 @@ def test_holder_query_splits_key_into_classid_and_objid(key: int, classid: int, 
 
     holder_params = next(p for sql, p in conn.statements if "pg_locks" in sql)
     assert holder_params == {"classid": classid, "objid": objid}
+
+
+@pytest.mark.parametrize(
+    ("tries", "acquired"),
+    [
+        pytest.param([False, False], False, id="held-past-deadline"),
+        pytest.param([False, True], True, id="freed-at-deadline-try"),
+    ],
+)
+def test_last_sleep_is_capped_at_the_deadline(
+    tries: list[bool | Exception], acquired: bool
+) -> None:
+    clock = _FakeClock()
+    conn = _FakeConnection(tries=tries, holder=4242)
+    ran: list[str] = []
+
+    def enter() -> None:
+        with advisory_lock(
+            cast(Connection, conn), KEY, 0.25, clock=clock.clock, sleep=clock.sleep, poll_s=1.0
+        ):
+            ran.append("body")
+
+    if acquired:
+        enter()
+    else:
+        with pytest.raises(AdvisoryLockTimeout):
+            enter()
+
+    assert clock.sleeps == [0.25]
+    assert conn.count("pg_try_advisory_lock") == 2
+    assert ran == (["body"] if acquired else [])

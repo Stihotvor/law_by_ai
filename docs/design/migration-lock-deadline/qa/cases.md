@@ -195,7 +195,7 @@
 - Given MIGRATION_LOCK_TIMEOUT_S is 0.5 and the key is held
 - When the operator runs `alembic upgrade head`
 - Then the run fails with a timeout error that shows the deadline 0.5 and it does not wait for a full 1 s poll cycle beyond the deadline
-- Resolved: the run always makes at least one try. It stops at the first poll at or after the deadline, so it overshoots by at most one poll interval (1 s).
+- Resolved: the run always makes at least one try. The last sleep is capped at the time left, so the final try happens at the deadline.
 
 ### QA-029 Empty value
 - Covers: Technical Constraints (non-numeric fails)

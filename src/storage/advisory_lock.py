@@ -81,7 +81,7 @@ def _acquire(
         if not waited:
             logger.info("Waiting for advisory lock 0x%X (deadline %g s)", key, timeout_s)
             waited = True
-        sleep(poll_s)
+        sleep(min(poll_s, deadline - clock()))
 
 
 def _release(connection: Connection, key: int) -> None:
