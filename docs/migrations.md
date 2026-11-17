@@ -47,16 +47,35 @@ change the schema. RLS policies for `users`/`tenants` live in the migrations
 
 ## Overlapping upgrade runs
 
-Each online run of `alembic upgrade head` takes a session-level
-`pg_advisory_lock` with the key `0x6C61775F6D6967` ("law_mig") before it reads
-`alembic_version`. When two runs overlap, the second run waits. It then sees
-head and applies nothing, so each migration runs once.
+Each online run of `alembic upgrade head` takes a session-level advisory lock
+with the key `0x6C61775F6D6967` ("law_mig") before it reads `alembic_version`.
+When two runs overlap, the second run waits. It then sees head and applies
+nothing, so each migration runs once.
 
-- A waiting run has no time limit. A hung run shows in `pg_locks`.
-- If a role or the server sets `lock_timeout` or `statement_timeout`, the
-  waiting run fails with a timeout error.
+The run tries `pg_try_advisory_lock` every 1 s until a deadline. The default
+deadline is 300 s. Set `MIGRATION_LOCK_TIMEOUT_S` to change it. The value must
+be a positive number. If the value is `0`, negative or not a number, the run
+fails before it connects. The error names the variable.
+
+- If the first try fails, the run logs one line. The line gives the key and
+  the deadline.
+- If the lock becomes free before the deadline, the run takes it at the next
+  try. Then it applies only the missing revisions.
+- The last try runs at the deadline. If the operating system wakes the run a
+  little late and the lock is free at that try, the run takes the lock and
+  continues. The deadline limits the wait for a held lock only.
+- If a lock try fails at or after the deadline, the run fails with a timeout
+  error. The timed-out run applies no revision and does not write
+  `alembic_version`. Another run can still change it in that time.
+- The timeout error gives the key, the deadline in seconds and the pid of the
+  backend that holds the lock. If that backend ended before the run read
+  `pg_locks`, the error gives "unknown" as the pid.
+- After a timeout, the process exits with a non-zero code. The one-shot
+  `init` service then fails, and the services that depend on it do not start.
+- If a poll query fails, for example because the connection is lost, the run
+  raises the database error. The run does not report it as a timeout.
 - When a process dies, PostgreSQL ends its session and frees the lock.
-- Offline mode (`--sql`) takes no lock.
+- Offline mode (`--sql`) takes no lock and does not read the deadline.
 
 ## Docker / test compose
 

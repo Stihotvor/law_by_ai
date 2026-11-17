@@ -268,6 +268,11 @@ class Settings:
         """Return the worker DB pool config; ``ValueError`` names a bad variable."""
         return PoolConfig(self.worker_postgres_pool_size, self.worker_postgres_max_overflow)
 
+    @property
+    def migration_lock_timeout_s(self) -> float:
+        """Seconds the Alembic run waits for the migration advisory lock."""
+        return _positive("MIGRATION_LOCK_TIMEOUT_S", "300", float)
+
     # --- Redis / Celery ------------------------------------------------------
     @property
     def redis_user(self) -> str:
