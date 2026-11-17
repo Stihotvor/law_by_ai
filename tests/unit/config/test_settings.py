@@ -2,6 +2,8 @@
 
 import os
 
+import pytest
+
 from config.settings import ROOT_DIR, Settings, get_settings, load_env
 
 # Environment variables the settings module may read.
@@ -240,3 +242,36 @@ def test_load_env_reads_file(tmp_path, monkeypatch):
 def test_root_dir_points_at_repo_root():
     # Container WORKDIR is /app; local checkout is <repo>/law_by_ai.
     assert (ROOT_DIR / "pyproject.toml").exists()
+
+
+_LOCK_VAR = "MIGRATION_LOCK_TIMEOUT_S"
+
+
+def _isolate_lock_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stop Settings() from loading the env file and clear the lock timeout variable."""
+    monkeypatch.setattr("config.settings.load_env", lambda: None)
+    monkeypatch.delenv(_LOCK_VAR, raising=False)
+
+
+def test_migration_lock_timeout_defaults_to_300(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_lock_env(monkeypatch)
+
+    assert Settings().migration_lock_timeout_s == 300.0
+
+
+def test_migration_lock_timeout_reads_valid_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_lock_env(monkeypatch)
+    monkeypatch.setenv(_LOCK_VAR, "12.5")
+
+    assert Settings().migration_lock_timeout_s == 12.5
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "abc"])
+def test_migration_lock_timeout_rejects_invalid_value(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    _isolate_lock_env(monkeypatch)
+    monkeypatch.setenv(_LOCK_VAR, value)
+
+    with pytest.raises(ValueError, match=_LOCK_VAR):
+        _ = Settings().migration_lock_timeout_s

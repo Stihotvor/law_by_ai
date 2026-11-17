@@ -8,7 +8,7 @@
       "done_when": ".venv/bin/pytest tests/unit -k migration_lock_timeout passes: default 300, a valid value, and 0, -5 and abc each raise an error that names MIGRATION_LOCK_TIMEOUT_S",
       "files": [
         "src/config/settings.py",
-        "tests/unit/test_settings.py"
+        "tests/unit/config/test_settings.py"
       ],
       "agent": "python-lead"
     },
