@@ -76,12 +76,14 @@ def _acquire(
     deadline = clock() + timeout_s
     waited = False
     while not _try_lock(connection, key):
-        if clock() >= deadline:
+        # One clock read per loop, so the guard and the sleep agree on the time left.
+        remaining = deadline - clock()
+        if remaining <= 0:
             raise AdvisoryLockTimeout(key, timeout_s, _holder_pid(connection, key))
         if not waited:
             logger.info("Waiting for advisory lock 0x%X (deadline %g s)", key, timeout_s)
             waited = True
-        sleep(min(poll_s, deadline - clock()))
+        sleep(min(poll_s, remaining))
 
 
 def _release(connection: Connection, key: int) -> None:

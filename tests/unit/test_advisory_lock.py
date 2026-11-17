@@ -287,3 +287,26 @@ def test_last_sleep_is_capped_at_the_deadline(
     assert clock.sleeps == [0.25]
     assert conn.count("pg_try_advisory_lock") == 2
     assert ran == (["body"] if acquired else [])
+
+
+def test_clock_passing_deadline_between_reads_times_out_without_negative_sleep() -> None:
+    # Reads: start (deadline 1.0), then 0.5 (before the deadline), then 1.5 (past it).
+    readings = iter([0.0, 0.5, 1.5, 2.0, 2.5])
+    sleeps: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        if seconds < 0:
+            raise ValueError("sleep length must be non-negative")
+        sleeps.append(seconds)
+
+    conn = _FakeConnection(tries=[False] * 10, holder=4242)
+
+    with (
+        pytest.raises(AdvisoryLockTimeout),
+        advisory_lock(
+            cast(Connection, conn), KEY, 1.0, clock=lambda: next(readings), sleep=sleep, poll_s=1.0
+        ),
+    ):
+        pass
+
+    assert all(s >= 0 for s in sleeps)
