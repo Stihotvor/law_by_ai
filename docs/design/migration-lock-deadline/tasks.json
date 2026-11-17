@@ -1,0 +1,54 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Settings.migration_lock_timeout_s from MIGRATION_LOCK_TIMEOUT_S (default 300, positive float) plus unit tests",
+      "size": "S",
+      "depends_on": [],
+      "done_when": ".venv/bin/pytest tests/unit -k migration_lock_timeout passes: default 300, a valid value, and 0, -5 and abc each raise an error that names MIGRATION_LOCK_TIMEOUT_S",
+      "files": [
+        "src/config/settings.py",
+        "tests/unit/test_settings.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T2",
+      "title": "src/storage/advisory_lock.py: advisory_lock context manager (poll pg_try_advisory_lock, injectable clock and sleep), AdvisoryLockTimeout, holder pid from pg_locks, plus unit tests with fake connection",
+      "size": "M",
+      "depends_on": [],
+      "done_when": ".venv/bin/pytest tests/unit/test_advisory_lock.py passes: free lock logs no wait line, lock freed before deadline is taken at next poll, deadline raises AdvisoryLockTimeout naming key 0x6C61775F6D6967, deadline and pid or unknown, body never runs on timeout, DB error in poll or pg_locks query propagates unchanged, release failure is logged and not raised",
+      "files": [
+        "src/storage/advisory_lock.py",
+        "tests/unit/test_advisory_lock.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T3",
+      "title": "migrations/env.py: read deadline before connect, call advisory_lock (online only); integration test with held key and 2 s deadline",
+      "size": "M",
+      "depends_on": [
+        "T1",
+        "T2"
+      ],
+      "done_when": "Docker suite: pytest tests/integration/test_migration_lock.py passes the 4 existing tests unchanged plus the new timeout test (key held on a second connection, MIGRATION_LOCK_TIMEOUT_S=2, run fails in 2 s to 5 s, message has 0x6C61775F6D6967 and the real holder pid, alembic_version has 0 changed rows); with MIGRATION_LOCK_TIMEOUT_S=0, -5 or abc the run fails before it connects naming the variable; offline --sql reads no deadline",
+      "files": [
+        "migrations/env.py",
+        "tests/integration/test_migration_lock.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T4",
+      "title": "docs/migrations.md: update 'Overlapping upgrade runs' with deadline, MIGRATION_LOCK_TIMEOUT_S setting and timeout error",
+      "size": "S",
+      "depends_on": [],
+      "done_when": "grep -n 'MIGRATION_LOCK_TIMEOUT_S' docs/migrations.md shows the section 'Overlapping upgrade runs' naming the 300 s default, the 1 s poll, the key 0x6C61775F6D6967 and the holder pid in the error",
+      "files": [
+        "docs/migrations.md"
+      ],
+      "agent": "python-lead"
+    }
+  ]
+}
