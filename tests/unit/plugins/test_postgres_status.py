@@ -1,11 +1,12 @@
 """Status guard in ``apply_update`` and reject errors in the PostgreSQL store.
 
-Unit tests: ``apply_update`` works on a detached ORM row, so no PostgreSQL
-instance is needed.
+Unit tests: ``apply_update`` works on a detached ORM row and the store tests
+use a fake ``Session``, so no PostgreSQL instance is needed.
 """
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -13,8 +14,9 @@ import pytest
 
 import plugins.relational_db.mappers as mappers_module
 from data.models import Base, LegalDocument
+from plugins.relational_db import postgres
 from plugins.relational_db.mappers import apply_update
-from plugins.relational_db.postgres import StoreDocumentNotFoundError
+from plugins.relational_db.postgres import PostgreSQLStore, StoreDocumentNotFoundError
 
 
 def _row(**overrides: Any) -> LegalDocument:
@@ -100,3 +102,90 @@ def test_validate_status_is_removed() -> None:
 def test_not_found_error_is_lookup_error_not_value_error() -> None:
     assert issubclass(StoreDocumentNotFoundError, LookupError)
     assert not issubclass(StoreDocumentNotFoundError, ValueError)
+
+
+class FakeSession:
+    """Fake session: ``get`` returns *row* (or ``None``); ``add`` records rows."""
+
+    def __init__(self, row: LegalDocument | None) -> None:
+        self.row = row
+        self.added: list[Any] = []
+
+    def __enter__(self) -> FakeSession:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        return None
+
+    def get(self, _model: object, _key: str) -> LegalDocument | None:
+        return self.row
+
+    def add(self, obj: Any) -> None:
+        self.added.append(obj)
+
+    def commit(self) -> None:
+        return None
+
+
+def _store(
+    monkeypatch: pytest.MonkeyPatch, row: LegalDocument | None
+) -> tuple[PostgreSQLStore, FakeSession]:
+    session = FakeSession(row)
+    store = PostgreSQLStore()
+    monkeypatch.setattr(store, "_ensure_initialized", lambda: None)
+    monkeypatch.setattr(postgres, "Session", lambda _engine: session)
+    return store, session
+
+
+def _doc(**extra: Any) -> dict[str, Any]:
+    return {"id": "d1", "title": "t", "content": "c", "source": "s", "source_url": "u", **extra}
+
+
+def _warnings(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+
+
+def test_save_insert_with_status_stores_needs_review_and_warns(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    store, session = _store(monkeypatch, None)
+    with caplog.at_level(logging.WARNING, logger=postgres.__name__):
+        store.save_document(_doc(status="approved"), tenant_id="t1")
+    assert len(session.added) == 1
+    assert session.added[0].status == "needs_review"
+    messages = _warnings(caplog)
+    assert len(messages) == 1
+    assert "status" in messages[0]
+    assert "approved" not in messages[0]
+
+
+def test_save_insert_without_status_does_not_warn(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    store, session = _store(monkeypatch, None)
+    with caplog.at_level(logging.WARNING, logger=postgres.__name__):
+        store.save_document(_doc(), tenant_id="t1")
+    assert len(session.added) == 1
+    assert session.added[0].status == "needs_review"
+    assert _warnings(caplog) == []
+
+
+def test_update_document_drops_status_and_warns(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    row = _row()
+    store, _ = _store(monkeypatch, row)
+    with caplog.at_level(logging.WARNING, logger=postgres.__name__):
+        store.update_document("d1", {"status": "approved", "title": "x"})
+    assert row.status == "needs_review"
+    assert row.title == "x"
+    messages = _warnings(caplog)
+    assert len(messages) == 1
+    assert "status" in messages[0]
+    assert "approved" not in messages[0]
+
+
+def test_update_document_missing_row_raises_key_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    store, _ = _store(monkeypatch, None)
+    with pytest.raises(KeyError):
+        store.update_document("missing", {"title": "x"})
