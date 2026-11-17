@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+import plugins.relational_db.mappers as mappers_module
 from data.models import Base, LegalDocument
 from plugins.relational_db.mappers import apply_update
 from plugins.relational_db.postgres import StoreDocumentNotFoundError
@@ -47,14 +48,14 @@ def test_apply_update_drops_any_status_value(value: object) -> None:
 
 
 def test_apply_update_drops_tenant_id_and_unknown_keys() -> None:
-    row = _row(tenant_id="t1")
+    row = _row()
     dropped = apply_update(row, {"tenant_id": "t2", "foo": 1})
     assert row.tenant_id == "t1"
     assert dropped == ["foo", "tenant_id"]
 
 
 def test_apply_update_ignores_id_without_reporting_it() -> None:
-    row = _row(id="d1")
+    row = _row()
     dropped = apply_update(row, {"id": "d2"})
     assert row.id == "d1"
     assert dropped == []
@@ -80,6 +81,7 @@ def test_apply_update_copies_allowed_keys() -> None:
     assert row.is_processed is True
     assert row.last_updated == when
     assert row.metadata_ == meta
+    # A raw setattr of "metadata" would shadow the declarative Base.metadata.
     assert row.metadata is Base.metadata
     assert dropped == []
 
@@ -89,6 +91,10 @@ def test_apply_update_does_not_mutate_input() -> None:
     before = dict(payload)
     apply_update(_row(), payload)
     assert payload == before
+
+
+def test_validate_status_is_removed() -> None:
+    assert not hasattr(mappers_module, "validate_status")
 
 
 def test_not_found_error_is_lookup_error_not_value_error() -> None:

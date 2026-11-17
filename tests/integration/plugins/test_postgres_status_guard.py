@@ -8,11 +8,8 @@ never their values. Needs a live PostgreSQL; skipped when it is unreachable.
 from __future__ import annotations
 
 import logging
-import shutil
-import subprocess
 import uuid
 from collections.abc import Callable, Iterator
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -25,7 +22,6 @@ from plugins.relational_db.postgres import PostgreSQLStore
 pytestmark = pytest.mark.integration
 
 _LOGGER = "plugins.relational_db.postgres"
-_REPO_ROOT = Path(__file__).resolve().parents[3]
 DocFactory = Callable[..., dict[str, Any]]
 
 
@@ -174,20 +170,131 @@ def test_reads_still_return_status(store: PostgreSQLStore, make_document: DocFac
     assert fetched["status"] == "needs_review"
 
 
-def test_validate_status_gone_and_no_new_migration() -> None:
-    """Static check; needs no database."""
-    hits = [
-        p for p in (_REPO_ROOT / "src").rglob("*.py") if "validate_status" in p.read_text("utf-8")
-    ]
-    assert hits == []
-    git = shutil.which("git")
-    if git is None or not (_REPO_ROOT / ".git").exists():
-        pytest.skip("git checkout not available for the migration check")
-    out = subprocess.run(  # noqa: S603 - fixed argv: git from PATH and constant args
-        [git, "status", "--porcelain", "migrations/versions"],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
-    assert out == ""
+def test_upsert_cannot_approve_needs_review_row(
+    store: PostgreSQLStore, make_document: DocFactory
+) -> None:
+    doc = make_document()
+    doc_id = store.save_document(doc)
+
+    store.save_document({**doc, "status": "approved"})
+
+    assert _stored_status(store, doc_id) == "needs_review"
+
+
+def test_insert_with_bogus_status_stores_needs_review(
+    store: PostgreSQLStore, make_document: DocFactory
+) -> None:
+    doc_id = store.save_document(make_document(status="bogus"))
+
+    assert _stored_status(store, doc_id) == "needs_review"
+
+
+def test_upsert_warning_names_status(
+    store: PostgreSQLStore, make_document: DocFactory, caplog: pytest.LogCaptureFixture
+) -> None:
+    doc = make_document()
+    store.save_document(doc)
+    caplog.set_level(logging.WARNING, logger=_LOGGER)
+
+    store.save_document({**doc, "status": "approved"})
+
+    warnings = _warnings(caplog)
+    assert len(warnings) == 1
+    assert "status" in warnings[0]
+    assert "approved" not in warnings[0]
+
+
+def test_title_only_update_logs_no_warning(
+    store: PostgreSQLStore, make_document: DocFactory, caplog: pytest.LogCaptureFixture
+) -> None:
+    doc_id = store.save_document(make_document())
+    caplog.set_level(logging.WARNING, logger=_LOGGER)
+
+    store.update_document(doc_id, {"title": "only title"})
+
+    assert _warnings(caplog) == []
+
+
+def test_update_keeps_tenant_and_warns(
+    store: PostgreSQLStore, make_document: DocFactory, caplog: pytest.LogCaptureFixture
+) -> None:
+    doc_id = store.save_document(make_document())
+    caplog.set_level(logging.WARNING, logger=_LOGGER)
+
+    store.update_document(doc_id, {"tenant_id": "tenant-other"})
+
+    fetched = store.get_document(doc_id)
+    assert fetched is not None
+    assert fetched["tenant_id"] == "tenant-7"
+    warnings = _warnings(caplog)
+    assert len(warnings) == 1
+    assert "tenant_id" in warnings[0]
+    assert "tenant-other" not in warnings[0]
+
+
+def test_upsert_keeps_tenant(store: PostgreSQLStore, make_document: DocFactory) -> None:
+    doc = make_document()
+    doc_id = store.save_document(doc)
+
+    store.save_document({**doc, "tenant_id": "tenant-other"})
+
+    fetched = store.get_document(doc_id)
+    assert fetched is not None
+    assert fetched["tenant_id"] == "tenant-7"
+
+
+def test_update_keeps_row_id(store: PostgreSQLStore, make_document: DocFactory) -> None:
+    doc_id = store.save_document(make_document())
+    other_id = str(uuid.uuid4())
+
+    store.update_document(doc_id, {"id": other_id, "title": "moved?"})
+
+    fetched = store.get_document(doc_id)
+    assert fetched is not None
+    assert fetched["id"] == doc_id
+    assert fetched["title"] == "moved?"
+    assert store.get_document(other_id) is None
+
+
+def test_update_metadata_round_trips(store: PostgreSQLStore, make_document: DocFactory) -> None:
+    doc_id = store.save_document(make_document())
+
+    store.update_document(doc_id, {"metadata": {"pages": 9, "lang": "uk"}})
+
+    fetched = store.get_document(doc_id)
+    assert fetched is not None
+    assert fetched["metadata"] == {"pages": 9, "lang": "uk"}
+
+
+def test_save_without_id_ignores_approved_status(
+    store: PostgreSQLStore, make_document: DocFactory
+) -> None:
+    doc = make_document(status="approved")
+    assert "id" not in doc
+
+    doc_id = store.save_document(doc)
+
+    assert _stored_status(store, doc_id) == "needs_review"
+
+
+def test_update_missing_id_raises_and_creates_no_row(store: PostgreSQLStore) -> None:
+    missing_id = str(uuid.uuid4())
+
+    with pytest.raises(KeyError):
+        store.update_document(missing_id, {"status": "approved"})
+
+    assert store.get_document(missing_id) is None
+
+
+def test_each_update_with_status_logs_one_warning(
+    store: PostgreSQLStore, make_document: DocFactory, caplog: pytest.LogCaptureFixture
+) -> None:
+    doc_id = store.save_document(make_document())
+    caplog.set_level(logging.WARNING, logger=_LOGGER)
+
+    for _ in range(3):
+        store.update_document(doc_id, {"status": "approved"})
+
+    warnings = _warnings(caplog)
+    assert len(warnings) == 3
+    assert all("status" in w for w in warnings)

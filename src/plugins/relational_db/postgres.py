@@ -101,7 +101,7 @@ def _set_tenant_setting(conn) -> None:
 def _warn_dropped(operation: str, document_id: str, keys: list[str]) -> None:
     """Log one warning naming the dropped payload keys; never log their values."""
     if keys:
-        _log.warning("%s ignored keys for document %s: %s", operation, document_id, ", ".join(keys))
+        _log.warning("%s ignored keys for document %r: %r", operation, document_id, keys)
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +180,10 @@ class PostgreSQLStore:
         If *document* has no ``id``, a new one is generated and written back
         into the dict, so re-saving the same dict upserts the same row.
         A new row always gets ``needs_review``; an existing row keeps its
-        ``status``. Dropped key names (never values) are logged as one warning.
+        ``status``, ``tenant_id`` and ``id``. Dropped key names (never values)
+        are logged as one warning. On insert only a ``status`` key is reported:
+        a payload ``tenant_id`` still picks the tenant (by design). On upsert
+        ``status``, ``tenant_id`` and unknown keys are reported.
         """
         self._ensure_initialized()
         doc_id = document.get("id") or str(uuid.uuid4())
@@ -206,6 +209,7 @@ class PostgreSQLStore:
                         status=DocumentStatus.NEEDS_REVIEW.value,
                     )
                 )
+                # Insert reports only status; payload tenant_id is used above (decision.md).
                 dropped = ["status"] if "status" in document else []
             else:
                 dropped = _apply_update(row, document)
