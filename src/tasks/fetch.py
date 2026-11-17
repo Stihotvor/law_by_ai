@@ -19,7 +19,6 @@ from agents.fetch.contracts import DocumentRef, FetchedDocument
 from agents.fetch.document_fetcher import DocumentFetcherAgent, RejectionChecker
 from agents.fetch.errors import DocumentRejectedError, InvalidReferenceError
 from config.settings import get_settings
-from data.models import DocumentStatus
 from plugins.relational_db.postgres import PostgreSQLStore
 from tasks.celery_app import FETCH_DOCUMENT, app
 
@@ -80,7 +79,6 @@ def _to_document(ref: DocumentRef, fetched: FetchedDocument, text: str) -> dict[
         "last_updated": fetched.fetched_at,
         "metadata": fetched.meta.extra,
         "is_processed": False,
-        "status": DocumentStatus.NEEDS_REVIEW.value,
     }
 
 

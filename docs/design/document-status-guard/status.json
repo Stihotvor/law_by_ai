@@ -3,6 +3,10 @@
     "state": "done"
   },
   "T2": {
-    "state": "doing"
+    "state": "done",
+    "note": "integration tests pending Docker run"
+  },
+  "T3": {
+    "state": "done"
   }
 }
