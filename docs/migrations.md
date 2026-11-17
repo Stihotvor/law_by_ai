@@ -65,7 +65,8 @@ fails before it connects. The error names the variable.
   little late and the lock is free at that try, the run takes the lock and
   continues. The deadline limits the wait for a held lock only.
 - If a lock try fails at or after the deadline, the run fails with a timeout
-  error. The run applies no revision, and `alembic_version` does not change.
+  error. The timed-out run applies no revision and does not write
+  `alembic_version`. Another run can still change it in that time.
 - The timeout error gives the key, the deadline in seconds and the pid of the
   backend that holds the lock. If that backend ended before the run read
   `pg_locks`, the error gives "unknown" as the pid.
