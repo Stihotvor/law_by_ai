@@ -18,6 +18,8 @@ from sqlalchemy.engine import Connection
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_POLL_S = 1.0
+
 _TRY_LOCK = text("SELECT pg_try_advisory_lock(:key)")
 _UNLOCK = text("SELECT pg_advisory_unlock(:key)")
 # A bigint advisory key is stored split: high 32 bits in classid, low 32 bits in
@@ -65,6 +67,7 @@ def _acquire(
     connection: Connection,
     key: int,
     timeout_s: float,
+    *,
     clock: Callable[[], float],
     sleep: Callable[[float], None],
     poll_s: float,
@@ -84,6 +87,7 @@ def _acquire(
 def _release(connection: Connection, key: int) -> None:
     """Unlock the key; log a failure and do not raise it."""
     try:
+        # Clear a transaction the body left open (e.g. migration error) so the unlock runs.
         if connection.in_transaction():
             connection.rollback()
         connection.execute(_UNLOCK, {"key": key})
@@ -100,7 +104,7 @@ def advisory_lock(
     *,
     clock: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
-    poll_s: float = 1.0,
+    poll_s: float = DEFAULT_POLL_S,
 ) -> Iterator[None]:
     """Hold the session advisory lock ``key`` for the body.
 
@@ -108,7 +112,7 @@ def advisory_lock(
     Database errors from a poll or the holder query propagate unchanged. A failed
     release is logged; closing the connection ends the session and frees the lock.
     """
-    _acquire(connection, key, timeout_s, clock, sleep, poll_s)
+    _acquire(connection, key, timeout_s, clock=clock, sleep=sleep, poll_s=poll_s)
     try:
         yield
     finally:

@@ -22,7 +22,7 @@ Path 2, chosen by the owner on 2026-11-17.
 - `env.py` stays a thin Alembic entry point.
 
 ## Consequences
-- The diff is larger than Path 1, about 80 lines plus tests.
+- The diff is larger than Path 1: the module has about 115 lines, plus tests.
 - `migrations/env.py` imports `storage.advisory_lock`.
 - The integration test must assert the real holder pid to guard the `classid`/`objid` split.
 - `docs/migrations.md`, section "Overlapping upgrade runs", describes the deadline, the setting and the error.
