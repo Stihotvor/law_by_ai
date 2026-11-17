@@ -1,11 +1,14 @@
 {
   "T1": {
-    "state": "doing"
+    "state": "done"
   },
   "T2": {
-    "state": "doing"
+    "state": "done"
   },
   "T4": {
+    "state": "done"
+  },
+  "T3": {
     "state": "doing"
   }
 }
