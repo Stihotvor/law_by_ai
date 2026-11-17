@@ -61,6 +61,9 @@ fails before it connects. The error names the variable.
   the deadline.
 - If the lock becomes free before the deadline, the run takes it at the next
   try. Then it applies only the missing revisions.
+- The last try runs at the deadline. If the operating system wakes the run a
+  little late and the lock is free at that try, the run takes the lock and
+  continues. The deadline limits the wait for a held lock only.
 - If the deadline passes, the run fails with a timeout error. The run applies
   no revision, and `alembic_version` does not change.
 - The timeout error gives the key, the deadline in seconds and the pid of the
