@@ -1,21 +1,12 @@
-"""Map between store dicts and ORM rows, and validate document fields."""
+"""Map between store dicts and ORM rows."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
 
-from data.models import DocumentStatus, LegalDocument
+from data.models import LegalDocument
 from plugins.relational_db.tenant_models import Tenant, User
-
-
-def validate_status(value: Any) -> str:
-    """Return *value* as a :class:`DocumentStatus` string; ``ValueError`` if unknown."""
-    try:
-        return DocumentStatus(value).value
-    except ValueError:
-        allowed = ", ".join(s.value for s in DocumentStatus)
-        raise ValueError(f"Unknown document status {value!r}; expected one of: {allowed}") from None
 
 
 def parse_dt(value: Any, *, default: datetime | None = None) -> datetime:
@@ -26,15 +17,34 @@ def parse_dt(value: Any, *, default: datetime | None = None) -> datetime:
     return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
 
 
-def apply_update(row: LegalDocument, document: dict[str, Any]) -> None:
-    """Merge ``document`` fields into a loaded row, in the caller's session."""
+# Fixed allowlist: payload key -> model attribute. Payload keys are never used
+# as attribute names; ``last_updated`` is handled separately via ``parse_dt``.
+_EDITABLE: dict[str, str] = {
+    "title": "title",
+    "content": "content",
+    "source": "source",
+    "source_url": "source_url",
+    "is_processed": "is_processed",
+    "metadata": "metadata_",
+}
+
+
+def apply_update(row: LegalDocument, document: dict[str, Any]) -> list[str]:
+    """Copy allowlisted ``document`` fields into a loaded row, in the caller's session.
+
+    Returns the sorted names of the dropped keys (``status``, ``tenant_id``,
+    unknown keys); ``id`` is ignored and not reported. ``document`` is not changed.
+    """
+    dropped: list[str] = []
     for key, value in document.items():
-        if key == "metadata":
-            row.metadata_ = value
+        attr = _EDITABLE.get(key)
+        if attr is not None:
+            setattr(row, attr, value)
         elif key == "last_updated":
             row.last_updated = parse_dt(value)
-        elif key != "id" and hasattr(row, key):
-            setattr(row, key, value)
+        elif key != "id":
+            dropped.append(key)
+    return sorted(dropped)
 
 
 def doc_to_dict(row: LegalDocument) -> dict[str, Any]:

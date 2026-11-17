@@ -8,6 +8,7 @@ Marked ``integration``: needs a live PostgreSQL. Skipped if it is unreachable.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Iterator
 from typing import Any
@@ -16,6 +17,7 @@ import pytest
 from fakes.fetch import FAKE_BODY, FAKE_SOURCE, FAKE_STRATEGY, FAKE_TITLE, FakeSource, FakeStrategy
 from sqlalchemy import create_engine, text
 
+from agents.fetch.contracts import DocumentRef, FetchedDocument
 from agents.fetch.registry import Registry
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
@@ -125,3 +127,51 @@ def test_task_without_tenant_saves_shared_document(store: PostgreSQLStore, sourc
     rows = _rows(source_url)
     assert len(rows) == 1
     assert rows[0]["tenant_id"] is None
+
+
+def _spy_payloads(monkeypatch: pytest.MonkeyPatch, extra: dict[str, Any]) -> list[dict[str, Any]]:
+    """Record each payload ``_to_document`` builds; merge *extra* into it first."""
+    payloads: list[dict[str, Any]] = []
+    real = fetch._to_document
+
+    def spy(ref: DocumentRef, fetched: FetchedDocument, body: str) -> dict[str, Any]:
+        payload = {**real(ref, fetched, body), **extra}
+        payloads.append(payload)
+        return payload
+
+    monkeypatch.setattr(fetch, "_to_document", spy)
+    return payloads
+
+
+def test_task_ingest_sends_no_status_and_stores_needs_review(
+    store: PostgreSQLStore,
+    source_url: str,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    payloads = _spy_payloads(monkeypatch, {})
+    caplog.set_level(logging.WARNING)
+
+    result = _run(source_url)
+
+    assert result["status"] == "saved"
+    assert len(payloads) == 1
+    assert "status" not in payloads[0]
+    rows = _rows(source_url)
+    assert len(rows) == 1
+    assert rows[0]["status"] == "needs_review"
+    warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert not [r for r in warnings if "status" in r.getMessage()]
+
+
+def test_task_payload_with_approved_status_stores_needs_review(
+    store: PostgreSQLStore, source_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _spy_payloads(monkeypatch, {"status": "approved"})
+
+    result = _run(source_url)
+
+    assert result["status"] == "saved"
+    rows = _rows(source_url)
+    assert len(rows) == 1
+    assert rows[0]["status"] == "needs_review"

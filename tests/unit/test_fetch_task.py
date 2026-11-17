@@ -105,7 +105,6 @@ def test_saved_document_fields(store: MagicMock, agent: MagicMock) -> None:
         "last_updated": FETCHED_AT,
         "metadata": {"k": "v"},
         "is_processed": False,
-        "status": "needs_review",
     }
 
 
