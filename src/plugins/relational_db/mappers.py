@@ -1,4 +1,4 @@
-"""Map between store dicts and ORM rows, and validate document fields."""
+"""Map between store dicts and ORM rows."""
 
 from __future__ import annotations
 
@@ -6,17 +6,8 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from data.models import DocumentStatus, LegalDocument
+from data.models import LegalDocument
 from plugins.relational_db.tenant_models import Tenant, User
-
-
-def validate_status(value: Any) -> str:
-    """Return *value* as a :class:`DocumentStatus` string; ``ValueError`` if unknown."""
-    try:
-        return DocumentStatus(value).value
-    except ValueError:
-        allowed = ", ".join(s.value for s in DocumentStatus)
-        raise ValueError(f"Unknown document status {value!r}; expected one of: {allowed}") from None
 
 
 def parse_dt(value: Any, *, default: datetime | None = None) -> datetime:

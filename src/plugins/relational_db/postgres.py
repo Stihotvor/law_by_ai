@@ -41,7 +41,6 @@ from plugins.relational_db.mappers import login_user_to_dict as _login_user_to_d
 from plugins.relational_db.mappers import parse_dt as _parse_dt
 from plugins.relational_db.mappers import tenant_to_dict as _tenant_to_dict
 from plugins.relational_db.mappers import user_to_dict as _user_to_dict
-from plugins.relational_db.mappers import validate_status as _validate_status
 from plugins.relational_db.schema_check import SchemaNotAtHeadError
 from plugins.relational_db.schema_check import check_schema_head as _check_schema_head
 from plugins.relational_db.tenant_models import Tenant, User
@@ -97,6 +96,12 @@ def _set_tenant_setting(conn) -> None:
         text("SELECT set_config(:key, :value, true)"),
         {"key": TENANT_SETTING, "value": tenant_id or ""},
     )
+
+
+def _warn_dropped(operation: str, document_id: str, keys: list[str]) -> None:
+    """Log one warning naming the dropped payload keys; never log their values."""
+    if keys:
+        _log.warning("%s ignored keys for document %s: %s", operation, document_id, ", ".join(keys))
 
 
 # ---------------------------------------------------------------------------
@@ -174,9 +179,9 @@ class PostgreSQLStore:
 
         If *document* has no ``id``, a new one is generated and written back
         into the dict, so re-saving the same dict upserts the same row.
-        Raises ``ValueError`` for an unknown ``status`` before any write.
+        A new row always gets ``needs_review``; an existing row keeps its
+        ``status``. Dropped key names (never values) are logged as one warning.
         """
-        status = _validate_status(document.get("status", DocumentStatus.NEEDS_REVIEW))
         self._ensure_initialized()
         doc_id = document.get("id") or str(uuid.uuid4())
         document["id"] = doc_id
@@ -198,12 +203,14 @@ class PostgreSQLStore:
                         metadata_=document.get("metadata"),
                         is_processed=bool(document.get("is_processed", False)),
                         tenant_id=tenant,
-                        status=status,
+                        status=DocumentStatus.NEEDS_REVIEW.value,
                     )
                 )
+                dropped = ["status"] if "status" in document else []
             else:
-                _apply_update(row, document)
+                dropped = _apply_update(row, document)
             session.commit()
+        _warn_dropped("save_document", doc_id, dropped)
         return doc_id
 
     def get_document(self, document_id: str, tenant_id: str | None = None) -> dict[str, Any] | None:
@@ -258,19 +265,19 @@ class PostgreSQLStore:
     def update_document(
         self, document_id: str, document: dict[str, Any], tenant_id: str | None = None
     ) -> None:
-        """Merge ``document`` fields into the row; raises ``KeyError`` if missing.
+        """Merge editable ``document`` fields into the row; raises ``KeyError`` if missing.
 
-        Raises ``ValueError`` for an unknown ``status`` before any write.
+        ``status``, ``tenant_id`` and unknown keys are dropped; their names
+        (never values) are logged as one warning.
         """
-        if "status" in document:
-            _validate_status(document["status"])
         self._ensure_initialized()
         with Session(self._engine) as session:
             row = session.get(LegalDocument, document_id)
             if row is None:
                 raise KeyError(f"Document not found: {document_id}")
-            _apply_update(row, document)
+            dropped = _apply_update(row, document)
             session.commit()
+        _warn_dropped("update_document", document_id, dropped)
 
     # --- reject (issue #92) -------------------------------------------------
 
