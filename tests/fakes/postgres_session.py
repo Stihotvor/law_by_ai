@@ -34,12 +34,21 @@ class FakeResult:
         return [] if self.row is None else [self.row]
 
 
+def _tenant_matches(sql: str, params: dict[str, Any], row: LegalDocument) -> bool:
+    """Apply the tenant rule the SQL uses: strict write rule or own-or-shared read rule."""
+    tenant = params.get("tenant_id_1")
+    if "IS NOT DISTINCT FROM" in sql or "tenant_id" not in sql:
+        return row.tenant_id == tenant
+    return row.tenant_id is None or (tenant is not None and row.tenant_id == tenant)
+
+
 class FakeSession:
     """Fake session: ``get`` returns *row* and records its kwargs.
 
     ``execute`` takes a select or delete, records its PostgreSQL SQL and bound
-    params, and returns *row* only when its id and tenant equal the ``id_1``
-    and ``tenant_id_1`` params (no ``tenant_id_1`` matches a shared row).
+    params, and returns *row* only when it passes the statement filters: the
+    ``id_1`` param when present, and the tenant rule the SQL uses (strict
+    ``IS NOT DISTINCT FROM`` for writes, own-or-shared for reads).
     ``commit`` raises *commit_error* when set; ``add``, commits and rollbacks
     are recorded.
     """
@@ -70,9 +79,9 @@ class FakeSession:
         params = compiled.params
         self.params.append(dict(params))
         row = self.row
-        if row is None or row.id != params.get("id_1"):
+        if row is None or ("id_1" in params and row.id != params["id_1"]):
             return FakeResult(None)
-        return FakeResult(row if row.tenant_id == params.get("tenant_id_1") else None)
+        return FakeResult(row if _tenant_matches(str(compiled), dict(params), row) else None)
 
     def add(self, obj: Any) -> None:
         self.added.append(obj)
