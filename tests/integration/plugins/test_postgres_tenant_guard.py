@@ -18,7 +18,7 @@ from typing import Any
 
 import pytest
 from factories.db_probe import can_connect
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
@@ -34,6 +34,7 @@ _LOGGER = "plugins.relational_db.postgres"
 _TENANTS = {"A1": "A", "B1": "B", "S1": None}
 # Seconds a test waits for another thread or for a lock waiter.
 _WAIT_SECONDS = 10.0
+_DB_TIMEOUT = "5s"  # shorter than _WAIT_SECONDS, so the join limit is never reached
 # Distinctive payload tenant: it must never show up in a warning.
 _PAYLOAD_TENANT = "tenant-secret-b7"
 # Keys in a ``get_document`` dict (``mappers.doc_to_dict``).
@@ -282,6 +283,12 @@ def hold(monkeypatch: pytest.MonkeyPatch) -> _Hold:
                 state.flushed.set()
                 assert state.release.wait(_WAIT_SECONDS)
             super().commit()
+
+    @event.listens_for(_HoldingSession, "after_begin")
+    def _bound_db_calls(_session: Session, _transaction: Any, connection: Any) -> None:
+        # PostgreSQL cancels a stalled call, so every worker ends before its join limit.
+        connection.exec_driver_sql(f"SET LOCAL lock_timeout = '{_DB_TIMEOUT}'")
+        connection.exec_driver_sql(f"SET LOCAL statement_timeout = '{_DB_TIMEOUT}'")
 
     monkeypatch.setattr(postgres, "Session", _HoldingSession)
     return state
