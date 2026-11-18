@@ -272,7 +272,11 @@ def hold(monkeypatch: pytest.MonkeyPatch) -> _Hold:
 
     class _HoldingSession(Session):
         def commit(self) -> None:
-            state.pids.append(self.execute(text("SELECT pg_backend_pid()")).scalar_one())
+            # No autoflush: the second worker must record its pid before its
+            # INSERT blocks on the first worker's uncommitted row.
+            with self.no_autoflush:
+                pid = self.execute(text("SELECT pg_backend_pid()")).scalar_one()
+            state.pids.append(pid)
             if not state.flushed.is_set():
                 self.flush()
                 state.flushed.set()
