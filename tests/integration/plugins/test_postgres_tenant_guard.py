@@ -333,7 +333,8 @@ def _run(results: dict[str, Any], key: str, call: Any) -> None:
 
 
 def _start(results: dict[str, Any], key: str, call: Any) -> threading.Thread:
-    thread = threading.Thread(target=_run, args=(results, key, call))
+    # Daemon: a worker that stalls anywhere cannot hang pytest; the liveness assert reports it.
+    thread = threading.Thread(target=_run, args=(results, key, call), daemon=True)
     thread.start()
     return thread
 
@@ -356,7 +357,6 @@ def test_concurrent_insert_of_same_new_id_lets_one_win(
         hold.release.set()
         for worker in workers:
             worker.join(_WAIT_SECONDS)
-        other_store.close()
     assert not any(worker.is_alive() for worker in workers)
     assert results["first"] == doc_id
     assert isinstance(results["second"], IntegrityError)
