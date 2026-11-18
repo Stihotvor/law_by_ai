@@ -328,8 +328,35 @@ def test_recent_changes_keeps_since_filter(monkeypatch: pytest.MonkeyPatch) -> N
 
 @pytest.mark.parametrize(
     ("row_tenant", "caller", "found"),
-    [("A", "A", True), (None, None, True), ("B", "A", False)],
-    ids=["own", "shared-no-tenant", "foreign"],
+    [
+        ("A", "A", True),
+        (None, None, True),
+        (None, "A", True),
+        ("B", "A", False),
+        ("A", None, False),
+    ],
+    ids=["own", "shared-no-tenant", "shared-tenant", "foreign", "tenant-row-no-tenant"],
+)
+def test_list_reads_return_readable_rows(
+    monkeypatch: pytest.MonkeyPatch, row_tenant: str | None, caller: str | None, found: bool
+) -> None:
+    row = _row(row_tenant, last_updated=datetime(2025, 1, 1, tzinfo=UTC))
+    store = make_store(monkeypatch, FakeSession(row))
+    expected = ["d1"] if found else []
+    assert [d["id"] for d in store.search_documents("c", tenant_id=caller)] == expected
+    assert [d["id"] for d in store.get_recent_changes(tenant_id=caller)] == expected
+
+
+@pytest.mark.parametrize(
+    ("row_tenant", "caller", "found"),
+    [
+        ("A", "A", True),
+        (None, None, True),
+        (None, "A", True),
+        ("B", "A", False),
+        ("A", None, False),
+    ],
+    ids=["own", "shared-no-tenant", "shared-tenant", "foreign", "tenant-row-no-tenant"],
 )
 def test_get_document_returns_dict_or_none(
     monkeypatch: pytest.MonkeyPatch, row_tenant: str | None, caller: str | None, found: bool
