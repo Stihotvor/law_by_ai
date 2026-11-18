@@ -54,7 +54,7 @@ def test_store_initializes(tmp_path):
 
 def test_save_and_get_roundtrip(plugin, make_document: Callable):
     doc = make_document(title="Konstytucja RP", content="Krajowe źródło prawa.")
-    doc_id = plugin.save_document(doc)
+    doc_id = plugin.save_document(doc, tenant_id="tenant-7")
 
     fetched = plugin.get_document(doc_id)
     assert fetched is not None
@@ -97,7 +97,6 @@ def make_document() -> Callable:
             "source_url": "https://example.invalid/",
             "metadata": {"pages": 1, "language": "pl"},
             "is_processed": False,
-            "tenant_id": "tenant-7",
         }
         return {**base, **overrides}
 

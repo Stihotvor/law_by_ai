@@ -28,8 +28,9 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import create_engine, delete, event, exists, select, text, update
+from sqlalchemy import Select, create_engine, delete, event, exists, select, text, update
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
 from config.settings import PoolConfig, get_settings
 from core.security import get_current_tenant, hash_password
@@ -70,8 +71,69 @@ _LOGIN_KEYS += ("password_hash", "session_version")
 _log = logging.getLogger(__name__)
 
 
-class StoreDocumentNotFoundError(LookupError):
-    """No ``legal_document`` row has the given id."""
+class StoreDocumentNotFoundError(KeyError):
+    """No ``legal_document`` row the caller can write has the given id.
+
+    A ``KeyError`` (so a ``LookupError``) with a plain ``str``, no quotes.
+    """
+
+    def __str__(self) -> str:
+        return str(self.args[0]) if self.args else ""
+
+
+def _not_found(document_id: str) -> StoreDocumentNotFoundError:
+    return StoreDocumentNotFoundError(f"Document not found: {document_id}")
+
+
+def _resolve_tenant(tenant_id: str | None) -> str | None:
+    """Caller tenant: the argument, else the context; ``""`` counts as ``None``."""
+    return tenant_id or get_current_tenant() or None
+
+
+def _require_writable(
+    row: LegalDocument | None, document_id: str, tenant: str | None
+) -> LegalDocument:
+    """Return *row* when *tenant* owns it (``NULL == NULL``); else raise not found."""
+    if row is None or row.tenant_id != tenant:
+        raise _not_found(document_id)
+    return row
+
+
+def _owned_row_for_update(document_id: str, tenant: str | None) -> Select[LegalDocument]:
+    """``SELECT ... FOR UPDATE`` of *document_id* only when *tenant* owns it (NULL-safe)."""
+    return (
+        select(LegalDocument)
+        .where(
+            LegalDocument.id == document_id,
+            LegalDocument.tenant_id.is_not_distinct_from(tenant),
+        )
+        .with_for_update()
+    )
+
+
+def _commit(session: Session, document_id: str) -> None:
+    """Commit (which flushes); a ``StaleDataError`` from it rolls back and raises not found."""
+    try:
+        session.commit()
+    except StaleDataError as exc:
+        session.rollback()
+        raise _not_found(document_id) from exc
+
+
+def _new_document(doc_id: str, document: dict[str, Any], tenant: str | None) -> LegalDocument:
+    """Build an insert row; ``status`` and payload ``tenant_id`` are not read."""
+    return LegalDocument(
+        id=doc_id,
+        title=document["title"],
+        content=document["content"],
+        source=document["source"],
+        source_url=document["source_url"],
+        last_updated=_parse_dt(document.get("last_updated"), default=datetime.now(UTC)),
+        metadata_=document.get("metadata"),
+        is_processed=bool(document.get("is_processed", False)),
+        tenant_id=tenant,
+        status=DocumentStatus.NEEDS_REVIEW.value,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -98,10 +160,10 @@ def _set_tenant_setting(conn) -> None:
     )
 
 
-def _warn_dropped(operation: str, document_id: str, keys: list[str]) -> None:
-    """Log one warning naming the dropped payload keys; never log their values."""
+def _warn_dropped(operation: str, keys: list[str]) -> None:
+    """Log one warning naming the operation and dropped keys; no values, no document id."""
     if keys:
-        _log.warning("%s ignored keys for document %r: %r", operation, document_id, keys)
+        _log.warning("%s ignored keys: %r", operation, keys)
 
 
 # ---------------------------------------------------------------------------
@@ -177,44 +239,31 @@ class PostgreSQLStore:
     def save_document(self, document: dict[str, Any], tenant_id: str | None = None) -> str:
         """Insert or update a document row; returns its id.
 
-        If *document* has no ``id``, a new one is generated and written back
-        into the dict, so re-saving the same dict upserts the same row.
-        A new row always gets ``needs_review``; an existing row keeps its
-        ``status``, ``tenant_id`` and ``id``. Dropped key names (never values)
-        are logged as one warning. On insert only a ``status`` key is reported:
-        a payload ``tenant_id`` still picks the tenant (by design). On upsert
-        ``status``, ``tenant_id`` and unknown keys are reported.
+        The caller tenant is the ``tenant_id`` argument, else the context
+        tenant (``""`` counts as not given); a payload ``tenant_id`` never
+        picks it. If *document* has no ``id``, a new one is generated and
+        written back into the dict. A new row gets the caller tenant and
+        ``needs_review``. An existing row is updated only when the caller
+        tenant owns it (a shared row only with no tenant); it keeps its
+        ``status``, ``tenant_id`` and ``id``. Otherwise
+        :class:`StoreDocumentNotFoundError` is raised, nothing is written and
+        *document* is not changed. Dropped key names (never values) are logged
+        as one warning. Guard limit: a caller with no tenant can write every
+        shared row; caller RBAC (``admin``) is the only guard until RLS exists.
         """
         self._ensure_initialized()
+        tenant = _resolve_tenant(tenant_id)
         doc_id = document.get("id") or str(uuid.uuid4())
-        document["id"] = doc_id
-        tenant = tenant_id or document.get("tenant_id") or get_current_tenant()
         with Session(self._engine) as session:
-            row = session.get(LegalDocument, doc_id)
+            row = session.get(LegalDocument, doc_id, with_for_update=True)
             if row is None:
-                session.add(
-                    LegalDocument(
-                        id=doc_id,
-                        title=document["title"],
-                        content=document["content"],
-                        source=document["source"],
-                        source_url=document["source_url"],
-                        last_updated=_parse_dt(
-                            document.get("last_updated"),
-                            default=datetime.now(UTC),
-                        ),
-                        metadata_=document.get("metadata"),
-                        is_processed=bool(document.get("is_processed", False)),
-                        tenant_id=tenant,
-                        status=DocumentStatus.NEEDS_REVIEW.value,
-                    )
-                )
-                # Insert reports only status; payload tenant_id is used above (decision.md).
-                dropped = ["status"] if "status" in document else []
+                document["id"] = doc_id
+                session.add(_new_document(doc_id, document, tenant))
+                dropped = sorted(k for k in ("status", "tenant_id") if k in document)
             else:
-                dropped = _apply_update(row, document)
-            session.commit()
-        _warn_dropped("save_document", doc_id, dropped)
+                dropped = _apply_update(_require_writable(row, doc_id, tenant), document)
+            _commit(session, doc_id)
+        _warn_dropped("save_document", dropped)
         return doc_id
 
     def get_document(self, document_id: str, tenant_id: str | None = None) -> dict[str, Any] | None:
@@ -269,19 +318,26 @@ class PostgreSQLStore:
     def update_document(
         self, document_id: str, document: dict[str, Any], tenant_id: str | None = None
     ) -> None:
-        """Merge editable ``document`` fields into the row; raises ``KeyError`` if missing.
+        """Merge editable ``document`` fields into a row the caller tenant owns.
 
+        The caller tenant is resolved as in :meth:`save_document`. Raises
+        :class:`StoreDocumentNotFoundError` (a ``KeyError``) with the same text
+        for a missing row and a row of another tenant; nothing is written.
         ``status``, ``tenant_id`` and unknown keys are dropped; their names
-        (never values) are logged as one warning.
+        (never values) are logged as one warning. Guard limit: a caller with no
+        tenant can write every shared row; caller RBAC is the only guard.
+        Only a row the caller owns is locked, so a foreign update never waits
+        on the owner's lock.
         """
         self._ensure_initialized()
+        tenant = _resolve_tenant(tenant_id)
         with Session(self._engine) as session:
-            row = session.get(LegalDocument, document_id)
+            row = session.execute(_owned_row_for_update(document_id, tenant)).scalar_one_or_none()
             if row is None:
-                raise KeyError(f"Document not found: {document_id}")
+                raise _not_found(document_id)
             dropped = _apply_update(row, document)
-            session.commit()
-        _warn_dropped("update_document", document_id, dropped)
+            _commit(session, document_id)
+        _warn_dropped("update_document", dropped)
 
     # --- reject (issue #92) -------------------------------------------------
 

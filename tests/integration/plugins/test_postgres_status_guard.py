@@ -17,7 +17,7 @@ from factories.db_probe import can_connect
 from sqlalchemy import create_engine, text
 
 from config.settings import get_settings
-from plugins.relational_db.postgres import PostgreSQLStore
+from plugins.relational_db.postgres import PostgreSQLStore, StoreDocumentNotFoundError
 
 pytestmark = pytest.mark.integration
 
@@ -49,7 +49,6 @@ def make_document() -> DocFactory:
             "source_url": "https://example.invalid/",
             "metadata": {"pages": 1},
             "is_processed": False,
-            "tenant_id": "tenant-7",
         }
         return {**base, **overrides}
 
@@ -218,10 +217,10 @@ def test_title_only_update_logs_no_warning(
 def test_update_keeps_tenant_and_warns(
     store: PostgreSQLStore, make_document: DocFactory, caplog: pytest.LogCaptureFixture
 ) -> None:
-    doc_id = store.save_document(make_document())
+    doc_id = store.save_document(make_document(), tenant_id="tenant-7")
     caplog.set_level(logging.WARNING, logger=_LOGGER)
 
-    store.update_document(doc_id, {"tenant_id": "tenant-other"})
+    store.update_document(doc_id, {"tenant_id": "tenant-other"}, tenant_id="tenant-7")
 
     fetched = store.get_document(doc_id)
     assert fetched is not None
@@ -234,9 +233,9 @@ def test_update_keeps_tenant_and_warns(
 
 def test_upsert_keeps_tenant(store: PostgreSQLStore, make_document: DocFactory) -> None:
     doc = make_document()
-    doc_id = store.save_document(doc)
+    doc_id = store.save_document(doc, tenant_id="tenant-7")
 
-    store.save_document({**doc, "tenant_id": "tenant-other"})
+    store.save_document({**doc, "tenant_id": "tenant-other"}, tenant_id="tenant-7")
 
     fetched = store.get_document(doc_id)
     assert fetched is not None
@@ -280,7 +279,7 @@ def test_save_without_id_ignores_approved_status(
 def test_update_missing_id_raises_and_creates_no_row(store: PostgreSQLStore) -> None:
     missing_id = str(uuid.uuid4())
 
-    with pytest.raises(KeyError):
+    with pytest.raises(StoreDocumentNotFoundError):
         store.update_document(missing_id, {"status": "approved"})
 
     assert store.get_document(missing_id) is None

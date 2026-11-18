@@ -120,7 +120,7 @@ class CountingSession:
     def __exit__(self, *_: object) -> None:
         return None
 
-    def get(self, _model: object, _key: str) -> LegalDocument:
+    def get(self, _model: object, _key: str, **_kwargs: object) -> LegalDocument:
         return self._row
 
     def commit(self) -> None:
