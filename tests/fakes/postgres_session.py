@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.sql import Select
+from sqlalchemy.sql import Delete, Select
 
 from data.models import LegalDocument
 from plugins.relational_db import postgres
@@ -27,12 +27,19 @@ class FakeResult:
     def scalar_one_or_none(self) -> LegalDocument | None:
         return self.row
 
+    def scalars(self) -> FakeResult:
+        return self
+
+    def all(self) -> list[LegalDocument]:
+        return [] if self.row is None else [self.row]
+
 
 class FakeSession:
     """Fake session: ``get`` returns *row* and records its kwargs.
 
-    ``execute`` takes the ``update_document`` select (id and NULL-safe tenant
-    match), records its PostgreSQL SQL and returns *row* only when it matches.
+    ``execute`` takes a select or delete, records its PostgreSQL SQL and bound
+    params, and returns *row* only when its id and tenant equal the ``id_1``
+    and ``tenant_id_1`` params (no ``tenant_id_1`` matches a shared row).
     ``commit`` raises *commit_error* when set; ``add``, commits and rollbacks
     are recorded.
     """
@@ -43,6 +50,7 @@ class FakeSession:
         self.added: list[Any] = []
         self.get_kwargs: list[dict[str, Any]] = []
         self.statements: list[str] = []
+        self.params: list[dict[str, Any]] = []
         self.commits = 0
         self.rollbacks = 0
 
@@ -56,10 +64,11 @@ class FakeSession:
         self.get_kwargs.append(kwargs)
         return self.row
 
-    def execute(self, stmt: Select[Any]) -> FakeResult:
+    def execute(self, stmt: Select[Any] | Delete) -> FakeResult:
         compiled = stmt.compile(dialect=postgresql.dialect())
         self.statements.append(str(compiled))
         params = compiled.params
+        self.params.append(dict(params))
         row = self.row
         if row is None or row.id != params.get("id_1"):
             return FakeResult(None)

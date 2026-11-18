@@ -28,9 +28,10 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import Select, create_engine, delete, event, exists, select, text, update
+from sqlalchemy import Select, create_engine, delete, event, exists, or_, select, text, update
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
+from sqlalchemy.sql import ColumnElement
 
 from config.settings import PoolConfig, get_settings
 from core.security import get_current_tenant, hash_password
@@ -99,14 +100,23 @@ def _require_writable(
     return row
 
 
+def _readable_by(tenant: str | None) -> ColumnElement[bool]:
+    """Read predicate: own and shared rows for a tenant, only shared rows for none."""
+    if tenant is None:
+        return LegalDocument.tenant_id.is_(None)
+    return or_(LegalDocument.tenant_id == tenant, LegalDocument.tenant_id.is_(None))
+
+
+def _owned_by(tenant: str | None) -> ColumnElement[bool]:
+    """Write predicate: the row tenant is *tenant* (``NULL`` equals ``NULL``)."""
+    return LegalDocument.tenant_id.is_not_distinct_from(tenant)
+
+
 def _owned_row_for_update(document_id: str, tenant: str | None) -> Select[LegalDocument]:
     """``SELECT ... FOR UPDATE`` of *document_id* only when *tenant* owns it (NULL-safe)."""
     return (
         select(LegalDocument)
-        .where(
-            LegalDocument.id == document_id,
-            LegalDocument.tenant_id.is_not_distinct_from(tenant),
-        )
+        .where(LegalDocument.id == document_id, _owned_by(tenant))
         .with_for_update()
     )
 
@@ -267,39 +277,50 @@ class PostgreSQLStore:
         return doc_id
 
     def get_document(self, document_id: str, tenant_id: str | None = None) -> dict[str, Any] | None:
-        """Return a document row as a dict, or ``None`` if missing."""
+        """Return a row the caller tenant can read as a dict; ``None`` if missing or foreign.
+
+        Tenant as in :meth:`save_document`: own and shared rows, or shared only with no tenant.
+        """
         self._ensure_initialized()
+        stmt = select(LegalDocument).where(
+            LegalDocument.id == document_id, _readable_by(_resolve_tenant(tenant_id))
+        )
         with Session(self._engine) as session:
-            row = session.get(LegalDocument, document_id)
+            row = session.execute(stmt).scalar_one_or_none()
             return _doc_to_dict(row) if row is not None else None
 
     def search_documents(
         self, query: str, *, limit: int = 10, tenant_id: str | None = None
     ) -> list[dict[str, Any]]:
-        """Case-insensitive LIKE search over title and content."""
+        """Case-insensitive LIKE search over title and content, newest first.
+
+        Only rows the caller can read (see :meth:`get_document`), filtered before *limit*.
+        """
         self._ensure_initialized()
         pattern = f"%{query}%"
-        with Session(self._engine) as session:
-            rows = (
-                session.execute(
-                    select(LegalDocument)
-                    .where(
-                        LegalDocument.title.ilike(pattern) | LegalDocument.content.ilike(pattern)
-                    )
-                    .order_by(LegalDocument.last_updated.desc())
-                    .limit(limit)
-                )
-                .scalars()
-                .all()
+        stmt = (
+            select(LegalDocument)
+            .where(
+                LegalDocument.title.ilike(pattern) | LegalDocument.content.ilike(pattern),
+                _readable_by(_resolve_tenant(tenant_id)),
             )
+            .order_by(LegalDocument.last_updated.desc())
+            .limit(limit)
+        )
+        with Session(self._engine) as session:
+            rows = session.execute(stmt).scalars().all()
             return [_doc_to_dict(r) for r in rows]
 
     def get_recent_changes(
         self, *, since: str | None = None, tenant_id: str | None = None
     ) -> list[dict[str, Any]]:
-        """Most recently updated documents, newest first."""
+        """Rows the caller tenant can read (see :meth:`get_document`), newest first."""
         self._ensure_initialized()
-        stmt = select(LegalDocument).order_by(LegalDocument.last_updated.desc())
+        stmt = (
+            select(LegalDocument)
+            .where(_readable_by(_resolve_tenant(tenant_id)))
+            .order_by(LegalDocument.last_updated.desc())
+        )
         if since:
             stmt = stmt.where(LegalDocument.last_updated > _parse_dt(since))
         with Session(self._engine) as session:
@@ -307,13 +328,21 @@ class PostgreSQLStore:
             return [_doc_to_dict(r) for r in rows]
 
     def delete_document(self, document_id: str, tenant_id: str | None = None) -> None:
-        """Delete a document row; missing ids are a no-op."""
+        """Delete a row the caller tenant owns (write rule) in one ``DELETE`` statement.
+
+        A missing, foreign or (for a tenant) shared id deletes nothing, with no
+        error. Guard limit: a caller with no tenant can delete every shared row;
+        caller RBAC (``admin``) is the only guard until RLS exists.
+        """
         self._ensure_initialized()
+        stmt = (
+            delete(LegalDocument)
+            .where(LegalDocument.id == document_id, _owned_by(_resolve_tenant(tenant_id)))
+            .execution_options(synchronize_session=False)
+        )
         with Session(self._engine) as session:
-            row = session.get(LegalDocument, document_id)
-            if row is not None:
-                session.delete(row)
-                session.commit()
+            session.execute(stmt)
+            session.commit()
 
     def update_document(
         self, document_id: str, document: dict[str, Any], tenant_id: str | None = None
