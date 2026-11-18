@@ -12,6 +12,7 @@ import threading
 import time
 import uuid
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from typing import Any
 
 import pytest
@@ -30,6 +31,10 @@ pytestmark = pytest.mark.integration
 
 _LOGGER = "plugins.relational_db.postgres"
 _TENANTS = {"A1": "A", "B1": "B", "S1": None}
+# Seconds a test waits for another thread or for a lock waiter.
+_WAIT_SECONDS = 10.0
+# Keys in a ``get_document`` dict (``mappers.doc_to_dict``).
+_DOCUMENT_FIELD_COUNT = 10
 
 
 def _owner_exec(sql: str) -> None:
@@ -78,7 +83,7 @@ def rows(store: PostgreSQLStore) -> dict[str, str]:
 def _snapshot(store: PostgreSQLStore, doc_id: str) -> dict[str, Any]:
     fetched = store.get_document(doc_id)
     assert fetched is not None
-    assert len(fetched) == 10
+    assert len(fetched) == _DOCUMENT_FIELD_COUNT
     return fetched
 
 
@@ -93,9 +98,10 @@ def _assert_not_found(exc: BaseException, doc_id: str) -> None:
     assert str(exc) == f"Document not found: {doc_id}"
 
 
-def test_qa1_insert_ignores_payload_tenant(
+def test_insert_takes_context_tenant_not_payload_tenant(
     store: PostgreSQLStore, caplog: pytest.LogCaptureFixture
 ) -> None:
+    """QA-1: an insert takes the context tenant; payload ``tenant_id`` is dropped, warned."""
     caplog.set_level(logging.WARNING, logger=_LOGGER)
     with tenant_context("A"):
         doc_id = store.save_document(_payload(tenant_id="B"))
@@ -106,33 +112,37 @@ def test_qa1_insert_ignores_payload_tenant(
     assert "'B'" not in warnings[0]
 
 
-def test_qa2_insert_without_tenant_is_shared(store: PostgreSQLStore) -> None:
+def test_insert_without_tenant_is_shared(store: PostgreSQLStore) -> None:
+    """QA-2: an insert with no tenant stores a shared (NULL) row."""
     with tenant_context(None):
         doc_id = store.save_document(_payload(tenant_id="B"))
     assert _snapshot(store, doc_id)["tenant_id"] is None
 
 
-def test_qa3_upsert_of_foreign_id_raises_and_inserts_nothing(
+def test_upsert_of_foreign_id_raises_and_inserts_nothing(
     store: PostgreSQLStore, rows: dict[str, str]
 ) -> None:
+    """QA-3: an upsert of a foreign id raises not found and writes nothing."""
     before = _snapshot(store, rows["B1"])
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError) as info:
         store.save_document(_payload(id=rows["B1"], title="x"))
     _assert_not_found(info.value, rows["B1"])
     assert _snapshot(store, rows["B1"]) == before
-    assert len(store.get_recent_changes()) == 3
+    assert len(store.get_recent_changes()) == len(_TENANTS)
 
 
-def test_qa4_update_of_foreign_row_raises(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+def test_update_of_foreign_row_raises(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """QA-4: an update of a foreign row raises not found and keeps the row."""
     before = _snapshot(store, rows["B1"])
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError):
         store.update_document(rows["B1"], {"title": "x"})
     assert _snapshot(store, rows["B1"]) == before
 
 
-def test_qa5_foreign_and_missing_ids_give_same_error(
+def test_foreign_and_missing_ids_give_same_error(
     store: PostgreSQLStore, rows: dict[str, str]
 ) -> None:
+    """QA-5: foreign and missing ids raise the same error type and text."""
     missing = str(uuid.uuid4())
     errors: list[BaseException] = []
     with tenant_context("A"):
@@ -146,7 +156,8 @@ def test_qa5_foreign_and_missing_ids_give_same_error(
     assert store.get_document(missing) is None
 
 
-def test_qa6_tenant_cannot_write_shared_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+def test_tenant_cannot_write_shared_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """QA-6: a tenant can not update or upsert a shared row."""
     before = _snapshot(store, rows["S1"])
     with tenant_context("A"):
         with pytest.raises(StoreDocumentNotFoundError):
@@ -156,16 +167,16 @@ def test_qa6_tenant_cannot_write_shared_row(store: PostgreSQLStore, rows: dict[s
     assert _snapshot(store, rows["S1"]) == before
 
 
-def test_qa7_no_tenant_cannot_write_tenant_row(
-    store: PostgreSQLStore, rows: dict[str, str]
-) -> None:
+def test_no_tenant_cannot_write_tenant_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """QA-7: a caller with no tenant can not update a tenant row."""
     before = _snapshot(store, rows["A1"])
     with tenant_context(None), pytest.raises(StoreDocumentNotFoundError):
         store.update_document(rows["A1"], {"title": "x"})
     assert _snapshot(store, rows["A1"]) == before
 
 
-def test_qa8_no_tenant_writes_shared_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+def test_no_tenant_writes_shared_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """QA-8: a caller with no tenant can update a shared row."""
     with tenant_context(None):
         store.update_document(rows["S1"], {"title": "x"})
     after = _snapshot(store, rows["S1"])
@@ -173,15 +184,17 @@ def test_qa8_no_tenant_writes_shared_row(store: PostgreSQLStore, rows: dict[str,
     assert after["tenant_id"] is None
 
 
-def test_qa9_argument_wins_over_context(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+def test_tenant_argument_wins_over_context(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """QA-9: the ``tenant_id`` argument wins over the context tenant."""
     with tenant_context("B"):
         store.update_document(rows["A1"], {"title": "x"}, tenant_id="A")
     assert _snapshot(store, rows["A1"])["title"] == "x"
 
 
-def test_qa10_update_drops_payload_tenant(
+def test_update_drops_payload_tenant(
     store: PostgreSQLStore, rows: dict[str, str], caplog: pytest.LogCaptureFixture
 ) -> None:
+    """QA-10: an update drops payload ``tenant_id`` and warns without values."""
     caplog.set_level(logging.WARNING, logger=_LOGGER)
     with tenant_context("A"):
         store.update_document(rows["A1"], {"title": "x", "tenant_id": "B"})
@@ -194,9 +207,10 @@ def test_qa10_update_drops_payload_tenant(
     assert "'A'" not in warnings[0]
 
 
-def test_qa11_empty_argument_falls_back_to_context(
+def test_empty_tenant_argument_falls_back_to_context(
     store: PostgreSQLStore, rows: dict[str, str]
 ) -> None:
+    """QA-11: an empty ``tenant_id`` argument falls back to the context tenant."""
     before = _snapshot(store, rows["S1"])
     with tenant_context("A"):
         with pytest.raises(StoreDocumentNotFoundError):
@@ -206,9 +220,8 @@ def test_qa11_empty_argument_falls_back_to_context(
     assert _snapshot(store, rows["A1"])["title"] == "y"
 
 
-def test_qa12_not_found_is_caught_as_key_error(
-    store: PostgreSQLStore, rows: dict[str, str]
-) -> None:
+def test_not_found_is_caught_as_key_error(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """QA-12: the not-found error is caught by ``except KeyError`` with plain text."""
     caught: KeyError | None = None
     with tenant_context("A"):
         try:
@@ -220,9 +233,8 @@ def test_qa12_not_found_is_caught_as_key_error(
     assert isinstance(caught, LookupError)
 
 
-def test_qa13_failed_upsert_keeps_row_and_payload(
-    store: PostgreSQLStore, rows: dict[str, str]
-) -> None:
+def test_failed_upsert_keeps_row_and_payload(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """QA-13: a rejected upsert changes neither the row nor the payload."""
     before = _snapshot(store, rows["B1"])
     payload = _payload(id=rows["B1"], title="x", tenant_id="A", status="approved")
     copy = dict(payload)
@@ -232,20 +244,44 @@ def test_qa13_failed_upsert_keeps_row_and_payload(
     assert payload == copy
 
 
-class _HoldingSession(Session):
-    """Session that flushes, signals, then waits before it commits."""
+@dataclass
+class _Hold:
+    """Per-test events: the first commit sets *flushed*, then waits for *release*."""
 
-    flushed = threading.Event()
-    release = threading.Event()
-
-    def commit(self) -> None:
-        self.flush()
-        _HoldingSession.flushed.set()
-        assert _HoldingSession.release.wait(10)
-        super().commit()
+    flushed: threading.Event = field(default_factory=threading.Event)
+    release: threading.Event = field(default_factory=threading.Event)
 
 
-def _wait_for_lock_waiter(timeout: float = 10.0) -> None:
+@pytest.fixture
+def hold(monkeypatch: pytest.MonkeyPatch) -> _Hold:
+    """Patch ``postgres.Session``: the first commit flushes, signals, then waits.
+
+    Later commits run as usual. ``monkeypatch`` restores ``Session`` at teardown.
+    """
+    state = _Hold()
+
+    class _HoldingSession(Session):
+        def commit(self) -> None:
+            if not state.flushed.is_set():
+                self.flush()
+                state.flushed.set()
+                assert state.release.wait(_WAIT_SECONDS)
+            super().commit()
+
+    monkeypatch.setattr(postgres, "Session", _HoldingSession)
+    return state
+
+
+@pytest.fixture
+def other_store(store: PostgreSQLStore) -> Iterator[PostgreSQLStore]:
+    """A second store (own engine) next to *store*; closed at teardown."""
+    other = PostgreSQLStore()
+    other.initialize()
+    yield other
+    other.close()
+
+
+def _wait_for_lock_waiter(timeout: float = _WAIT_SECONDS) -> None:
     """Block until a backend waits on a lock (the second insert)."""
     engine = create_engine(get_settings().postgres_url, future=True)
     sql = text("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock'")
@@ -268,60 +304,66 @@ def _run(results: dict[str, Any], key: str, call: Any) -> None:
         results[key] = exc
 
 
-def test_qa14_concurrent_insert_of_same_new_id(
-    store: PostgreSQLStore, monkeypatch: pytest.MonkeyPatch
+def _start(results: dict[str, Any], key: str, call: Any) -> threading.Thread:
+    thread = threading.Thread(target=_run, args=(results, key, call))
+    thread.start()
+    return thread
+
+
+def test_concurrent_insert_of_same_new_id_lets_one_win(
+    store: PostgreSQLStore, other_store: PostgreSQLStore, hold: _Hold
 ) -> None:
+    """QA-14: two concurrent inserts of one new id: one wins, one gets ``IntegrityError``."""
     doc_id = str(uuid.uuid4())
-    other = PostgreSQLStore()
-    other.initialize()
-    _HoldingSession.flushed.clear()
-    _HoldingSession.release.clear()
-    monkeypatch.setattr(postgres, "Session", _HoldingSession)
     results: dict[str, Any] = {}
-    first = threading.Thread(
-        target=_run, args=(results, "first", lambda: store.save_document(_payload(id=doc_id)))
-    )
-    first.start()
-    assert _HoldingSession.flushed.wait(10)
-    monkeypatch.setattr(postgres, "Session", Session)
-    second = threading.Thread(
-        target=_run, args=(results, "second", lambda: other.save_document(_payload(id=doc_id)))
-    )
-    second.start()
+    first = _start(results, "first", lambda: store.save_document(_payload(id=doc_id)))
+    assert hold.flushed.wait(_WAIT_SECONDS)
+    second = _start(results, "second", lambda: other_store.save_document(_payload(id=doc_id)))
     _wait_for_lock_waiter()
-    _HoldingSession.release.set()
-    first.join(10)
-    second.join(10)
-    other.close()
+    hold.release.set()
+    first.join(_WAIT_SECONDS)
+    second.join(_WAIT_SECONDS)
     assert results["first"] == doc_id
     assert isinstance(results["second"], IntegrityError)
 
 
-class _StaleSession(Session):
-    """Session whose flush of a changed row raises ``StaleDataError``."""
+@dataclass
+class _StaleCounter:
+    """Per-test count of rollbacks on the stale session."""
 
-    rollbacks = 0
-
-    def flush(self, objects: Any = None) -> None:
-        if self.dirty:
-            raise StaleDataError("row changed under the session")
-        super().flush(objects)
-
-    def rollback(self) -> None:
-        _StaleSession.rollbacks += 1
-        super().rollback()
+    rollbacks: int = 0
 
 
-def test_qa15_stale_data_maps_to_not_found(
+def _stale_session(monkeypatch: pytest.MonkeyPatch) -> _StaleCounter:
+    """Patch ``postgres.Session``: a flush of a changed row raises ``StaleDataError``.
+
+    The ``monkeypatch`` fixture restores ``Session`` at teardown.
+    """
+    counter = _StaleCounter()
+
+    class _StaleSession(Session):
+        def flush(self, objects: Any = None) -> None:
+            if self.dirty:
+                raise StaleDataError("row changed under the session")
+            super().flush(objects)
+
+        def rollback(self) -> None:
+            counter.rollbacks += 1
+            super().rollback()
+
+    monkeypatch.setattr(postgres, "Session", _StaleSession)
+    return counter
+
+
+def test_stale_data_on_commit_maps_to_not_found(
     store: PostgreSQLStore, rows: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """QA-15: ``StaleDataError`` on commit rolls back and raises not found."""
     before = _snapshot(store, rows["A1"])
-    _StaleSession.rollbacks = 0
-    monkeypatch.setattr(postgres, "Session", _StaleSession)
+    counter = _stale_session(monkeypatch)
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError) as info:
         store.update_document(rows["A1"], {"title": "x"})
-    monkeypatch.setattr(postgres, "Session", Session)
     _assert_not_found(info.value, rows["A1"])
     assert isinstance(info.value.__cause__, StaleDataError)
-    assert _StaleSession.rollbacks >= 1
+    assert counter.rollbacks >= 1
     assert _snapshot(store, rows["A1"]) == before

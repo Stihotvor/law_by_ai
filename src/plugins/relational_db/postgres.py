@@ -87,9 +87,7 @@ def _not_found(document_id: str) -> StoreDocumentNotFoundError:
 
 def _resolve_tenant(tenant_id: str | None) -> str | None:
     """Caller tenant: the argument, else the context; ``""`` counts as ``None``."""
-    arg = tenant_id or None
-    tenant = arg if arg is not None else get_current_tenant()
-    return tenant or None
+    return tenant_id or get_current_tenant() or None
 
 
 def _require_writable(
@@ -102,7 +100,7 @@ def _require_writable(
 
 
 def _commit(session: Session, document_id: str) -> None:
-    """Commit; a ``StaleDataError`` on flush rolls back and raises not found."""
+    """Commit (which flushes); a ``StaleDataError`` from it rolls back and raises not found."""
     try:
         session.commit()
     except StaleDataError as exc:
