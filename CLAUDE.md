@@ -33,7 +33,9 @@ Self-hosted, multi-tenant AI legal assistant (information, not advice) for EU (P
 
 ## Current state (as of 2026-10-31)
 Built: PostgreSQL store (CRUD, ILIKE search), RBAC helpers and tenant helpers in `src/core/security/`, Celery app shell, Streamlit app shell, settings (plain class, still has Cohere rerank keys), Alembic initial migration, Docker stack, CI.
-Verified gaps (2026-11-01): no login UI (`src/ui/components/auth.py` is missing), no RLS or cross-tenant tests (RLS policies exist only on `tenants` and `users`, not on `legal_document`), no `status` column on `legal_document`, no full-text search, no Postgres image file.
+Verified gaps (2026-11-01): no login UI (`src/ui/components/auth.py` is missing), no RLS on documents (RLS policies exist only on `tenants` and `users`, not on `legal_document`), no `status` column on `legal_document`, no full-text search, no Postgres image file.
+Tenant guard in `PostgreSQLStore` (2026-11-18, design records `tenant-write-guard` and `tenant-read-guard`): the tenant comes from the argument, else `get_current_tenant()`. Reads return own rows and shared (`NULL` tenant) rows. A caller with no tenant reads only shared rows. Writes and `delete_document` match the tenant strictly (`IS NOT DISTINCT FROM`). A foreign row behaves as a missing row.
+Open tenant gaps: no RLS on `legal_document` (the store filter is the only isolation), a caller with no tenant can delete every shared row (only RBAC guards it), no index on `legal_document.tenant_id`, `get_recent_changes` has no `LIMIT`, and the RLS session hook sets the tenant from the context, not from the resolved argument. Do not copy the `setting = ''` RLS policy pattern to `legal_document`, because it shows all rows to a caller with no tenant.
 Not built: all agents (`src/agents/` is empty), Qdrant, Neo4j, ETL sources, embeddings, OCR, search, observability, health checks, most UI pages.
 
 ## Work hierarchy
@@ -49,6 +51,9 @@ The MVP planning date is 2027-02-28. Rerank is local (Cohere dropped), and an ev
 ## Working rules for this repo
 - Git remote operations (clone, push, `gh`) go through the `git-agent` subagent. A hook blocks `.env` access and pipes in Bash.
 - Design gate for an issue that crosses a module boundary: the issue has a "Contract" section (inputs, outputs and errors of each call, checked against the validation of the callee). The `solution-architect` agent reviews the interface before any code. When the issue is picked, the architect reads it again against the current code and updates the issue text before the branch is created.
+- When the owner changes a decision at the design gate, update the issue text in the same step. CodeRabbit checks the PR against the linked issue.
+- CodeRabbit does not review this repo automatically. Post `@coderabbitai review` on each new PR.
+- Merge only after every check is complete. `integration-test` is not a required check, so `gh pr merge --auto` can merge before it ends.
 - Each Celery task has at least one integration test with production collaborators. Mock only the network edge.
 - Quality gate before a task is done: ruff check, ruff format --check, pyright, pytest.
 - Coverage commands and gates: see the "Coverage and mutation gates" section of CONTRIBUTING.md.
