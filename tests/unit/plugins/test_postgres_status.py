@@ -99,7 +99,8 @@ def test_validate_status_is_removed() -> None:
     assert not hasattr(mappers_module, "validate_status")
 
 
-def test_not_found_error_is_lookup_error_not_value_error() -> None:
+def test_not_found_error_is_key_error_not_value_error() -> None:
+    assert issubclass(StoreDocumentNotFoundError, KeyError)
     assert issubclass(StoreDocumentNotFoundError, LookupError)
     assert not issubclass(StoreDocumentNotFoundError, ValueError)
 
@@ -117,7 +118,7 @@ class FakeSession:
     def __exit__(self, *_: object) -> None:
         return None
 
-    def get(self, _model: object, _key: str) -> LegalDocument | None:
+    def get(self, _model: object, _key: str, **_kwargs: object) -> LegalDocument | None:
         return self.row
 
     def add(self, obj: Any) -> None:
@@ -176,7 +177,7 @@ def test_update_document_drops_status_and_warns(
     row = _row()
     store, _ = _store(monkeypatch, row)
     with caplog.at_level(logging.WARNING, logger=postgres.__name__):
-        store.update_document("d1", {"status": "approved", "title": "x"})
+        store.update_document("d1", {"status": "approved", "title": "x"}, tenant_id="t1")
     assert row.status == "needs_review"
     assert row.title == "x"
     messages = _warnings(caplog)
@@ -185,7 +186,7 @@ def test_update_document_drops_status_and_warns(
     assert "approved" not in messages[0]
 
 
-def test_update_document_missing_row_raises_key_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_update_document_missing_row_raises_not_found(monkeypatch: pytest.MonkeyPatch) -> None:
     store, _ = _store(monkeypatch, None)
-    with pytest.raises(KeyError):
+    with pytest.raises(StoreDocumentNotFoundError, match=r"^Document not found: missing$"):
         store.update_document("missing", {"title": "x"})
