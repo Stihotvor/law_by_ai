@@ -28,7 +28,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import create_engine, delete, event, exists, select, text, update
+from sqlalchemy import Select, create_engine, delete, event, exists, select, text, update
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
@@ -99,6 +99,18 @@ def _require_writable(
     return row
 
 
+def _owned_row_for_update(document_id: str, tenant: str | None) -> Select[LegalDocument]:
+    """``SELECT ... FOR UPDATE`` of *document_id* only when *tenant* owns it (NULL-safe)."""
+    return (
+        select(LegalDocument)
+        .where(
+            LegalDocument.id == document_id,
+            LegalDocument.tenant_id.is_not_distinct_from(tenant),
+        )
+        .with_for_update()
+    )
+
+
 def _commit(session: Session, document_id: str) -> None:
     """Commit (which flushes); a ``StaleDataError`` from it rolls back and raises not found."""
     try:
@@ -148,10 +160,10 @@ def _set_tenant_setting(conn) -> None:
     )
 
 
-def _warn_dropped(operation: str, document_id: str, keys: list[str]) -> None:
-    """Log one warning naming the dropped payload keys; never log their values."""
+def _warn_dropped(operation: str, keys: list[str]) -> None:
+    """Log one warning naming the operation and dropped keys; no values, no document id."""
     if keys:
-        _log.warning("%s ignored keys for document %r: %r", operation, document_id, keys)
+        _log.warning("%s ignored keys: %r", operation, keys)
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +263,7 @@ class PostgreSQLStore:
             else:
                 dropped = _apply_update(_require_writable(row, doc_id, tenant), document)
             _commit(session, doc_id)
-        _warn_dropped("save_document", doc_id, dropped)
+        _warn_dropped("save_document", dropped)
         return doc_id
 
     def get_document(self, document_id: str, tenant_id: str | None = None) -> dict[str, Any] | None:
@@ -314,14 +326,18 @@ class PostgreSQLStore:
         ``status``, ``tenant_id`` and unknown keys are dropped; their names
         (never values) are logged as one warning. Guard limit: a caller with no
         tenant can write every shared row; caller RBAC is the only guard.
+        Only a row the caller owns is locked, so a foreign update never waits
+        on the owner's lock.
         """
         self._ensure_initialized()
         tenant = _resolve_tenant(tenant_id)
         with Session(self._engine) as session:
-            row = session.get(LegalDocument, document_id, with_for_update=True)
-            dropped = _apply_update(_require_writable(row, document_id, tenant), document)
+            row = session.execute(_owned_row_for_update(document_id, tenant)).scalar_one_or_none()
+            if row is None:
+                raise _not_found(document_id)
+            dropped = _apply_update(row, document)
             _commit(session, document_id)
-        _warn_dropped("update_document", document_id, dropped)
+        _warn_dropped("update_document", dropped)
 
     # --- reject (issue #92) -------------------------------------------------
 

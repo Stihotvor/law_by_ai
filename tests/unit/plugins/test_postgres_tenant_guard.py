@@ -23,6 +23,9 @@ from plugins.relational_db.postgres import (
     _resolve_tenant,
 )
 
+# Distinctive payload tenant: it must never show up in a warning.
+_PAYLOAD_TENANT = "tenant-secret-b7"
+
 
 def _row(tenant: str | None = "A", **overrides: Any) -> LegalDocument:
     fields: dict[str, Any] = {
@@ -96,14 +99,15 @@ def test_insert_uses_context_tenant_and_drops_payload_tenant(
     session = FakeSession(None)
     store = make_store(monkeypatch, session)
     with tenant_context("A"), caplog.at_level(logging.WARNING, logger=postgres.__name__):
-        store.save_document(make_doc(tenant_id="B", status="approved"))
+        store.save_document(make_doc(id="doc-id-q4", tenant_id=_PAYLOAD_TENANT, status="approved"))
     assert session.added[0].tenant_id == "A"
     messages = store_warnings(caplog)
     assert len(messages) == 1
     assert "tenant_id" in messages[0]
     assert "status" in messages[0]
-    assert "'B'" not in messages[0]
+    assert _PAYLOAD_TENANT not in messages[0]
     assert "approved" not in messages[0]
+    assert "doc-id-q4" not in messages[0]
 
 
 def test_insert_without_tenant_is_shared(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -164,13 +168,46 @@ def test_save_stale_data_maps_to_not_found(monkeypatch: pytest.MonkeyPatch) -> N
 # --- update_document ----------------------------------------------------------
 
 
-def test_update_loads_with_for_update(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_update_locks_only_row_of_caller_tenant(monkeypatch: pytest.MonkeyPatch) -> None:
     row = _row("A")
     session = FakeSession(row)
     make_store(monkeypatch, session).update_document("d1", {"title": "x"}, tenant_id="A")
-    assert session.get_kwargs == [{"with_for_update": True}]
+    assert session.get_kwargs == []
+    assert len(session.statements) == 1
+    sql = session.statements[0]
+    assert "legal_document.id = " in sql
+    assert "legal_document.tenant_id IS NOT DISTINCT FROM " in sql
+    assert sql.rstrip().endswith("FOR UPDATE")
     assert row.title == "x"
     assert session.commits == 1
+
+
+def test_update_of_shared_row_without_tenant_matches_null(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    row = _row(None)
+    session = FakeSession(row)
+    with tenant_context(None):
+        make_store(monkeypatch, session).update_document("d1", {"title": "x"})
+    assert "tenant_id IS NOT DISTINCT FROM NULL" in session.statements[0]
+    assert row.title == "x"
+
+
+def test_update_warning_names_keys_only(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    row = _row("A", id="doc-id-q4")
+    store = make_store(monkeypatch, FakeSession(row))
+    with caplog.at_level(logging.WARNING, logger=postgres.__name__):
+        store.update_document(
+            "doc-id-q4", {"title": "x", "tenant_id": _PAYLOAD_TENANT}, tenant_id="A"
+        )
+    messages = store_warnings(caplog)
+    assert len(messages) == 1
+    assert "update_document" in messages[0]
+    assert "tenant_id" in messages[0]
+    assert _PAYLOAD_TENANT not in messages[0]
+    assert "doc-id-q4" not in messages[0]
 
 
 @pytest.mark.parametrize("row", [None, _row("B")], ids=["missing", "foreign"])

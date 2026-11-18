@@ -7,6 +7,7 @@ skipped when it is unreachable.
 
 from __future__ import annotations
 
+import copy
 import logging
 import threading
 import time
@@ -33,6 +34,8 @@ _LOGGER = "plugins.relational_db.postgres"
 _TENANTS = {"A1": "A", "B1": "B", "S1": None}
 # Seconds a test waits for another thread or for a lock waiter.
 _WAIT_SECONDS = 10.0
+# Distinctive payload tenant: it must never show up in a warning.
+_PAYLOAD_TENANT = "tenant-secret-b7"
 # Keys in a ``get_document`` dict (``mappers.doc_to_dict``).
 _DOCUMENT_FIELD_COUNT = 10
 
@@ -104,12 +107,13 @@ def test_insert_takes_context_tenant_not_payload_tenant(
     """QA-1: an insert takes the context tenant; payload ``tenant_id`` is dropped, warned."""
     caplog.set_level(logging.WARNING, logger=_LOGGER)
     with tenant_context("A"):
-        doc_id = store.save_document(_payload(tenant_id="B"))
+        doc_id = store.save_document(_payload(tenant_id=_PAYLOAD_TENANT))
     assert _snapshot(store, doc_id)["tenant_id"] == "A"
     warnings = _warnings(caplog)
     assert len(warnings) == 1
     assert "tenant_id" in warnings[0]
-    assert "'B'" not in warnings[0]
+    assert _PAYLOAD_TENANT not in warnings[0]
+    assert doc_id not in warnings[0]
 
 
 def test_insert_without_tenant_is_shared(store: PostgreSQLStore) -> None:
@@ -197,14 +201,15 @@ def test_update_drops_payload_tenant(
     """QA-10: an update drops payload ``tenant_id`` and warns without values."""
     caplog.set_level(logging.WARNING, logger=_LOGGER)
     with tenant_context("A"):
-        store.update_document(rows["A1"], {"title": "x", "tenant_id": "B"})
+        store.update_document(rows["A1"], {"title": "x", "tenant_id": _PAYLOAD_TENANT})
     after = _snapshot(store, rows["A1"])
     assert (after["title"], after["tenant_id"]) == ("x", "A")
     warnings = _warnings(caplog)
     assert len(warnings) == 1
     assert "tenant_id" in warnings[0]
-    assert "'B'" not in warnings[0]
+    assert _PAYLOAD_TENANT not in warnings[0]
     assert "'A'" not in warnings[0]
+    assert rows["A1"] not in warnings[0]
 
 
 def test_empty_tenant_argument_falls_back_to_context(
@@ -237,31 +242,37 @@ def test_failed_upsert_keeps_row_and_payload(store: PostgreSQLStore, rows: dict[
     """QA-13: a rejected upsert changes neither the row nor the payload."""
     before = _snapshot(store, rows["B1"])
     payload = _payload(id=rows["B1"], title="x", tenant_id="A", status="approved")
-    copy = dict(payload)
+    payload_before = copy.deepcopy(payload)
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError):
         store.save_document(payload)
     assert _snapshot(store, rows["B1"]) == before
-    assert payload == copy
+    assert payload == payload_before
 
 
 @dataclass
 class _Hold:
-    """Per-test events: the first commit sets *flushed*, then waits for *release*."""
+    """Per-test state: the first commit sets *flushed*, then waits for *release*.
+
+    *pids* holds the backend pid of each committing session, in commit order.
+    """
 
     flushed: threading.Event = field(default_factory=threading.Event)
     release: threading.Event = field(default_factory=threading.Event)
+    pids: list[int] = field(default_factory=list)
 
 
 @pytest.fixture
 def hold(monkeypatch: pytest.MonkeyPatch) -> _Hold:
     """Patch ``postgres.Session``: the first commit flushes, signals, then waits.
 
-    Later commits run as usual. ``monkeypatch`` restores ``Session`` at teardown.
+    Every commit first records its backend pid. Later commits run as usual.
+    ``monkeypatch`` restores ``Session`` at teardown.
     """
     state = _Hold()
 
     class _HoldingSession(Session):
         def commit(self) -> None:
+            state.pids.append(self.execute(text("SELECT pg_backend_pid()")).scalar_one())
             if not state.flushed.is_set():
                 self.flush()
                 state.flushed.set()
@@ -281,16 +292,22 @@ def other_store(store: PostgreSQLStore) -> Iterator[PostgreSQLStore]:
     other.close()
 
 
-def _wait_for_lock_waiter(timeout: float = _WAIT_SECONDS) -> None:
-    """Block until a backend waits on a lock (the second insert)."""
+def _is_blocked_by(conn: Any, waiter: int, holder: int) -> bool:
+    sql = text("SELECT CAST(:holder AS integer) = ANY(pg_blocking_pids(:waiter))")
+    return bool(conn.execute(sql, {"holder": holder, "waiter": waiter}).scalar())
+
+
+def _wait_until_second_blocked_by_first(hold: _Hold, timeout: float = _WAIT_SECONDS) -> None:
+    """Block until the second worker's backend is blocked by the first worker's backend."""
     engine = create_engine(get_settings().postgres_url, future=True)
-    sql = text("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock'")
     deadline = time.monotonic() + timeout
     try:
         while time.monotonic() < deadline:
-            with engine.connect() as conn:
-                if conn.execute(sql).scalar():
-                    return
+            pids = list(hold.pids)
+            if len(pids) >= 2:
+                with engine.connect() as conn:
+                    if _is_blocked_by(conn, waiter=pids[1], holder=pids[0]):
+                        return
             time.sleep(0.05)
     finally:
         engine.dispose()
@@ -316,13 +333,20 @@ def test_concurrent_insert_of_same_new_id_lets_one_win(
     """QA-14: two concurrent inserts of one new id: one wins, one gets ``IntegrityError``."""
     doc_id = str(uuid.uuid4())
     results: dict[str, Any] = {}
-    first = _start(results, "first", lambda: store.save_document(_payload(id=doc_id)))
-    assert hold.flushed.wait(_WAIT_SECONDS)
-    second = _start(results, "second", lambda: other_store.save_document(_payload(id=doc_id)))
-    _wait_for_lock_waiter()
-    hold.release.set()
-    first.join(_WAIT_SECONDS)
-    second.join(_WAIT_SECONDS)
+    workers: list[threading.Thread] = []
+    try:
+        workers.append(_start(results, "first", lambda: store.save_document(_payload(id=doc_id))))
+        assert hold.flushed.wait(_WAIT_SECONDS)
+        workers.append(
+            _start(results, "second", lambda: other_store.save_document(_payload(id=doc_id)))
+        )
+        _wait_until_second_blocked_by_first(hold)
+    finally:
+        hold.release.set()
+        for worker in workers:
+            worker.join(_WAIT_SECONDS)
+        other_store.close()
+    assert not any(worker.is_alive() for worker in workers)
     assert results["first"] == doc_id
     assert isinstance(results["second"], IntegrityError)
 

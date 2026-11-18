@@ -11,12 +11,13 @@ Lens: the tenant predicate lives in one SQL statement per write. There is no rea
 - `StoreDocumentNotFoundError(KeyError)`: base change only.
 
 ## Error flow
-Zero rows means no commit. The row is unchanged. `IntegrityError` from a race passes through.
+Zero rows means no commit. The row is unchanged.
 
 ## Fit
 - T2, E1, E5: the resolved tenant is a bound parameter. `IS NOT DISTINCT FROM` gives `NULL == NULL`.
 - F1-F3: met. Check and write are one atomic statement (no race window).
-- F4, F5: unchanged and accepted.
+- F4: unchanged and accepted.
+- F5: changed. Two inserts of the same new id give no `IntegrityError`. `ON CONFLICT DO UPDATE` makes the second call an update when both callers have the same tenant. When the tenants differ, the conflict `WHERE` fails and the second call raises `StoreDocumentNotFoundError`.
 
 Effort: M. Two write paths rewritten, mapper changes shape, `apply_update` tests migrate.
 

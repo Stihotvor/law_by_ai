@@ -10,15 +10,29 @@ import logging
 from typing import Any
 
 import pytest
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql import Select
 
 from data.models import LegalDocument
 from plugins.relational_db import postgres
 from plugins.relational_db.postgres import PostgreSQLStore
 
 
+class FakeResult:
+    """Result of :meth:`FakeSession.execute`: at most one row."""
+
+    def __init__(self, row: LegalDocument | None) -> None:
+        self.row = row
+
+    def scalar_one_or_none(self) -> LegalDocument | None:
+        return self.row
+
+
 class FakeSession:
     """Fake session: ``get`` returns *row* and records its kwargs.
 
+    ``execute`` takes the ``update_document`` select (id and NULL-safe tenant
+    match), records its PostgreSQL SQL and returns *row* only when it matches.
     ``commit`` raises *commit_error* when set; ``add``, commits and rollbacks
     are recorded.
     """
@@ -28,6 +42,7 @@ class FakeSession:
         self.commit_error = commit_error
         self.added: list[Any] = []
         self.get_kwargs: list[dict[str, Any]] = []
+        self.statements: list[str] = []
         self.commits = 0
         self.rollbacks = 0
 
@@ -40,6 +55,15 @@ class FakeSession:
     def get(self, _model: object, _key: str, **kwargs: Any) -> LegalDocument | None:
         self.get_kwargs.append(kwargs)
         return self.row
+
+    def execute(self, stmt: Select[Any]) -> FakeResult:
+        compiled = stmt.compile(dialect=postgresql.dialect())
+        self.statements.append(str(compiled))
+        params = compiled.params
+        row = self.row
+        if row is None or row.id != params.get("id_1"):
+            return FakeResult(None)
+        return FakeResult(row if row.tenant_id == params.get("tenant_id_1") else None)
 
     def add(self, obj: Any) -> None:
         self.added.append(obj)

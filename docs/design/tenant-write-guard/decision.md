@@ -6,29 +6,32 @@ Status: accepted (owner, 2026-11-18). Path 1, all five defaults, and the dba cha
 `save_document` lets a payload `tenant_id` pick the tenant on insert. `save_document` (upsert) and `update_document` load rows by id with no tenant filter. `legal_document` has no RLS. Size S (one module, no schema change), so two paths were compared.
 
 ## Options
-- Path 1, ORM load-then-check: `session.get`, then a Python ownership helper, then `apply_update`.
+- Path 1, ORM load-then-check: load under a row lock, then a Python ownership check, then `apply_update`.
 - Path 2, set-based conditional SQL: `UPDATE ... WHERE tenant IS NOT DISTINCT FROM` and `INSERT ... ON CONFLICT DO UPDATE ... WHERE`.
 
 | Row | Path 1 | Path 2 |
 |---|---|---|
 | Fit to constraints (T1-T6) | Full. No new SQL dialect use. | Full. PostgreSQL-only SQL. |
 | Failure modes F1-F3 | Met | Met |
-| Race between check and write | Closed by `with_for_update` (dba change) | Closed (one statement) |
-| Complexity | 2 helpers, `apply_update` unchanged | New values builder, 2 Core statements, empty-SET fallback |
+| Race between check and write | Closed by row locks (dba change) | Closed (one statement) |
+| Same-id insert race (F5) | `IntegrityError` (unchanged) | Changed: update or not-found |
+| Complexity | 3 small helpers, `apply_update` unchanged | New values builder, 2 Core statements, empty-SET fallback |
 | Effort | S | M |
 | Main risk | Guard lives in Python only | ORM hooks and type coercion skipped |
 
 ## Decision
 Path 1, with these rules.
 - Tenant: `_resolve_tenant` changes `""` to `None`, then uses the `tenant_id` argument if not `None`, else `get_current_tenant()` (also `""` to `None`). Payload `tenant_id` is dropped and logged by name.
-- Load: `session.get(LegalDocument, id, with_for_update=True)` in `save_document` and `update_document`.
+- Load in `update_document`: `_owned_row_for_update` selects by `id` AND `tenant_id IS NOT DISTINCT FROM tenant`, `FOR UPDATE`. It locks only an eligible row.
+- Load in `save_document`: `session.get(LegalDocument, id, with_for_update=True)`, then the ownership check.
 - Ownership: `row.tenant_id == tenant`, `NULL == NULL`. Tenant rows are writable only by that tenant. Shared rows are writable only with no tenant.
-- Error: `StoreDocumentNotFoundError`, base changed to `KeyError`, plain `__str__`. Same text `Document not found: <id>` for missing and foreign rows. `StaleDataError` on flush maps to the same error.
+- Error: `StoreDocumentNotFoundError`, base changed to `KeyError`, plain `__str__`. `update_document` gives the same type and text `Document not found: <id>` for missing and foreign rows. `StaleDataError` on flush maps to the same error.
 - Upsert of a foreign id raises. It never inserts a new id and never overwrites. The payload dict stays unchanged.
 - Argument and context differ: the argument wins.
+- The dropped-key warning logs the operation name and key names only.
 
 ## Consequences
-- The race between check and write is closed. The row lock holds until commit.
+- The race between check and write is closed. A foreign update never waits on the lock of the owner.
 - `update_document` raises `StoreDocumentNotFoundError` instead of bare `KeyError`. `except KeyError` still works.
 - `reject` callers that catch `StoreDocumentNotFoundError` or `LookupError` keep working.
 - A caller with no tenant can write every shared row. Caller RBAC (`admin` role) is the only guard until RLS exists.
