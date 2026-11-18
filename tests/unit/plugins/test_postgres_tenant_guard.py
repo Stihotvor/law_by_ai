@@ -1,4 +1,8 @@
-"""Tenant write guard on ``save_document`` and ``update_document`` (unit level).
+"""Tenant guard on the document calls of ``PostgreSQLStore`` (unit level).
+
+Write guard: ``save_document`` and ``update_document``. Read and delete guard:
+``get_document``, ``search_documents``, ``get_recent_changes`` and
+``delete_document`` (``docs/design/tenant-read-guard``).
 
 A fake ``Session`` stands in for PostgreSQL. The integration twin in
 ``tests/integration/plugins/test_postgres_tenant_guard.py`` runs the QA cases
@@ -8,6 +12,8 @@ on a live database.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -248,3 +254,152 @@ def test_update_stale_data_maps_to_not_found(monkeypatch: pytest.MonkeyPatch) ->
     assert str(info.value) == "Document not found: d1"
     assert isinstance(info.value.__cause__, StaleDataError)
     assert session.rollbacks == 1
+
+
+# --- read guard: get_document, search_documents, get_recent_changes ----------
+
+_READABLE_BY_TENANT = (
+    "legal_document.tenant_id = %(tenant_id_1)s::VARCHAR OR legal_document.tenant_id IS NULL"
+)
+_READS: dict[str, Callable[[postgres.PostgreSQLStore, str | None], object]] = {
+    "get_document": lambda s, t: s.get_document("d1", tenant_id=t),
+    "search_documents": lambda s, t: s.search_documents("q", tenant_id=t),
+    "get_recent_changes": lambda s, t: s.get_recent_changes(tenant_id=t),
+}
+
+
+def _read_sql(
+    monkeypatch: pytest.MonkeyPatch, call: str, arg: str | None, context: str | None
+) -> tuple[str, dict[str, Any]]:
+    """Run read *call* once; return its only SQL statement and its params."""
+    session = FakeSession(None)
+    store = make_store(monkeypatch, session)
+    with tenant_context(context):
+        _READS[call](store, arg)
+    assert session.get_kwargs == []
+    assert len(session.statements) == 1
+    return session.statements[0], session.params[0]
+
+
+@pytest.mark.parametrize("call", list(_READS))
+@pytest.mark.parametrize(
+    ("arg", "context"),
+    [("A", None), (None, "A"), ("A", "B"), ("", "A")],
+    ids=["argument", "context", "argument-wins", "empty-argument-uses-context"],
+)
+def test_read_with_tenant_sends_own_or_shared(
+    monkeypatch: pytest.MonkeyPatch, call: str, arg: str | None, context: str | None
+) -> None:
+    sql, params = _read_sql(monkeypatch, call, arg, context)
+    assert _READABLE_BY_TENANT in sql
+    assert params["tenant_id_1"] == "A"
+    assert "IS NOT DISTINCT FROM" not in sql
+
+
+@pytest.mark.parametrize("call", list(_READS))
+@pytest.mark.parametrize(("arg", "context"), [(None, None), ("", None), ("", "")])
+def test_read_without_tenant_sends_shared_only(
+    monkeypatch: pytest.MonkeyPatch, call: str, arg: str | None, context: str | None
+) -> None:
+    sql, params = _read_sql(monkeypatch, call, arg, context)
+    assert "legal_document.tenant_id IS NULL" in sql
+    assert "legal_document.tenant_id = " not in sql
+    assert "OR legal_document.tenant_id" not in sql
+    assert "tenant_id_1" not in params
+    assert "IS NOT DISTINCT FROM" not in sql
+
+
+def test_search_filters_tenant_before_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    sql, params = _read_sql(monkeypatch, "search_documents", "A", None)
+    assert sql.index(_READABLE_BY_TENANT) < sql.index("LIMIT")
+    assert "ILIKE" in sql
+    assert params["param_1"] == 10
+
+
+def test_recent_changes_keeps_since_filter(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = FakeSession(None)
+    make_store(monkeypatch, session).get_recent_changes(
+        since="2025-01-01T00:00:00+00:00", tenant_id="A"
+    )
+    sql = session.statements[0]
+    assert _READABLE_BY_TENANT in sql
+    assert "legal_document.last_updated > " in sql
+
+
+@pytest.mark.parametrize(
+    ("row_tenant", "caller", "found"),
+    [
+        ("A", "A", True),
+        (None, None, True),
+        (None, "A", True),
+        ("B", "A", False),
+        ("A", None, False),
+    ],
+    ids=["own", "shared-no-tenant", "shared-tenant", "foreign", "tenant-row-no-tenant"],
+)
+def test_list_reads_return_readable_rows(
+    monkeypatch: pytest.MonkeyPatch, row_tenant: str | None, caller: str | None, found: bool
+) -> None:
+    row = _row(row_tenant, last_updated=datetime(2025, 1, 1, tzinfo=UTC))
+    store = make_store(monkeypatch, FakeSession(row))
+    expected = ["d1"] if found else []
+    assert [d["id"] for d in store.search_documents("c", tenant_id=caller)] == expected
+    assert [d["id"] for d in store.get_recent_changes(tenant_id=caller)] == expected
+
+
+@pytest.mark.parametrize(
+    ("row_tenant", "caller", "found"),
+    [
+        ("A", "A", True),
+        (None, None, True),
+        (None, "A", True),
+        ("B", "A", False),
+        ("A", None, False),
+    ],
+    ids=["own", "shared-no-tenant", "shared-tenant", "foreign", "tenant-row-no-tenant"],
+)
+def test_get_document_returns_dict_or_none(
+    monkeypatch: pytest.MonkeyPatch, row_tenant: str | None, caller: str | None, found: bool
+) -> None:
+    row = _row(row_tenant, last_updated=datetime(2025, 1, 1, tzinfo=UTC))
+    store = make_store(monkeypatch, FakeSession(row))
+    result = store.get_document("d1", tenant_id=caller)
+    assert (result is not None) is found
+    if result is not None:
+        assert result["id"] == "d1"
+
+
+# --- delete guard: delete_document --------------------------------------------
+
+
+def _delete(monkeypatch: pytest.MonkeyPatch, arg: str | None, context: str | None) -> FakeSession:
+    session = FakeSession(_row("A"))
+    store = make_store(monkeypatch, session)
+    with tenant_context(context):
+        assert store.delete_document("d1", tenant_id=arg) is None
+    return session
+
+
+@pytest.mark.parametrize(
+    ("arg", "context"),
+    [("A", None), (None, "A"), ("A", "B"), ("", "A")],
+    ids=["argument", "context", "argument-wins", "empty-argument-uses-context"],
+)
+def test_delete_sends_one_owned_delete_and_commits_once(
+    monkeypatch: pytest.MonkeyPatch, arg: str | None, context: str | None
+) -> None:
+    session = _delete(monkeypatch, arg, context)
+    assert session.get_kwargs == []
+    assert len(session.statements) == 1
+    sql = session.statements[0]
+    assert sql.startswith("DELETE FROM legal_document")
+    assert "legal_document.id = %(id_1)s" in sql
+    assert "legal_document.tenant_id IS NOT DISTINCT FROM %(tenant_id_1)s" in sql
+    assert session.params[0] == {"id_1": "d1", "tenant_id_1": "A"}
+    assert session.commits == 1
+
+
+def test_delete_without_tenant_matches_shared_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    session = _delete(monkeypatch, "", None)
+    assert "legal_document.tenant_id IS NOT DISTINCT FROM NULL" in session.statements[0]
+    assert session.commits == 1

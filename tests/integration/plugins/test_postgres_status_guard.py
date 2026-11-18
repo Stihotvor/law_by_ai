@@ -222,7 +222,7 @@ def test_update_keeps_tenant_and_warns(
 
     store.update_document(doc_id, {"tenant_id": "tenant-other"}, tenant_id="tenant-7")
 
-    fetched = store.get_document(doc_id)
+    fetched = store.get_document(doc_id, tenant_id="tenant-7")
     assert fetched is not None
     assert fetched["tenant_id"] == "tenant-7"
     warnings = _warnings(caplog)
@@ -237,7 +237,7 @@ def test_upsert_keeps_tenant(store: PostgreSQLStore, make_document: DocFactory) 
 
     store.save_document({**doc, "tenant_id": "tenant-other"}, tenant_id="tenant-7")
 
-    fetched = store.get_document(doc_id)
+    fetched = store.get_document(doc_id, tenant_id="tenant-7")
     assert fetched is not None
     assert fetched["tenant_id"] == "tenant-7"
 

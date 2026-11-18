@@ -1,8 +1,9 @@
-"""Integration tests: tenant write guard on ``save_document`` and ``update_document``.
+"""Integration tests: tenant guard on the document calls of the store.
 
-QA cases from ``docs/design/tenant-write-guard/qa.md``. Rows: ``A1`` (tenant
-``A``), ``B1`` (tenant ``B``), ``S1`` (shared, NULL). Needs a live PostgreSQL;
-skipped when it is unreachable.
+Write guard QA cases from ``docs/design/tenant-write-guard/qa.md``; read and
+delete guard cases from ``docs/design/tenant-read-guard/tasks.md``. Rows:
+``A1`` (tenant ``A``), ``B1`` (tenant ``B``), ``S1`` (shared, NULL). Needs a
+live PostgreSQL; skipped when it is unreachable.
 """
 
 from __future__ import annotations
@@ -84,11 +85,16 @@ def rows(store: PostgreSQLStore) -> dict[str, str]:
     return ids
 
 
-def _snapshot(store: PostgreSQLStore, doc_id: str) -> dict[str, Any]:
-    fetched = store.get_document(doc_id)
+def _snapshot(store: PostgreSQLStore, doc_id: str, tenant: str | None) -> dict[str, Any]:
+    with tenant_context(None):
+        fetched = store.get_document(doc_id, tenant_id=tenant)
     assert fetched is not None
     assert len(fetched) == _DOCUMENT_FIELD_COUNT
     return fetched
+
+
+def _ids(docs: list[dict[str, Any]]) -> set[str]:
+    return {d["id"] for d in docs}
 
 
 def _warnings(caplog: pytest.LogCaptureFixture) -> list[str]:
@@ -109,7 +115,7 @@ def test_insert_takes_context_tenant_not_payload_tenant(
     caplog.set_level(logging.WARNING, logger=_LOGGER)
     with tenant_context("A"):
         doc_id = store.save_document(_payload(tenant_id=_PAYLOAD_TENANT))
-    assert _snapshot(store, doc_id)["tenant_id"] == "A"
+    assert _snapshot(store, doc_id, "A")["tenant_id"] == "A"
     warnings = _warnings(caplog)
     assert len(warnings) == 1
     assert "tenant_id" in warnings[0]
@@ -121,27 +127,27 @@ def test_insert_without_tenant_is_shared(store: PostgreSQLStore) -> None:
     """QA-2: an insert with no tenant stores a shared (NULL) row."""
     with tenant_context(None):
         doc_id = store.save_document(_payload(tenant_id="B"))
-    assert _snapshot(store, doc_id)["tenant_id"] is None
+    assert _snapshot(store, doc_id, None)["tenant_id"] is None
 
 
 def test_upsert_of_foreign_id_raises_and_inserts_nothing(
     store: PostgreSQLStore, rows: dict[str, str]
 ) -> None:
     """QA-3: an upsert of a foreign id raises not found and writes nothing."""
-    before = _snapshot(store, rows["B1"])
+    before = _snapshot(store, rows["B1"], "B")
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError) as info:
         store.save_document(_payload(id=rows["B1"], title="x"))
     _assert_not_found(info.value, rows["B1"])
-    assert _snapshot(store, rows["B1"]) == before
-    assert len(store.get_recent_changes()) == len(_TENANTS)
+    assert _snapshot(store, rows["B1"], "B") == before
+    assert _ids(store.get_recent_changes(tenant_id="A")) == {rows["A1"], rows["S1"]}
 
 
 def test_update_of_foreign_row_raises(store: PostgreSQLStore, rows: dict[str, str]) -> None:
     """QA-4: an update of a foreign row raises not found and keeps the row."""
-    before = _snapshot(store, rows["B1"])
+    before = _snapshot(store, rows["B1"], "B")
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError):
         store.update_document(rows["B1"], {"title": "x"})
-    assert _snapshot(store, rows["B1"]) == before
+    assert _snapshot(store, rows["B1"], "B") == before
 
 
 def test_foreign_and_missing_ids_give_same_error(
@@ -163,28 +169,28 @@ def test_foreign_and_missing_ids_give_same_error(
 
 def test_tenant_cannot_write_shared_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
     """QA-6: a tenant can not update or upsert a shared row."""
-    before = _snapshot(store, rows["S1"])
+    before = _snapshot(store, rows["S1"], None)
     with tenant_context("A"):
         with pytest.raises(StoreDocumentNotFoundError):
             store.update_document(rows["S1"], {"title": "x"})
         with pytest.raises(StoreDocumentNotFoundError):
             store.save_document(_payload(id=rows["S1"], title="x"))
-    assert _snapshot(store, rows["S1"]) == before
+    assert _snapshot(store, rows["S1"], None) == before
 
 
 def test_no_tenant_cannot_write_tenant_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
     """QA-7: a caller with no tenant can not update a tenant row."""
-    before = _snapshot(store, rows["A1"])
+    before = _snapshot(store, rows["A1"], "A")
     with tenant_context(None), pytest.raises(StoreDocumentNotFoundError):
         store.update_document(rows["A1"], {"title": "x"})
-    assert _snapshot(store, rows["A1"]) == before
+    assert _snapshot(store, rows["A1"], "A") == before
 
 
 def test_no_tenant_writes_shared_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
     """QA-8: a caller with no tenant can update a shared row."""
     with tenant_context(None):
         store.update_document(rows["S1"], {"title": "x"})
-    after = _snapshot(store, rows["S1"])
+    after = _snapshot(store, rows["S1"], None)
     assert after["title"] == "x"
     assert after["tenant_id"] is None
 
@@ -193,7 +199,7 @@ def test_tenant_argument_wins_over_context(store: PostgreSQLStore, rows: dict[st
     """QA-9: the ``tenant_id`` argument wins over the context tenant."""
     with tenant_context("B"):
         store.update_document(rows["A1"], {"title": "x"}, tenant_id="A")
-    assert _snapshot(store, rows["A1"])["title"] == "x"
+    assert _snapshot(store, rows["A1"], "A")["title"] == "x"
 
 
 def test_update_drops_payload_tenant(
@@ -203,7 +209,7 @@ def test_update_drops_payload_tenant(
     caplog.set_level(logging.WARNING, logger=_LOGGER)
     with tenant_context("A"):
         store.update_document(rows["A1"], {"title": "x", "tenant_id": _PAYLOAD_TENANT})
-    after = _snapshot(store, rows["A1"])
+    after = _snapshot(store, rows["A1"], "A")
     assert (after["title"], after["tenant_id"]) == ("x", "A")
     warnings = _warnings(caplog)
     assert len(warnings) == 1
@@ -217,13 +223,13 @@ def test_empty_tenant_argument_falls_back_to_context(
     store: PostgreSQLStore, rows: dict[str, str]
 ) -> None:
     """QA-11: an empty ``tenant_id`` argument falls back to the context tenant."""
-    before = _snapshot(store, rows["S1"])
+    before = _snapshot(store, rows["S1"], None)
     with tenant_context("A"):
         with pytest.raises(StoreDocumentNotFoundError):
             store.update_document(rows["S1"], {"title": "x"}, tenant_id="")
         store.update_document(rows["A1"], {"title": "y"}, tenant_id="")
-    assert _snapshot(store, rows["S1"]) == before
-    assert _snapshot(store, rows["A1"])["title"] == "y"
+    assert _snapshot(store, rows["S1"], None) == before
+    assert _snapshot(store, rows["A1"], "A")["title"] == "y"
 
 
 def test_not_found_is_caught_as_key_error(store: PostgreSQLStore, rows: dict[str, str]) -> None:
@@ -241,12 +247,12 @@ def test_not_found_is_caught_as_key_error(store: PostgreSQLStore, rows: dict[str
 
 def test_failed_upsert_keeps_row_and_payload(store: PostgreSQLStore, rows: dict[str, str]) -> None:
     """QA-13: a rejected upsert changes neither the row nor the payload."""
-    before = _snapshot(store, rows["B1"])
+    before = _snapshot(store, rows["B1"], "B")
     payload = _payload(id=rows["B1"], title="x", tenant_id="A", status="approved")
     payload_before = copy.deepcopy(payload)
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError):
         store.save_document(payload)
-    assert _snapshot(store, rows["B1"]) == before
+    assert _snapshot(store, rows["B1"], "B") == before
     assert payload == payload_before
 
 
@@ -394,11 +400,94 @@ def test_stale_data_on_commit_maps_to_not_found(
     store: PostgreSQLStore, rows: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """QA-15: ``StaleDataError`` on commit rolls back and raises not found."""
-    before = _snapshot(store, rows["A1"])
+    before = _snapshot(store, rows["A1"], "A")
     counter = _stale_session(monkeypatch)
     with tenant_context("A"), pytest.raises(StoreDocumentNotFoundError) as info:
         store.update_document(rows["A1"], {"title": "x"})
     _assert_not_found(info.value, rows["A1"])
     assert isinstance(info.value.__cause__, StaleDataError)
     assert counter.rollbacks >= 1
-    assert _snapshot(store, rows["A1"]) == before
+    assert _snapshot(store, rows["A1"], "A") == before
+
+
+# --- read and delete guard (docs/design/tenant-read-guard) -------------------
+
+
+def test_tenant_reads_own_rows_and_no_foreign_rows(
+    store: PostgreSQLStore, rows: dict[str, str]
+) -> None:
+    """A tenant reads its own rows and never a foreign row in all three reads."""
+    assert _snapshot(store, rows["A1"], "A")["id"] == rows["A1"]
+    assert store.get_document(rows["B1"], tenant_id="A") is None
+    for docs in (
+        store.search_documents("Original", tenant_id="A"),
+        store.get_recent_changes(tenant_id="A"),
+    ):
+        assert rows["A1"] in _ids(docs)
+        assert rows["B1"] not in _ids(docs)
+
+
+def test_tenant_sees_shared_rows(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """A tenant reads shared rows in all three reads."""
+    with tenant_context("A"):
+        assert store.get_document(rows["S1"]) is not None
+        assert rows["S1"] in _ids(store.search_documents("Original"))
+        assert rows["S1"] in _ids(store.get_recent_changes())
+
+
+@pytest.mark.parametrize("name", ["B1", "missing"], ids=["foreign", "missing"])
+def test_foreign_id_reads_as_missing(
+    store: PostgreSQLStore, rows: dict[str, str], name: str
+) -> None:
+    """``get_document`` of a foreign id returns ``None``, as for a missing id."""
+    doc_id = rows.get(name, str(uuid.uuid4()))
+    with tenant_context("A"):
+        assert store.get_document(doc_id) is None
+
+
+def test_no_tenant_reads_only_shared_rows(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """A caller with no tenant reads only shared rows."""
+    with tenant_context(None):
+        assert store.get_document(rows["A1"]) is None
+        assert store.get_document(rows["S1"]) is not None
+        assert _ids(store.search_documents("Original")) == {rows["S1"]}
+        assert _ids(store.get_recent_changes()) == {rows["S1"]}
+
+
+def test_search_limit_applies_after_tenant_filter(store: PostgreSQLStore) -> None:
+    """With ``limit=1`` a tenant gets its own row, not a newer foreign row."""
+    own = store.save_document(_payload(last_updated="2024-01-01T00:00:00+00:00"), tenant_id="A")
+    store.save_document(_payload(last_updated="2025-01-01T00:00:00+00:00"), tenant_id="B")
+    assert _ids(store.search_documents("Original", limit=1, tenant_id="A")) == {own}
+
+
+@pytest.mark.parametrize("name", ["S1", "B1"], ids=["shared", "foreign"])
+def test_tenant_cannot_delete_shared_or_foreign_row(
+    store: PostgreSQLStore, rows: dict[str, str], name: str
+) -> None:
+    """A tenant delete of a shared or foreign row is a silent no-op."""
+    before = _snapshot(store, rows[name], _TENANTS[name])
+    with tenant_context("A"):
+        assert store.delete_document(rows[name]) is None
+    assert _snapshot(store, rows[name], _TENANTS[name]) == before
+
+
+def test_tenant_deletes_own_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """A tenant deletes its own row."""
+    store.delete_document(rows["A1"], tenant_id="A")
+    assert store.get_document(rows["A1"], tenant_id="A") is None
+
+
+def test_no_tenant_deletes_shared_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """A caller with no tenant deletes a shared row."""
+    with tenant_context(None):
+        store.delete_document(rows["S1"])
+        assert store.get_document(rows["S1"]) is None
+
+
+def test_no_tenant_cannot_delete_tenant_row(store: PostgreSQLStore, rows: dict[str, str]) -> None:
+    """A caller with no tenant cannot delete a tenant row."""
+    before = _snapshot(store, rows["A1"], "A")
+    with tenant_context(None):
+        assert store.delete_document(rows["A1"]) is None
+    assert _snapshot(store, rows["A1"], "A") == before

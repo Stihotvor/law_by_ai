@@ -56,7 +56,7 @@ def test_save_and_get_roundtrip(plugin, make_document: Callable):
     doc = make_document(title="Konstytucja RP", content="Krajowe źródło prawa.")
     doc_id = plugin.save_document(doc, tenant_id="tenant-7")
 
-    fetched = plugin.get_document(doc_id)
+    fetched = plugin.get_document(doc_id, tenant_id="tenant-7")
     assert fetched is not None
     assert fetched["id"] == doc_id
     assert fetched["title"] == "Konstytucja RP"

@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.sql import Select
+from sqlalchemy.sql import Delete, Select
 
 from data.models import LegalDocument
 from plugins.relational_db import postgres
@@ -27,12 +27,28 @@ class FakeResult:
     def scalar_one_or_none(self) -> LegalDocument | None:
         return self.row
 
+    def scalars(self) -> FakeResult:
+        return self
+
+    def all(self) -> list[LegalDocument]:
+        return [] if self.row is None else [self.row]
+
+
+def _tenant_matches(sql: str, params: dict[str, Any], row: LegalDocument) -> bool:
+    """Apply the tenant rule the SQL uses: strict write rule or own-or-shared read rule."""
+    tenant = params.get("tenant_id_1")
+    if "IS NOT DISTINCT FROM" in sql or "tenant_id" not in sql:
+        return row.tenant_id == tenant
+    return row.tenant_id is None or (tenant is not None and row.tenant_id == tenant)
+
 
 class FakeSession:
     """Fake session: ``get`` returns *row* and records its kwargs.
 
-    ``execute`` takes the ``update_document`` select (id and NULL-safe tenant
-    match), records its PostgreSQL SQL and returns *row* only when it matches.
+    ``execute`` takes a select or delete, records its PostgreSQL SQL and bound
+    params, and returns *row* only when it passes the statement filters: the
+    ``id_1`` param when present, and the tenant rule the SQL uses (strict
+    ``IS NOT DISTINCT FROM`` for writes, own-or-shared for reads).
     ``commit`` raises *commit_error* when set; ``add``, commits and rollbacks
     are recorded.
     """
@@ -43,6 +59,7 @@ class FakeSession:
         self.added: list[Any] = []
         self.get_kwargs: list[dict[str, Any]] = []
         self.statements: list[str] = []
+        self.params: list[dict[str, Any]] = []
         self.commits = 0
         self.rollbacks = 0
 
@@ -56,14 +73,15 @@ class FakeSession:
         self.get_kwargs.append(kwargs)
         return self.row
 
-    def execute(self, stmt: Select[Any]) -> FakeResult:
+    def execute(self, stmt: Select[Any] | Delete) -> FakeResult:
         compiled = stmt.compile(dialect=postgresql.dialect())
         self.statements.append(str(compiled))
         params = compiled.params
+        self.params.append(dict(params))
         row = self.row
-        if row is None or row.id != params.get("id_1"):
+        if row is None or ("id_1" in params and row.id != params["id_1"]):
             return FakeResult(None)
-        return FakeResult(row if row.tenant_id == params.get("tenant_id_1") else None)
+        return FakeResult(row if _tenant_matches(str(compiled), dict(params), row) else None)
 
     def add(self, obj: Any) -> None:
         self.added.append(obj)
