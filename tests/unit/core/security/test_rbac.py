@@ -109,3 +109,9 @@ def test_require_role_custom_required() -> None:
     assert check("admin") is False
     assert check("") is False
     assert check("root") is False
+
+
+def test_require_role_nonstandard_required_returns_false() -> None:
+    check = require_role("root")
+    assert check("admin") is False
+    assert check("root") is True

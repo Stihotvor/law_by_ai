@@ -152,7 +152,7 @@
 - Type: security
 - Given a principal with role "user"
 - When the admin principal check runs
-- Then access is denied with PrivilegeEscalationError
+- Then access is denied with PrincipalRequiredError (a PermissionError)
 
 ### QA-023 Admin principal check allows admin
 - Covers: Decision (reviewer change 1)

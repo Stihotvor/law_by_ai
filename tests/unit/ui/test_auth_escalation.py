@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from core.security.principal import get_principal, reset_principal
+from core.security.principal import RequestPrincipal, get_principal, reset_principal
 from ui.components import auth
 
 ADMIN_EMAIL = "admin@x.com"
@@ -123,11 +123,24 @@ def _open_admin_session(env: Env) -> None:
 
 def test_demoted_admin_loses_admin_page(env: Env) -> None:
     _open_admin_session(env)
+    assert get_principal() == RequestPrincipal(email=ADMIN_EMAIL, role="admin")
     env.lookup.row = _row(role="user")
     with pytest.raises(_Stopped):
         _admin_page()
     assert env.lookup.calls == [ADMIN_EMAIL, ADMIN_EMAIL]
     assert env.st.session_state[auth.SESSION_USER_KEY]["role"] == "user"
+    assert get_principal() == RequestPrincipal(email=ADMIN_EMAIL, role="user")
+    env.st.warning.assert_called_once_with(ADMIN_REQUIRED)
+    env.st.stop.assert_called_once()
+
+
+def test_stale_admin_session_role_is_replaced_by_database_role(env: Env) -> None:
+    env.st.session_state[auth.SESSION_USER_KEY] = _row(role="admin")
+    env.lookup.row = _row(role="user")
+    assert auth.require_auth()["role"] == "user"
+    assert env.st.session_state[auth.SESSION_USER_KEY]["role"] == "user"
+    with pytest.raises(_Stopped):
+        auth.require_admin()
     env.st.warning.assert_called_once_with(ADMIN_REQUIRED)
     env.st.stop.assert_called_once()
 
