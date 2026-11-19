@@ -13,6 +13,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from alembic import command
@@ -21,11 +22,13 @@ from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from factories.db_probe import can_connect
 from factories.scratch_db import ScratchDb, scratch_database
-from sqlalchemy import Engine, create_engine, inspect, make_url, text
+from sqlalchemy import DefaultClause, Engine, MetaData, create_engine, inspect, make_url, text
 from sqlalchemy.exc import IntegrityError
 
 from config.settings import get_settings
-from data.models import Base
+from data.autogen import AUTOGEN_COMPARE_OPTS
+from data.models import Base, DocumentStatus
+from plugins.relational_db import tenant_models  # noqa: F401  (registers users on Base)
 
 pytestmark = pytest.mark.integration
 
@@ -115,7 +118,7 @@ def test_new_rows_default_to_needs_review(engine: Engine) -> None:
     with engine.begin() as conn:
         conn.execute(INSERT_DOC, {"id": doc_id})
 
-    assert _status(engine, doc_id) == "needs_review"
+    assert _status(engine, doc_id) == DocumentStatus.NEEDS_REVIEW.value
 
 
 @pytest.mark.parametrize("bad_status", ["bogus", "rejected"])
@@ -164,9 +167,60 @@ def test_downgrade_removes_column_and_table_then_upgrade_restores(engine: Engine
 
 def test_autogenerate_finds_no_changes(engine: Engine) -> None:
     with engine.connect() as conn:
-        diff = compare_metadata(MigrationContext.configure(conn), Base.metadata)
+        diff = compare_metadata(
+            MigrationContext.configure(conn, opts=dict(AUTOGEN_COMPARE_OPTS)), Base.metadata
+        )
 
     assert diff == []
+
+
+def _flatten(diff: list[Any]) -> list[tuple[Any, ...]]:
+    """Alembic nests column changes in lists; return one flat list of tuples."""
+    flat: list[tuple[Any, ...]] = []
+    for entry in diff:
+        flat.extend(entry if isinstance(entry, list) else [entry])
+    return flat
+
+
+def _status_default_arg(metadata: MetaData) -> object:
+    default = metadata.tables["legal_document"].c.status.server_default
+    assert isinstance(default, DefaultClause)
+    return default.arg
+
+
+@pytest.mark.parametrize(
+    ("table", "column", "new_default"),
+    [
+        pytest.param(
+            "legal_document",
+            "status",
+            DefaultClause(DocumentStatus.APPROVED.value),
+            id="status_changed",
+        ),
+        pytest.param(
+            "users", "session_version", DefaultClause(text("1")), id="session_version_changed"
+        ),
+        pytest.param("legal_document", "status", None, id="status_removed"),
+    ],
+)
+def test_autogenerate_detects_changed_server_default(
+    engine: Engine, table: str, column: str, new_default: DefaultClause | None
+) -> None:
+    assert table in Base.metadata.tables  # users needs the tenant_models import
+    copy_md = MetaData()
+    for tbl in Base.metadata.sorted_tables:
+        tbl.to_metadata(copy_md)
+    copy_md.tables[table].c[column].server_default = new_default
+
+    with engine.connect() as conn:
+        diff = compare_metadata(
+            MigrationContext.configure(conn, opts=dict(AUTOGEN_COMPARE_OPTS)), copy_md
+        )
+
+    modify_defaults = [e for e in _flatten(diff) if e[0] == "modify_default"]
+    assert len(modify_defaults) == 1
+    assert modify_defaults[0][2:4] == (table, column)
+    assert _status_default_arg(Base.metadata) == DocumentStatus.NEEDS_REVIEW.value
 
 
 def test_rls_only_on_tenants_and_users(engine: Engine) -> None:
