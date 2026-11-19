@@ -17,9 +17,24 @@ from factories.db_probe import can_connect
 from sqlalchemy import create_engine, text
 
 from config.settings import get_settings
+from core.security import (
+    ADMIN,
+    USER,
+    PrincipalRequiredError,
+    RequestPrincipal,
+    principal_context,
+)
 from plugins.relational_db.postgres import PostgreSQLStore, StoreDocumentNotFoundError
 
 pytestmark = pytest.mark.integration
+
+ADMIN_EMAIL = "admin@example.com"
+
+
+def _reject_as_admin(store: PostgreSQLStore, document_id: str, email: str = ADMIN_EMAIL) -> None:
+    """Reject under an admin principal; the store reads the actor from it."""
+    with principal_context(RequestPrincipal(email, ADMIN)):
+        store.reject(document_id)
 
 
 def _audit_rows(document_id: str) -> list[tuple[str, str, str]]:
@@ -44,7 +59,8 @@ def source_url() -> Iterator[str]:
         pytest.skip("PostgreSQL unavailable")
     value = f"https://example.invalid/reject92/{uuid.uuid4().hex}"
     yield value
-    engine = create_engine(url, future=True)
+    # The app role cannot delete audit rows; clean up as the owner.
+    engine = create_engine(get_settings().postgres_owner_url, future=True)
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM rejected_document WHERE source_url = :u"), {"u": value})
     engine.dispose()
@@ -80,10 +96,10 @@ def test_reject_deletes_row_writes_audit_and_calls_hook(
 ) -> None:
     doc_id = _save(store, source_url)
 
-    store.reject(doc_id, "admin@example.com")
+    _reject_as_admin(store, doc_id)
 
     assert store.get_document(doc_id) is None
-    assert _audit_rows(doc_id) == [(doc_id, source_url, "admin@example.com")]
+    assert _audit_rows(doc_id) == [(doc_id, source_url, ADMIN_EMAIL)]
     assert deleted_ids == [doc_id]
 
 
@@ -92,7 +108,7 @@ def test_reject_without_hook_still_deletes_and_audits(source_url: str) -> None:
     s.initialize()
     try:
         doc_id = _save(s, source_url)
-        s.reject(doc_id, "admin@example.com")
+        _reject_as_admin(s, doc_id)
         assert s.get_document(doc_id) is None
         assert len(_audit_rows(doc_id)) == 1
     finally:
@@ -101,7 +117,7 @@ def test_reject_without_hook_still_deletes_and_audits(source_url: str) -> None:
 
 def test_reject_records_utc_timestamp(store: PostgreSQLStore, source_url: str) -> None:
     doc_id = _save(store, source_url)
-    store.reject(doc_id, "admin@example.com")
+    _reject_as_admin(store, doc_id)
 
     engine = create_engine(get_settings().postgres_url, future=True)
     with engine.connect() as conn:
@@ -115,7 +131,7 @@ def test_reject_records_utc_timestamp(store: PostgreSQLStore, source_url: str) -
 
 def test_is_rejected_true_after_reject(store: PostgreSQLStore, source_url: str) -> None:
     doc_id = _save(store, source_url)
-    store.reject(doc_id, "admin@example.com")
+    _reject_as_admin(store, doc_id)
 
     assert store.is_rejected(source_url) is True
 
@@ -130,7 +146,7 @@ def test_reject_unknown_id_raises_without_audit_or_hook(
     missing = f"missing-{uuid.uuid4().hex}"
 
     with pytest.raises(StoreDocumentNotFoundError, match=missing):
-        store.reject(missing, "admin@example.com")
+        _reject_as_admin(store, missing)
 
     assert _audit_rows(missing) == []
     assert deleted_ids == []
@@ -159,7 +175,7 @@ def test_hook_error_is_logged_and_reject_still_completes(source_url: str) -> Non
     store_log.addHandler(handler)
     try:
         doc_id = _save(s, source_url)
-        s.reject(doc_id, "admin@example.com")  # must not raise
+        _reject_as_admin(s, doc_id)  # must not raise
         assert s.get_document(doc_id) is None
         assert len(_audit_rows(doc_id)) == 1
         assert any("on_document_deleted hook failed" in m for m in handler.messages)
@@ -176,9 +192,10 @@ def test_concurrent_rejects_write_one_audit_row_and_one_hook_call(
     outcomes: list[str] = []
 
     def _worker() -> None:
+        # A new thread does not inherit context variables: enter the principal here.
         barrier.wait()
         try:
-            store.reject(doc_id, "admin@example.com")
+            _reject_as_admin(store, doc_id)
             outcomes.append("ok")
         except StoreDocumentNotFoundError:
             outcomes.append("not_found")
@@ -192,3 +209,40 @@ def test_concurrent_rejects_write_one_audit_row_and_one_hook_call(
     assert sorted(outcomes) == ["not_found", "ok"]
     assert len(_audit_rows(doc_id)) == 1
     assert deleted_ids == [doc_id]
+
+
+@pytest.mark.parametrize(
+    "principal",
+    [
+        None,
+        RequestPrincipal("", ADMIN),
+        RequestPrincipal("   ", ADMIN),
+        RequestPrincipal(ADMIN_EMAIL, USER),
+    ],
+    ids=["none", "blank-email", "spaces-email", "role-user"],
+)
+def test_reject_refused_principal_writes_nothing(
+    store: PostgreSQLStore,
+    source_url: str,
+    deleted_ids: list[str],
+    principal: RequestPrincipal | None,
+) -> None:
+    doc_id = _save(store, source_url)
+
+    with principal_context(principal), pytest.raises(PrincipalRequiredError):
+        store.reject(doc_id)
+
+    assert _audit_rows(doc_id) == []
+    assert store.get_document(doc_id) is not None
+    assert deleted_ids == []
+
+
+@pytest.mark.parametrize("email", ["boss@x.pl", "  boss@x.pl  "], ids=["plain", "padded"])
+def test_reject_audit_actor_equals_principal_email(
+    store: PostgreSQLStore, source_url: str, email: str
+) -> None:
+    doc_id = _save(store, source_url)
+
+    _reject_as_admin(store, doc_id, email)
+
+    assert _audit_rows(doc_id) == [(doc_id, source_url, "boss@x.pl")]
