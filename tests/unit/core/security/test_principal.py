@@ -97,5 +97,28 @@ def test_admin_passes_with_stripped_email() -> None:
     assert result.role == "admin"
 
 
+@pytest.mark.parametrize(
+    "principal",
+    [
+        None,
+        RequestPrincipal(email="u@x.pl", role="user"),
+        RequestPrincipal(email="a@x.pl", role="ADMIN"),
+        RequestPrincipal(email="a@x.pl", role=""),
+        RequestPrincipal(email="", role="admin"),
+        RequestPrincipal(email=" \t\n ", role="admin"),
+    ],
+    ids=["none", "user", "upper-admin", "empty-role", "empty-email", "blank-email"],
+)
+def test_require_admin_principal_fails_closed(principal: RequestPrincipal | None) -> None:
+    set_principal(principal)
+    with pytest.raises(PrincipalRequiredError):
+        require_admin_principal()
+
+
+def test_require_admin_principal_accepts_admin_with_stripped_email() -> None:
+    set_principal(RequestPrincipal(email=" a@x.pl ", role="admin"))
+    assert require_admin_principal() == RequestPrincipal(email="a@x.pl", role="admin")
+
+
 def test_principal_required_error_is_permission_error() -> None:
     assert issubclass(PrincipalRequiredError, PermissionError)
