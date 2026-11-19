@@ -1,5 +1,9 @@
 """Tests for the shared ORM models in ``data.models`` (issue #16)."""
 
+from sqlalchemy import CheckConstraint, MetaData
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.schema import CreateTable
+
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
 from plugins.relational_db import postgres
 
@@ -53,3 +57,13 @@ def test_status_check_constraint_lists_enum_values() -> None:
 def test_postgres_models_share_one_metadata() -> None:
     assert postgres.Base is Base
     assert {"legal_document", "users", "tenants"} <= set(Base.metadata.tables)
+
+
+def test_check_name_survives_naming_convention() -> None:
+    metadata = MetaData(naming_convention={"ck": "ck_%(table_name)s_%(constraint_name)s"})
+    table = Base.metadata.tables["legal_document"].to_metadata(metadata)
+    ddl = str(CreateTable(table).compile(dialect=postgresql.dialect()))
+    names = [c.name for c in table.constraints if isinstance(c, CheckConstraint)]
+    assert "CONSTRAINT ck_legal_document_status CHECK" in ddl, (
+        f"CHECK name changed under naming_convention; pin it with conv(): {names}"
+    )

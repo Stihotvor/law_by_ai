@@ -16,6 +16,7 @@ from typing import Any
 from sqlalchemy import CheckConstraint, String
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.sql.elements import conv
 
 
 class DocumentStatus(StrEnum):
@@ -44,7 +45,7 @@ class LegalDocument(Base):
     __table_args__ = (
         CheckConstraint(
             f"status IN ({_STATUS_SQL_VALUES})",
-            name="ck_legal_document_status",
+            name=conv("ck_legal_document_status"),
         ),
     )
 

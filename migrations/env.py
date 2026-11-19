@@ -17,6 +17,7 @@ from alembic.config import Config
 from sqlalchemy import engine_from_config, pool
 
 from config.settings import get_settings
+from data.autogen import AUTOGEN_COMPARE_OPTS
 from plugins.relational_db.postgres import Base
 from storage.advisory_lock import advisory_lock
 
@@ -55,6 +56,8 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        # Autogenerate does not run offline. Pass the same options so both modes stay identical.
+        **AUTOGEN_COMPARE_OPTS,
     )
 
     with context.begin_transaction():
@@ -78,7 +81,11 @@ def run_migrations_online() -> None:
         connectable.connect() as connection,
         advisory_lock(connection, MIGRATION_LOCK_KEY, timeout_s),
     ):
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            **AUTOGEN_COMPARE_OPTS,
+        )
 
         with context.begin_transaction():
             context.run_migrations()
