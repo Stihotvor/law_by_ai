@@ -34,7 +34,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.sql import ColumnElement
 
 from config.settings import PoolConfig, get_settings
-from core.security import get_current_tenant, hash_password
+from core.security import get_current_tenant, hash_password, require_admin_principal
 from core.security.login_throttle import normalise_email
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
 from plugins.relational_db.mappers import apply_update as _apply_update
@@ -368,18 +368,18 @@ class PostgreSQLStore:
             _commit(session, document_id)
         _warn_dropped("update_document", dropped)
 
-    # --- reject (issue #92) -------------------------------------------------
+    # --- reject --------------------------------------------------------------
 
-    def reject(self, document_id: str, admin: str) -> None:
-        """Delete a document and record the reject in ``rejected_document``.
+    def reject(self, document_id: str) -> None:
+        """Delete a document and record the reject with the principal email as actor.
 
-        ``DELETE ... RETURNING`` and the audit insert share one transaction, so
-        of two concurrent rejects only one deletes the row and writes the audit
-        row. After commit the ``on_document_deleted`` hook (if set) is called
-        once. Raises :class:`StoreDocumentNotFoundError` for an unknown id;
-        nothing is written and the hook is not called. Review state is global:
-        there is no tenant check.
+        Raises ``PrincipalRequiredError`` before any database access when no principal is
+        set, the principal is not an admin, or its email is blank. DELETE RETURNING and the
+        audit insert share one transaction, so only one concurrent reject wins. The hook runs
+        once after the commit. An unknown id raises :class:`StoreDocumentNotFoundError`; then
+        nothing is written and the hook does not run. Review state is global (no tenant check).
         """
+        principal = require_admin_principal()
         self._ensure_initialized()
         stmt = (
             delete(LegalDocument)
@@ -395,7 +395,7 @@ class PostgreSQLStore:
                 RejectedDocument(
                     document_id=document_id,
                     source_url=source_url,
-                    admin=admin,
+                    admin=principal.email,
                     rejected_at=datetime.now(UTC),
                 )
             )
