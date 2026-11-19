@@ -108,9 +108,9 @@
 ### QA-016 Hand-edited CHECK text is caught
 - Covers: Technical Constraints (CHECK text guard)
 - Type: failure
-- Given the model CHECK on `legal_document.status` has a changed allowed value list, with the same name
-- When the existing CHECK text test runs against the migrated database
-- Then the test fails, because the drift comparison alone does not see CHECK text
+- Given the database CHECK `ck_legal_document_status` is replaced with a changed allowed value list, with the same name
+- When the existing CHECK text test reads it through `pg_get_constraintdef`
+- Then the test fails, because the drift comparison does not see CHECK text
 
 ### QA-017 CHECK name in database unchanged
 - Covers: Business Goal 2

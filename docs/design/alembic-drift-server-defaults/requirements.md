@@ -9,7 +9,7 @@
 - `migrations/env.py` must pass `compare_server_default=True` in both online and offline `context.configure` calls, so `alembic revision --autogenerate` and the test use the same rule.
 - The test must use the same option source as `env.py`, so the two cannot drift apart.
 - Server defaults today: `legal_document.status = 'needs_review'`, `users.session_version = 0`.
-- Alembic compares CHECK constraints by name only. The `pg_get_constraintdef` test stays as the guard of the CHECK text.
+- Alembic 1.20.1 does not compare CHECK constraints by default. Name-based CHECK detection needs the opt-in `checkconstraint_byname` plugin, which this change does not enable. The `pg_get_constraintdef` test stays as the guard of the CHECK text.
 - No new dependency. No schema change unless the comparison shows real drift.
 
 ## Edge Cases

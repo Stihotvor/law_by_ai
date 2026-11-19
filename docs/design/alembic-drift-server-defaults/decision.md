@@ -1,7 +1,7 @@
 # Decision: Alembic drift test compares server defaults
 
 ## Context
-The drift test calls `compare_metadata` with no options, so Alembic 1.20.1 does not compare server defaults. A changed model default passes silently. Alembic compares CHECK constraints by name only. The CHECK name `ck_legal_document_status` would change if someone adds a naming convention with a `%(constraint_name)s` ck token.
+The drift test calls `compare_metadata` with no options, so Alembic 1.20.1 does not compare server defaults. A changed model default passes silently. Alembic 1.20.1 does not compare CHECK constraints by default (name-based detection is an opt-in plugin, not enabled here). The CHECK name `ck_legal_document_status` would change if someone adds a naming convention with a `%(constraint_name)s` ck token.
 
 ## Options
 - Path 1: one shared options dict used by `env.py` and the test, `conv()` pins the CHECK name, and a drift test on an isolated metadata copy.

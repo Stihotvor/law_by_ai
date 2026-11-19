@@ -217,9 +217,10 @@ def test_autogenerate_detects_changed_server_default(
             MigrationContext.configure(conn, opts=dict(AUTOGEN_COMPARE_OPTS)), copy_md
         )
 
-    modify_defaults = [e for e in _flatten(diff) if e[0] == "modify_default"]
-    assert len(modify_defaults) == 1
-    assert modify_defaults[0][2:4] == (table, column)
+    entries = _flatten(diff)
+    assert len(entries) == 1, entries
+    assert entries[0][0] == "modify_default"
+    assert entries[0][2:4] == (table, column)
     assert _status_default_arg(Base.metadata) == DocumentStatus.NEEDS_REVIEW.value
 
 
