@@ -24,7 +24,7 @@ tests/
   `pytest_plugins`.
 - Tests needing live PostgreSQL/Redis are marked `integration`; whole-stack
   flows belong in `e2e/`. Both are excluded from the default unit run.
-- Security tests (auth, RBAC, cross-tenant leak, ADR-0003/ADR-0004) are
+- Security tests (auth, RBAC, cross-tenant leak, ADR-0003/ADR-0013) are
   marked `security`.
 
 Run the unit suite with `uv run pytest -m "not integration"`.
