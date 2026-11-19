@@ -17,9 +17,23 @@ Tenancy:
     - set_current_tenant(), get_current_tenant(), reset_current_tenant()
     - tenant_context(), without_tenant()
     - export_current_tenant()
+
+Principal:
+    - RequestPrincipal, PrincipalRequiredError
+    - set_principal(), get_principal(), reset_principal()
+    - principal_context(), require_admin_principal()
 """
 
 from .passwords import check_password, hash_password
+from .principal import (
+    PrincipalRequiredError,
+    RequestPrincipal,
+    get_principal,
+    principal_context,
+    require_admin_principal,
+    reset_principal,
+    set_principal,
+)
 from .rbac import (
     ADMIN,
     USER,
@@ -44,17 +58,24 @@ __all__ = [
     "ADMIN",
     "USER",
     "InvalidRoleError",
+    "PrincipalRequiredError",
     "PrivilegeEscalationError",
+    "RequestPrincipal",
     "check_password",
     "check_privilege_escalation",
     "export_current_tenant",
     "get_current_tenant",
+    "get_principal",
     "hash_password",
     "is_admin",
     "is_user",
+    "principal_context",
+    "require_admin_principal",
     "require_role",
     "reset_current_tenant",
+    "reset_principal",
     "set_current_tenant",
+    "set_principal",
     "tenant_context",
     "valid_role",
     "without_tenant",
