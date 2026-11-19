@@ -62,7 +62,7 @@ def test_require_auth_sets_the_principal(fake_st: MagicMock) -> None:
     assert get_principal() == RequestPrincipal("a@x.pl", "admin")
 
 
-def test_qa_033_failed_login_sets_no_principal(fake_st: MagicMock) -> None:
+def test_failed_login_sets_no_principal(fake_st: MagicMock) -> None:
     class _Stopped(Exception):
         pass
 

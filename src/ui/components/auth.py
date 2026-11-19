@@ -251,7 +251,7 @@ def require_auth() -> dict[str, Any]:
         _sign_out(cookie, settings.auth_cookie_name)
     st.session_state[SESSION_USER_KEY] = user
     set_current_tenant(user["tenant_id"])
-    set_principal(RequestPrincipal(user["email"], user["role"]))
+    set_principal(RequestPrincipal(email=user["email"], role=user["role"]))
     logout_button(cookie)
     return user
 

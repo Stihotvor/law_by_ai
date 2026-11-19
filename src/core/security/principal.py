@@ -67,7 +67,7 @@ def principal_context(principal: RequestPrincipal | None) -> Generator[None]:
 
 
 def require_admin_principal() -> RequestPrincipal:
-    """Return the current admin principal with a stripped email.
+    """Return the current admin principal with its email stripped.
 
     Raises:
         PrincipalRequiredError: no principal is set, its role is not

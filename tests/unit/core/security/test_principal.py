@@ -50,7 +50,7 @@ def test_context_manager_restores_previous_value_on_exception() -> None:
     assert get_principal() == a
 
 
-def test_qa_028_new_thread_does_not_inherit_principal() -> None:
+def test_new_thread_does_not_inherit_principal() -> None:
     set_principal(RequestPrincipal(email="admin@example.com", role="admin"))
     seen: list[RequestPrincipal | None] = []
     errors: list[BaseException] = []

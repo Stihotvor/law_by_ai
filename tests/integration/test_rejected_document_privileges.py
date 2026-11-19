@@ -1,11 +1,12 @@
 """Reject audit is append only for the app role (migration ``81dde4a27be7``).
 
-Marked ``integration``. ``lawbyai_app`` (``postgres_url``) must be denied
-UPDATE, DELETE and TRUNCATE on ``rejected_document`` (SQLSTATE 42501) and keep
-INSERT and SELECT. Each denied statement runs in its own transaction. The owner
-``lawbyai_owner`` (``postgres_owner_url``) cleans test rows and runs the
-Alembic round trip upgrade head, downgrade to ``b7e2d41c9a30``, upgrade head; head is always
-restored. Skipped if PostgreSQL is unreachable.
+``lawbyai_app`` (``postgres_url``) is denied UPDATE, DELETE and TRUNCATE on
+``rejected_document`` (SQLSTATE 42501) and keeps INSERT and SELECT. Each denied
+statement runs in its own transaction. The owner ``lawbyai_owner``
+(``postgres_owner_url``) cleans test rows and runs the Alembic round trip:
+upgrade head, downgrade to ``b7e2d41c9a30``, upgrade head. Head is always restored.
+
+Marked ``integration``; skipped if PostgreSQL is unreachable.
 """
 
 from __future__ import annotations
@@ -109,7 +110,7 @@ def owner_url() -> str:
 
 
 @pytest.fixture
-def source_url(app_url: str, owner_url: str) -> Iterator[str]:
+def audit_row_url(app_url: str, owner_url: str) -> Iterator[str]:
     """Unique source URL with one audit row; the owner removes its rows afterwards."""
     value = f"https://example.invalid/priv/{uuid.uuid4().hex}"
     _run(owner_url, INSERT_ROW, doc=f"priv-{uuid.uuid4().hex[:12]}", url=value)
@@ -121,28 +122,33 @@ def source_url(app_url: str, owner_url: str) -> Iterator[str]:
 
 
 @pytest.mark.parametrize("statement", ["UPDATE", "DELETE", "TRUNCATE"])
-def test_app_role_is_denied(app_url: str, source_url: str, statement: str) -> None:
-    """Scenario Outline: app role is denied (SQLSTATE 42501)."""
+def test_app_role_is_denied(app_url: str, audit_row_url: str, statement: str) -> None:
+    """The app role gets SQLSTATE 42501 and the audit row stays."""
     with pytest.raises(ProgrammingError) as info:
-        _run(app_url, DENIED_SQL[statement], url=source_url)
+        _run(app_url, DENIED_SQL[statement], url=audit_row_url)
     assert _sqlstate(info.value) == INSUFFICIENT_PRIVILEGE
     assert (
         _scalar(
             app_url,
             "SELECT count(*) FROM rejected_document WHERE source_url = :url",
-            url=source_url,
+            url=audit_row_url,
         )
         == 1
     )
 
 
-def test_app_role_keeps_insert_and_select(app_url: str, source_url: str) -> None:
-    """Scenario: app role keeps insert and select."""
-    _run(app_url, INSERT_ROW, doc="priv-app", url=source_url)
+def test_app_role_keeps_insert_and_select(app_url: str, audit_row_url: str) -> None:
+    """The app role can insert an audit row and read it back."""
+    _run(app_url, INSERT_ROW, doc="priv-app", url=audit_row_url)
     rows = _run(
-        app_url, "SELECT admin FROM rejected_document WHERE source_url = :url", url=source_url
+        app_url,
+        "SELECT document_id, source_url, admin FROM rejected_document "
+        "WHERE source_url = :url AND document_id = 'priv-app'",
+        url=audit_row_url,
     )
-    assert len(rows) == 2
+    assert rows == [("priv-app", audit_row_url, "priv-test")]
+    count = "SELECT count(*) FROM rejected_document WHERE source_url = :url"
+    assert _scalar(app_url, count, url=audit_row_url) == 2
 
 
 # --- schema guard on the head schema -------------------------------------------
@@ -150,17 +156,17 @@ def test_app_role_keeps_insert_and_select(app_url: str, source_url: str) -> None
 
 @pytest.mark.parametrize("priv", ["UPDATE", "DELETE", "TRUNCATE"])
 def test_schema_guard_table_privilege_false(app_url: str, priv: str) -> None:
-    """Scenario: schema guard (has_table_privilege)."""
+    """has_table_privilege is false for the app role on each revoked privilege."""
     assert _has_table_privilege(app_url, priv) is False
 
 
 def test_schema_guard_no_column_update(app_url: str) -> None:
-    """Scenario: schema guard (has_any_column_privilege UPDATE)."""
+    """The app role has no UPDATE privilege on any column of the table."""
     assert _scalar(app_url, COLUMN_PRIV_SQL, role=APP_ROLE, table=TABLE) is False
 
 
 def test_schema_guard_public_has_no_privilege(app_url: str) -> None:
-    """Scenario: schema guard (PUBLIC has no privilege on the table)."""
+    """PUBLIC has no privilege on the table."""
     assert _scalar(app_url, PUBLIC_ACL_SQL, table=TABLE) == 0
     assert _scalar(app_url, PUBLIC_GRANTS_SQL) == 0
 
@@ -173,7 +179,7 @@ def _privileges(url: str) -> dict[str, bool]:
 
 
 def test_migration_round_trip(app_url: str, owner_url: str) -> None:
-    """Scenario: migration round trip (upgrade, downgrade, upgrade)."""
+    """Downgrade grants back UPDATE and DELETE; upgrade head revokes them again."""
     cfg = _alembic_config()
     try:
         command.upgrade(cfg, "head")
@@ -185,25 +191,25 @@ def test_migration_round_trip(app_url: str, owner_url: str) -> None:
         command.upgrade(cfg, "head")
 
 
-def test_qa_006_sequence_grant_gives_distinct_ids(app_url: str, source_url: str) -> None:
-    """QA-006: two app-role inserts without an id get two different ids."""
+def test_sequence_grant_gives_distinct_ids(app_url: str, audit_row_url: str) -> None:
+    """Two app-role inserts without an id get two different ids."""
     ids = [
-        _scalar(app_url, INSERT_ROW + " RETURNING id", doc=f"priv-seq-{n}", url=source_url)
+        _scalar(app_url, INSERT_ROW + " RETURNING id", doc=f"priv-seq-{n}", url=audit_row_url)
         for n in range(2)
     ]
     assert ids[0] != ids[1]
 
 
-def test_qa_007_owner_keeps_update_delete_truncate(owner_url: str, source_url: str) -> None:
-    """QA-007: the owner can UPDATE, DELETE and TRUNCATE (rolled back at the end)."""
+def test_owner_keeps_update_delete_truncate(owner_url: str, audit_row_url: str) -> None:
+    """The owner can UPDATE, DELETE and TRUNCATE (rolled back at the end)."""
     engine = create_engine(owner_url, future=True)
     try:
         with engine.connect() as conn:
             trans = conn.begin()
             try:
-                updated = conn.execute(text(DENIED_SQL["UPDATE"]), {"url": source_url})
+                updated = conn.execute(text(DENIED_SQL["UPDATE"]), {"url": audit_row_url})
                 assert updated.rowcount == 1
-                deleted = conn.execute(text(DENIED_SQL["DELETE"]), {"url": source_url})
+                deleted = conn.execute(text(DENIED_SQL["DELETE"]), {"url": audit_row_url})
                 assert deleted.rowcount == 1
                 conn.execute(text(DENIED_SQL["TRUNCATE"]))
                 assert conn.execute(text("SELECT count(*) FROM rejected_document")).scalar() == 0
@@ -213,35 +219,35 @@ def test_qa_007_owner_keeps_update_delete_truncate(owner_url: str, source_url: s
         engine.dispose()
 
 
-def test_qa_011_existing_rows_survive_upgrade(app_url: str, owner_url: str) -> None:
-    """QA-011: 5 rows written at the previous revision are intact after upgrade head."""
+def test_existing_rows_survive_upgrade(app_url: str, owner_url: str) -> None:
+    """Five rows written at the previous revision are intact after upgrade head."""
     cfg = _alembic_config()
     tag = uuid.uuid4().hex
-    urls = [f"https://example.invalid/qa011/{tag}/{n}" for n in range(5)]
+    urls = [f"https://example.invalid/kept/{tag}/{n}" for n in range(5)]
     try:
         command.upgrade(cfg, "head")
         command.downgrade(cfg, PREVIOUS_REVISION)
         for n, url in enumerate(urls):
-            _run(owner_url, INSERT_ROW, doc=f"qa011-{tag[:8]}-{n}", url=url)
+            _run(owner_url, INSERT_ROW, doc=f"kept-{tag[:8]}-{n}", url=url)
         command.upgrade(cfg, "head")
         rows = _run(
             owner_url,
             "SELECT document_id, source_url, admin FROM rejected_document "
             "WHERE source_url LIKE :pat ORDER BY source_url",
-            pat=f"https://example.invalid/qa011/{tag}/%",
+            pat=f"https://example.invalid/kept/{tag}/%",
         )
-        assert rows == [(f"qa011-{tag[:8]}-{n}", url, "priv-test") for n, url in enumerate(urls)]
+        assert rows == [(f"kept-{tag[:8]}-{n}", url, "priv-test") for n, url in enumerate(urls)]
     finally:
         command.upgrade(cfg, "head")
         _run(
             owner_url,
             "DELETE FROM rejected_document WHERE source_url LIKE :pat",
-            pat=f"https://example.invalid/qa011/{tag}/%",
+            pat=f"https://example.invalid/kept/{tag}/%",
         )
 
 
-def test_qa_015_repeated_upgrade_is_safe(app_url: str, owner_url: str) -> None:
-    """QA-015: a second upgrade head is a no-op and the privileges stay revoked."""
+def test_repeated_upgrade_is_safe(app_url: str, owner_url: str) -> None:
+    """A second upgrade head is a no-op and the privileges stay revoked."""
     cfg = _alembic_config()
     command.upgrade(cfg, "head")
     before = _privileges(app_url)

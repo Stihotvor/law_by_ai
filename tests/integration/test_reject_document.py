@@ -211,7 +211,7 @@ def test_concurrent_rejects_write_one_audit_row_and_one_hook_call(
     assert deleted_ids == [doc_id]
 
 
-def test_qa_024_reject_twice_raises_not_found_and_one_audit_row(
+def test_reject_twice_raises_not_found_and_one_audit_row(
     store: PostgreSQLStore, source_url: str
 ) -> None:
     doc_id = _save(store, source_url)
@@ -223,7 +223,7 @@ def test_qa_024_reject_twice_raises_not_found_and_one_audit_row(
     assert _audit_rows(doc_id) == [(doc_id, source_url, ADMIN_EMAIL)]
 
 
-def test_qa_026_audit_insert_failure_keeps_document_and_writes_no_audit(
+def test_audit_insert_failure_keeps_document_and_writes_no_audit(
     store: PostgreSQLStore,
     source_url: str,
     deleted_ids: list[str],

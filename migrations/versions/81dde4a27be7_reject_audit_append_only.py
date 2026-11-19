@@ -26,7 +26,7 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
-# Frozen literals: this revision must not change if the model changes.
+# Literals are frozen so this revision does not change with the models.
 APP_ROLE = "lawbyai_app"
 AUDIT_TABLE = "public.rejected_document"
 

@@ -368,16 +368,16 @@ class PostgreSQLStore:
             _commit(session, document_id)
         _warn_dropped("update_document", dropped)
 
-    # --- reject (issue #92) -------------------------------------------------
+    # --- reject --------------------------------------------------------------
 
     def reject(self, document_id: str) -> None:
-        """Delete a document and record the reject, actor = principal email.
+        """Delete a document and record the reject with the principal email as actor.
 
-        Raises ``PrincipalRequiredError`` (no principal, non-admin, blank email)
-        before any DB access. DELETE RETURNING and the audit insert share one
-        transaction (one winner of concurrent rejects); the deletion hook runs
-        once after commit. Unknown id: :class:`StoreDocumentNotFoundError`,
-        nothing written, no hook. Review state is global: no tenant check.
+        Raises ``PrincipalRequiredError`` before any database access when no principal is
+        set, the principal is not an admin, or its email is blank. DELETE RETURNING and the
+        audit insert share one transaction, so only one concurrent reject wins. The hook runs
+        once after the commit. An unknown id raises :class:`StoreDocumentNotFoundError`; then
+        nothing is written and the hook does not run. Review state is global (no tenant check).
         """
         principal = require_admin_principal()
         self._ensure_initialized()
