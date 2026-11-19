@@ -211,6 +211,39 @@ def test_concurrent_rejects_write_one_audit_row_and_one_hook_call(
     assert deleted_ids == [doc_id]
 
 
+def test_qa_024_reject_twice_raises_not_found_and_one_audit_row(
+    store: PostgreSQLStore, source_url: str
+) -> None:
+    doc_id = _save(store, source_url)
+    _reject_as_admin(store, doc_id)
+
+    with pytest.raises(StoreDocumentNotFoundError, match=doc_id):
+        _reject_as_admin(store, doc_id)
+
+    assert _audit_rows(doc_id) == [(doc_id, source_url, ADMIN_EMAIL)]
+
+
+def test_qa_026_audit_insert_failure_keeps_document_and_writes_no_audit(
+    store: PostgreSQLStore,
+    source_url: str,
+    deleted_ids: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    doc_id = _save(store, source_url)
+
+    def _boom(**_kwargs: object) -> None:
+        raise RuntimeError("audit insert forced to fail")
+
+    monkeypatch.setattr("plugins.relational_db.postgres.RejectedDocument", _boom)
+
+    with pytest.raises(RuntimeError, match="audit insert forced to fail"):
+        _reject_as_admin(store, doc_id)
+
+    assert store.get_document(doc_id) is not None
+    assert _audit_rows(doc_id) == []
+    assert deleted_ids == []
+
+
 @pytest.mark.parametrize(
     "principal",
     [

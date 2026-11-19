@@ -1,3 +1,4 @@
+import threading
 from collections.abc import Iterator
 
 import pytest
@@ -47,6 +48,27 @@ def test_context_manager_restores_previous_value_on_exception() -> None:
 
     assert seen == [b]
     assert get_principal() == a
+
+
+def test_qa_028_new_thread_does_not_inherit_principal() -> None:
+    set_principal(RequestPrincipal(email="admin@example.com", role="admin"))
+    seen: list[RequestPrincipal | None] = []
+    errors: list[BaseException] = []
+
+    def work() -> None:
+        seen.append(get_principal())
+        try:
+            require_admin_principal()
+        except PrincipalRequiredError as exc:
+            errors.append(exc)
+
+    thread = threading.Thread(target=work)
+    thread.start()
+    thread.join()
+
+    assert seen == [None]
+    assert len(errors) == 1
+    assert get_principal() is not None
 
 
 def test_missing_principal_is_refused() -> None:

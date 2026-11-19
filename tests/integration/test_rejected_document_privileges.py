@@ -183,3 +183,68 @@ def test_migration_round_trip(app_url: str, owner_url: str) -> None:
         assert _privileges(app_url) == {"UPDATE": False, "DELETE": False, "TRUNCATE": False}
     finally:
         command.upgrade(cfg, "head")
+
+
+def test_qa_006_sequence_grant_gives_distinct_ids(app_url: str, source_url: str) -> None:
+    """QA-006: two app-role inserts without an id get two different ids."""
+    ids = [
+        _scalar(app_url, INSERT_ROW + " RETURNING id", doc=f"priv-seq-{n}", url=source_url)
+        for n in range(2)
+    ]
+    assert ids[0] != ids[1]
+
+
+def test_qa_007_owner_keeps_update_delete_truncate(owner_url: str, source_url: str) -> None:
+    """QA-007: the owner can UPDATE, DELETE and TRUNCATE (rolled back at the end)."""
+    engine = create_engine(owner_url, future=True)
+    try:
+        with engine.connect() as conn:
+            trans = conn.begin()
+            try:
+                updated = conn.execute(text(DENIED_SQL["UPDATE"]), {"url": source_url})
+                assert updated.rowcount == 1
+                deleted = conn.execute(text(DENIED_SQL["DELETE"]), {"url": source_url})
+                assert deleted.rowcount == 1
+                conn.execute(text(DENIED_SQL["TRUNCATE"]))
+                assert conn.execute(text("SELECT count(*) FROM rejected_document")).scalar() == 0
+            finally:
+                trans.rollback()
+    finally:
+        engine.dispose()
+
+
+def test_qa_011_existing_rows_survive_upgrade(app_url: str, owner_url: str) -> None:
+    """QA-011: 5 rows written at the previous revision are intact after upgrade head."""
+    cfg = _alembic_config()
+    tag = uuid.uuid4().hex
+    urls = [f"https://example.invalid/qa011/{tag}/{n}" for n in range(5)]
+    try:
+        command.upgrade(cfg, "head")
+        command.downgrade(cfg, PREVIOUS_REVISION)
+        for n, url in enumerate(urls):
+            _run(owner_url, INSERT_ROW, doc=f"qa011-{tag[:8]}-{n}", url=url)
+        command.upgrade(cfg, "head")
+        rows = _run(
+            owner_url,
+            "SELECT document_id, source_url, admin FROM rejected_document "
+            "WHERE source_url LIKE :pat ORDER BY source_url",
+            pat=f"https://example.invalid/qa011/{tag}/%",
+        )
+        assert rows == [(f"qa011-{tag[:8]}-{n}", url, "priv-test") for n, url in enumerate(urls)]
+    finally:
+        command.upgrade(cfg, "head")
+        _run(
+            owner_url,
+            "DELETE FROM rejected_document WHERE source_url LIKE :pat",
+            pat=f"https://example.invalid/qa011/{tag}/%",
+        )
+
+
+def test_qa_015_repeated_upgrade_is_safe(app_url: str, owner_url: str) -> None:
+    """QA-015: a second upgrade head is a no-op and the privileges stay revoked."""
+    cfg = _alembic_config()
+    command.upgrade(cfg, "head")
+    before = _privileges(app_url)
+    command.upgrade(cfg, "head")
+    after = _privileges(app_url)
+    assert before == after == {"UPDATE": False, "DELETE": False, "TRUNCATE": False}

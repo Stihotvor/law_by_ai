@@ -13,8 +13,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from core.security.principal import (
+    PrincipalRequiredError,
     RequestPrincipal,
     get_principal,
+    require_admin_principal,
     reset_principal,
     set_principal,
 )
@@ -58,6 +60,27 @@ def test_require_auth_sets_the_principal(fake_st: MagicMock) -> None:
     ):
         assert auth.require_auth() == user
     assert get_principal() == RequestPrincipal("a@x.pl", "admin")
+
+
+def test_qa_033_failed_login_sets_no_principal(fake_st: MagicMock) -> None:
+    class _Stopped(Exception):
+        pass
+
+    fake_st.stop.side_effect = _Stopped
+    fake_st.form_submit_button.return_value = True
+    with (
+        patch.object(auth, "get_settings", MagicMock()),
+        patch.object(auth, "CookieModel", MagicMock()),
+        patch.object(auth, "_session_user", lambda cookie: None),
+        patch.object(auth, "_cookie_sent", lambda name: False),
+        patch.object(auth, "_attempt", lambda email, password: None),
+        pytest.raises(_Stopped),
+    ):
+        auth.require_auth()
+    fake_st.error.assert_called_once_with(auth._LOGIN_FAILED)
+    assert get_principal() is None
+    with pytest.raises(PrincipalRequiredError):
+        require_admin_principal()
 
 
 def test_sign_out_clears_the_principal(fake_st: MagicMock) -> None:

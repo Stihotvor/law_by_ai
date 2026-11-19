@@ -140,6 +140,30 @@ def test_reject_writes_audit_row_and_calls_hook(monkeypatch: pytest.MonkeyPatch)
     assert calls == ["doc-1"]
 
 
+def test_qa_027_reject_after_context_exit_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    store, session = _store(monkeypatch, URL)
+
+    with principal_context(ADMIN_PRINCIPAL):
+        store.reject("doc-011")
+    with pytest.raises(PrincipalRequiredError):
+        store.reject("doc-012")
+
+    assert [row.document_id for row in session.added] == ["doc-011"]
+
+
+def test_qa_029_nested_context_restores_outer_actor(monkeypatch: pytest.MonkeyPatch) -> None:
+    store, session = _store(monkeypatch, URL)
+    outer = RequestPrincipal(email="a@example.com", role="admin")
+    inner = RequestPrincipal(email="b@example.com", role="admin")
+
+    with principal_context(outer):
+        with principal_context(inner):
+            pass
+        store.reject("doc-014")
+
+    assert [row.admin for row in session.added] == ["a@example.com"]
+
+
 @pytest.mark.usefixtures("admin_principal")
 def test_reject_without_hook(monkeypatch: pytest.MonkeyPatch) -> None:
     store, session = _store(monkeypatch, URL)
