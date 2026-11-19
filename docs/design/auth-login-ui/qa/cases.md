@@ -70,12 +70,12 @@
 - When the same admin-only action is tried 3 more times
 - Then each try raises PrivilegeEscalationError
 
-### QA-011 Role requirement with invalid role name
+### QA-011 Role requirement with non-standard role name
 - Covers: T2, Decision (dead code kept)
 - Type: failure
 - Given a role requirement for the role name "root"
 - When the role requirement check runs for a caller with role "admin"
-- Then InvalidRoleError is raised
+- Then the check returns False and raises nothing (require_role is an equality predicate, see T2 spec)
 
 ### QA-012 Role requirement accepts matching role
 - Covers: T2
