@@ -20,6 +20,7 @@ from agents.fetch.registry import Registry
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
 from config.settings import get_settings
+from core.security import ADMIN, RequestPrincipal, principal_context
 from plugins.relational_db.postgres import PostgreSQLStore
 
 pytestmark = pytest.mark.integration
@@ -46,7 +47,8 @@ def source_url() -> Iterator[str]:
         pytest.skip("PostgreSQL unavailable")
     value = f"{_BASE}/{uuid.uuid4().hex}"
     yield value
-    engine = create_engine(url, future=True)
+    # The app role cannot DELETE from rejected_document (append-only audit).
+    engine = create_engine(get_settings().postgres_owner_url, future=True)
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM rejected_document WHERE source_url = :u"), {"u": value})
     engine.dispose()
@@ -68,7 +70,8 @@ def test_rejected_url_is_blocked_before_read(store: PostgreSQLStore, source_url:
     doc_id = store.save_document(
         {"title": "Do odrzucenia", "content": "Treść", "source": "test", "source_url": source_url}
     )
-    store.reject(doc_id, "admin@example.com")
+    with principal_context(RequestPrincipal("admin@example.com", ADMIN)):
+        store.reject(doc_id)
 
     with DocumentFetcherAgent(rejection=store) as agent, pytest.raises(DocumentRejectedError):
         agent.fetch_document("fake", _ref(source_url))

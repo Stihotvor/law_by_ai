@@ -22,6 +22,7 @@ from agents.fetch.registry import Registry
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
 from config.settings import get_settings
+from core.security import ADMIN, RequestPrincipal, principal_context
 from plugins.relational_db.postgres import PostgreSQLStore
 from tasks import fetch
 from tasks.celery_app import app
@@ -65,7 +66,8 @@ def source_url(postgres_url: str) -> Iterator[str]:
     """Unique source URL; its document and audit rows are removed afterwards."""
     value = f"{_BASE}/{uuid.uuid4().hex}.txt"
     yield value
-    engine = create_engine(postgres_url, future=True)
+    # The app role cannot DELETE from rejected_document (append-only audit).
+    engine = create_engine(get_settings().postgres_owner_url, future=True)
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM legal_document WHERE source_url = :u"), {"u": value})
         conn.execute(text("DELETE FROM rejected_document WHERE source_url = :u"), {"u": value})
@@ -111,7 +113,8 @@ def test_task_skips_rejected_url(store: PostgreSQLStore, source_url: str) -> Non
     doc_id = store.save_document(
         {"title": "Do odrzucenia", "content": "Treść", "source": "test", "source_url": source_url}
     )
-    store.reject(doc_id, "admin@example.com")
+    with principal_context(RequestPrincipal("admin@example.com", ADMIN)):
+        store.reject(doc_id)
 
     result = _run(source_url)
 

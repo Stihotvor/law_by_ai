@@ -19,7 +19,7 @@ from sqlalchemy.pool import QueuePool
 from agents.fetch.registry import Registry
 from agents.fetch.sources.base import LegalSource, _validate_source
 from agents.fetch.strategies.base import FetchStrategy
-from config.settings import PoolConfig
+from config.settings import PoolConfig, get_settings
 from plugins.relational_db import postgres
 from tasks import fetch
 from tasks.celery_app import app
@@ -57,7 +57,8 @@ def source_url(postgres_url: str) -> Iterator[str]:
     """Unique source URL; its document and audit rows are removed afterwards."""
     value = f"{_BASE}/{uuid.uuid4().hex}.txt"
     yield value
-    engine = create_engine(postgres_url, future=True)
+    # The app role cannot DELETE from rejected_document (append-only audit).
+    engine = create_engine(get_settings().postgres_owner_url, future=True)
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM legal_document WHERE source_url = :u"), {"u": value})
         conn.execute(text("DELETE FROM rejected_document WHERE source_url = :u"), {"u": value})
