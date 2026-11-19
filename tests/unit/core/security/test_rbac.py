@@ -1,3 +1,5 @@
+"""Role predicates and the privilege escalation check in core.security.rbac."""
+
 import pytest
 
 from core.security.rbac import (
@@ -52,7 +54,7 @@ def test_user_cannot_pass_admin_check() -> None:
     assert err.required_role == "admin"
 
 
-@pytest.mark.parametrize("role", ["", "ADMIN", "root"])
+@pytest.mark.parametrize("role", ODD_ROLES)
 def test_unknown_role_raises_privilege_escalation_not_invalid_role(role: str) -> None:
     with pytest.raises(PrivilegeEscalationError) as exc_info:
         check_privilege_escalation(role)
@@ -62,6 +64,20 @@ def test_unknown_role_raises_privilege_escalation_not_invalid_role(role: str) ->
     assert err.operation == "unknown operation"
     assert err.requested_role == role
     assert err.required_role == "admin"
+
+
+def test_none_role_fails_closed() -> None:
+    assert is_admin(None) is False  # type: ignore[arg-type]
+    assert is_user(None) is False  # type: ignore[arg-type]
+    assert valid_role(None) is False  # type: ignore[arg-type]
+    with pytest.raises(PrivilegeEscalationError):
+        check_privilege_escalation(None)  # type: ignore[arg-type]
+
+
+def test_user_denied_on_repeated_admin_checks() -> None:
+    for _ in range(3):
+        with pytest.raises(PrivilegeEscalationError):
+            check_privilege_escalation("user")
 
 
 def test_admin_fails_user_required_check() -> None:
