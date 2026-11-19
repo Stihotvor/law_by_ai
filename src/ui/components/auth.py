@@ -18,6 +18,7 @@ from streamlit_authenticator.models import CookieModel
 from config.settings import get_settings
 from core.security.login_throttle import LoginThrottle, normalise_email
 from core.security.passwords import DUMMY_HASH, check_password
+from core.security.principal import RequestPrincipal, reset_principal, set_principal
 from core.security.rbac import is_admin, valid_role
 from core.security.tenant import reset_current_tenant, set_current_tenant
 from plugins.relational_db.postgres import PostgreSQLStore
@@ -227,6 +228,7 @@ def _sign_out(cookie: CookieModel, cookie_name: str) -> NoReturn:
     st.session_state.pop(USERNAME_KEY, None)
     st.session_state.pop(EXPIRES_KEY, None)
     reset_current_tenant()
+    reset_principal()
     # The request cookies stay stale until the browser reloads. The logout flag
     # makes the cookie unread from now on, so the delete runs only once and never
     # in the same rerun as the set_cookie of a new login.
@@ -249,6 +251,7 @@ def require_auth() -> dict[str, Any]:
         _sign_out(cookie, settings.auth_cookie_name)
     st.session_state[SESSION_USER_KEY] = user
     set_current_tenant(user["tenant_id"])
+    set_principal(RequestPrincipal(user["email"], user["role"]))
     logout_button(cookie)
     return user
 
@@ -284,6 +287,7 @@ def logout_button(cookie: CookieModel) -> None:
     st.session_state.pop(EXPIRES_KEY, None)
     st.session_state[LOGOUT_KEY] = True
     reset_current_tenant()
+    reset_principal()
     cookie.delete_cookie()
     if not revoked:
         st.session_state[LOGOUT_WARNING_KEY] = True
