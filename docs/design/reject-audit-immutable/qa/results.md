@@ -1,6 +1,6 @@
 # QA results: reject-audit-immutable
 
-Basis: unit suite 1399 passed; Docker suite 1580 passed, 5 skipped, 0 failed (run by the main session). Counts: 34 pass, 0 partial, 0 fail, 3 not-automated.
+Basis: unit suite 1399 passed; Docker suite 1580 passed, 5 skipped, 0 failed (run by the main session). Counts: 33 pass, 1 partial, 0 fail, 3 not-automated.
 
 P = tests/integration/test_rejected_document_privileges.py
 R = tests/integration/test_reject_document.py
@@ -46,6 +46,6 @@ AP = tests/unit/ui/test_auth_principal.py
 | QA-034 | not-automated | OPEN: the reject UI page is out of scope per decision.md |
 | QA-035 | pass | Docker suite, 0 failed: test_fetch_rejection.py, test_fetch_worker_pool.py, test_fetch_task_integration.py, test_reject_document.py |
 | QA-036 | not-automated | needs a throwaway migration in a test database to show the guard goes red; the guard tests exist (QA-008) |
-| QA-037 | pass | quality gate pass (lint, format, types, security, tests, lock); diff-cover 100%; Docker suite 1580 passed |
+| QA-037 | partial | quality gate: lint, format, types, security, tests and lock pass; audit not run locally (needs network, runs in CI); diff-cover 100%; Docker suite 1580 passed |
 
-Counts: pass 22, partial 12, fail 0, not-automated 3.
+Counts: pass 33, partial 1, fail 0, not-automated 3.

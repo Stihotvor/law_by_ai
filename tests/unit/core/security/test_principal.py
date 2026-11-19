@@ -1,3 +1,4 @@
+import contextvars
 import threading
 from collections.abc import Iterator
 
@@ -62,7 +63,8 @@ def test_new_thread_does_not_inherit_principal() -> None:
         except PrincipalRequiredError as exc:
             errors.append(exc)
 
-    thread = threading.Thread(target=work)
+    # Run in an empty context: Python 3.14 can let a thread inherit the caller's context.
+    thread = threading.Thread(target=contextvars.Context().run, args=(work,))
     thread.start()
     thread.join()
 
