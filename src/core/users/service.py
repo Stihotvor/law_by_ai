@@ -16,7 +16,7 @@ from core.security import (
     require_admin_principal,
     valid_role,
 )
-from core.security.login_throttle import normalise_email
+from core.security.emails import normalise_email
 from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
 
 from .errors import (
