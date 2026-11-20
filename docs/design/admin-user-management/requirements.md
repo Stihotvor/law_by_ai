@@ -31,7 +31,7 @@ An admin-only Streamlit page to create and deactivate users. Follow-up left out 
 ## Failure Modes
 - Each action is one transaction. On a DB error the page shows a generic error, creates nothing, deactivates nothing.
 - The log never holds a password or a hash.
-- Audit is a structlog event with actor id, target id and action. A DB audit table is a follow-up, not in scope.
+- Audit is a structured log event (stdlib `logging`, `extra` fields; structlog is not a dependency yet) with actor id, target id and action. A DB audit table is a follow-up, not in scope.
 - If the redis or login lookup is down, the existing login behaviour stays unchanged.
 - The admin sees a clear error for invalid input. The admin never sees a stack trace.
 
