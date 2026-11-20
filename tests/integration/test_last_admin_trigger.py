@@ -20,6 +20,9 @@ from alembic.config import Config
 from factories.scratch_db import ScratchDb, scratch_database, tenant_sql
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import DBAPIError, ProgrammingError
+from users_helpers import HASH, OwnerSql, app_store
+
+from core.security import tenant_context
 
 pytestmark = pytest.mark.integration
 
@@ -325,3 +328,28 @@ def test_downgrade_stops_while_the_audit_table_holds_rows(scratch: ScratchDb) ->
     tenant_sql(scratch.owner_url, "t", "DELETE FROM admin_action_audit")
     command.downgrade(cfg, PREVIOUS_REVISION)
     assert _count(scratch.app_url, TABLE_COUNT) == 0
+
+
+# --- the store writes the audit rows ------------------------------------------------
+
+
+def test_store_audits_create_and_deactivate(
+    owner_url: str, owner_sql: OwnerSql, tenant: Tenant
+) -> None:
+    """Scenario: create and deactivate each append one row for the actor, atomically."""
+    with app_store(owner_sql, ()) as store, tenant_context(tenant.id):
+        created = store.insert_user(
+            email=f"new-{tenant.user}@x.pl",
+            password_hash=HASH,
+            role="user",
+            name="N",
+            actor_id=tenant.admin1,
+        )
+        assert store.deactivate_user(tenant.user, actor_id=tenant.admin1) is True
+        assert store.deactivate_user(tenant.user, actor_id=tenant.admin1) is False
+    sql = "SELECT tenant_id, actor_id, action, target_id FROM admin_action_audit ORDER BY id"
+    rows = [tuple(r) for r in tenant_sql(owner_url, tenant.id, sql)]
+    assert rows == [
+        (tenant.id, tenant.admin1, "create_user", created["id"]),
+        (tenant.id, tenant.admin1, "deactivate_user", tenant.user),
+    ]

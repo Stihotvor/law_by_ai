@@ -54,7 +54,9 @@ def insert_record(
 ) -> dict[str, Any]:
     """Insert a user through the port under *tenant*; return its record."""
     with tenant_context(tenant):
-        record = store.insert_user(email=email, password_hash=HASH, role=role, name="N")
+        record = store.insert_user(
+            email=email, password_hash=HASH, role=role, name="N", actor_id="actor-test"
+        )
     return dict(record)
 
 

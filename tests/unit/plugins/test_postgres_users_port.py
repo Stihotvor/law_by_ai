@@ -22,6 +22,7 @@ from plugins.relational_db.postgres import PostgreSQLStore, User
 
 TENANT = "t-a"
 HASH = "$2b$12$h"
+ACTOR = "admin-1"
 RECORD_KEYS = {"id", "tenant_id", "email", "role", "name", "is_active"}
 
 
@@ -133,7 +134,7 @@ def _params(stmt: Any) -> dict[str, Any]:
 
 
 def _insert(store: PostgreSQLStore, email: str = "a@x.pl") -> Any:
-    return store.insert_user(email=email, password_hash=HASH, role="user", name="N")
+    return store.insert_user(email=email, password_hash=HASH, role="user", name="N", actor_id=ACTOR)
 
 
 # --- mapper -----------------------------------------------------------------
@@ -171,6 +172,23 @@ def test_insert_writes_active_user_in_current_tenant(store_with: MakeStore) -> N
     assert set(record) == RECORD_KEYS
     assert record["id"] == row.id
     assert len(row.id) == 36
+
+
+def test_insert_appends_a_create_audit_row_after_the_flush(store_with: MakeStore) -> None:
+    store, sessions = store_with()
+
+    with tenant_context(TENANT):
+        record = _insert(store)
+
+    (audit,) = sessions[0].statements
+    assert _sql(audit).startswith("INSERT INTO admin_action_audit")
+    assert _params(audit) == {
+        "tenant_id": TENANT,
+        "actor_id": ACTOR,
+        "action": "create_user",
+        "target_id": record["id"],
+    }
+    assert sessions[0].committed
 
 
 def test_insert_ids_are_new_each_time(store_with: MakeStore) -> None:

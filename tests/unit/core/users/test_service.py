@@ -49,8 +49,16 @@ class FakeRepo:
             return None
         return self.admin
 
-    def insert_user(self, *, email: str, password_hash: str, role: str, name: str) -> UserRecord:
-        args = {"email": email, "password_hash": password_hash, "role": role, "name": name}
+    def insert_user(
+        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> UserRecord:
+        args = {
+            "email": email,
+            "password_hash": password_hash,
+            "role": role,
+            "name": name,
+            "actor_id": actor_id,
+        }
         self.calls.append(("insert_user", args))
         self.writes.append(("insert_user", args))
         return UserRecord(
@@ -244,6 +252,8 @@ def test_email_normalised_and_password_hashed(service: UserService, repo: FakeRe
     assert args["password_hash"].startswith("$2")
     assert check_password(GOOD_PASSWORD, args["password_hash"])
     assert (args["role"], args["name"]) == ("user", "N")
+    assert repo.admin is not None
+    assert args["actor_id"] == repo.admin["id"]
     assert result["id"] == "U9"
     assert "password_hash" not in result
 
@@ -400,7 +410,9 @@ def test_duplicate_refusal_log_holds_no_password_hash_or_email(
 ) -> None:
     hashes: list[str] = []
 
-    def refuse(*, email: str, password_hash: str, role: str, name: str) -> UserRecord:
+    def refuse(
+        *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> UserRecord:
         hashes.append(password_hash)
         raise UserCreateRefusedError(f"email {email} taken")
 
