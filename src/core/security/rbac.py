@@ -1,4 +1,4 @@
-"""RBAC layer (ADR-0004).
+"""RBAC layer (ADR-0013).
 
 Role constants and a ``require_role`` decorator / predicate usable from
 both the core security module and the Streamlit adapter.

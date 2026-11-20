@@ -1,4 +1,4 @@
-"""Tenant context (ADR-0003, ADR-0004).
+"""Tenant context (ADR-0003).
 
 Threads ``tenant_id`` through the application via ``contextvars`` so that
 every query path — SQL, vector search, graph traversal — can reference the
@@ -109,9 +109,9 @@ def without_tenant():
 # ---------------------------------------------------------------------------
 # Protocol for external storage of ``tenant_id`` (e.g., Redis, DB).
 # The core module only manages the *context variable*; storage-layer
-# implementations live in ``src/core/security/token_store.py`` and the
-# PostgreSQL plugin.  This function is a hook for middleware that wants to
-# persist the current tenant alongside other session data.
+# implementations live in the PostgreSQL plugin.  This function is a hook
+# for middleware that wants to persist the current tenant alongside other
+# session data.
 # ---------------------------------------------------------------------------
 
 

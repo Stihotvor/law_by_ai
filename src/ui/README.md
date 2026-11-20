@@ -8,5 +8,5 @@ clients interact with the app directly.
 - `pages/` — one page per feature
 - `components/` — reusable custom components
 
-All pages are behind JWT auth; RBAC limits data management to `admin`
-(ADR-0004).
+All pages are behind the login (streamlit-authenticator cookie); RBAC limits data management to `admin`
+(ADR-0013).
