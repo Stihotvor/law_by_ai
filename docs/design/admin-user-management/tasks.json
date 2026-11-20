@@ -21,7 +21,7 @@
    "depends_on": [
     "T1"
    ],
-   "done_when": "pytest tests/integration/test_store_users.py -k 'insert or list or leak' passes: duplicate email in own and other tenant raises the same error, list returns 0 foreign rows; with no tenant set list returns 0 rows and insert raises, at store level; any other IntegrityError is not mapped to the generic message",
+   "done_when": "pytest tests/integration/test_store_users.py -k 'insert or list or leak or find' passes: duplicate email in own and other tenant raises the same error, list returns 0 foreign rows; with no tenant set list returns 0 rows and insert raises, at store level; any other IntegrityError is not mapped to the generic message",
    "files": [
     "src/plugins/relational_db/postgres.py",
     "tests/integration/test_store_users.py"

@@ -22,6 +22,38 @@ Path 2, chosen by the owner at the design gate. The architect and DBA reviewed i
 - `PostgreSQLStore.create_user` keeps its signature. The seed script still uses it.
 - `require_admin`, `require_admin_principal` and `check_privilege_escalation` stay unchanged.
 
+## Port signatures
+The `UserRepository` Protocol in `src/core/users/ports.py` has four methods. `PostgreSQLStore` implements all four with the same parameter names, kinds and defaults (T5 checks this).
+
+Record type, in `ports.py`:
+```python
+class UserRecord(TypedDict):
+    id: str
+    tenant_id: str
+    email: str
+    role: str
+    name: str
+    is_active: bool
+```
+`UserRecord` never holds `password_hash` or `session_version`. `plugins/relational_db/mappers.py` adds `user_to_record(row: User) -> UserRecord`. The existing `user_to_dict` stays unchanged for `create_user` and `get_user_by_email`.
+
+Methods:
+```python
+def find_active_admin(self, email: str) -> UserRecord | None: ...
+def insert_user(self, *, email: str, password_hash: str, role: str, name: str) -> UserRecord: ...
+def list_users(self) -> list[UserRecord]: ...
+def deactivate_user(self, user_id: str, *, actor_id: str) -> bool: ...
+```
+
+Rules for each method in the store:
+- Every method reads the tenant from `get_current_tenant()`. Every query adds a `tenant_id` predicate on top of RLS.
+- `find_active_admin(email)`: the service passes the email from `normalise_email(principal.email)`. The store compares it exactly. It returns the row only if `role = 'admin'` and `is_active` are true. Otherwise it returns `None`. With no tenant set, it returns `None` and runs no SQL. It raises no domain error. The service maps `None` to `PrincipalRequiredError`.
+- `insert_user(...)`: the service passes a normalised email and a bcrypt hash. The store sets a new `uuid4` id, the current tenant and `is_active = true`. It returns the new record. Errors: `PrincipalRequiredError` with no tenant set, before any SQL. `UserCreateRefusedError` only for SQLSTATE 23505 on `uq_users_email`. Every other DB error is re-raised unmapped. The transaction rolls back on every error.
+- `list_users()`: it keeps the existing name and has no parameters. Its return annotation changes from `list[dict[str, Any]]` to `list[UserRecord]`. It orders by email. With no tenant set, it returns `[]` and raises no error. DB errors propagate unmapped.
+- `deactivate_user(user_id, *, actor_id)`: the service passes the `id` of the row that `find_active_admin` returned. The store does the self check inside the lock transaction, so the check and the update see the same state. It returns `True` when the update changed one row, and `False` for an idempotent no-op on an inactive target. Errors, in check order: `PrincipalRequiredError` with no tenant set, before any SQL. `UserNotFoundError` for a missing or foreign id. `SelfDeactivationError` when `user_id == actor_id`. `LastAdminError` when the locked admin set has one row or fewer. The transaction rolls back on every error.
+- The store imports the domain errors from `core.users.errors` and `PrincipalRequiredError` from `core.security`. The `core.users` package still imports no `plugins.*`.
+- The service audit event holds actor id, target id, action and the `changed` flag from `deactivate_user`.
+
 ## Consequences
 - No migration and no new dependency. No new index: `ix_users_tenant_id` and `uq_users_email` serve the queries.
 - Unit tests use a fake port. Integration tests use real Postgres, including a two-session test for the last-admin lock and leak tests with no tenant set at store level.
