@@ -27,6 +27,7 @@ from core.users import (
     UserCreateRefusedError,
     UserNotFoundError,
     UserRecord,
+    UserService,
 )
 
 SRC = Path(__file__).resolve().parents[3] / "src"
@@ -258,6 +259,82 @@ def test_duplicate_email_shows_fixed_message(service: FakeService) -> None:
     at = _create(_page())
     assert [e.value for e in at.error] == ["Cannot create this user."]
     assert "t-1" not in _all_text(at)
+
+
+class _ValidatingService(UserService):
+    """Real ``UserService`` input checks; the actor lookup is bypassed (no tenant context)."""
+
+    def _actor(self) -> UserRecord:
+        return _record("u-1", "admin@x.com", "admin")
+
+
+class _NoWriteRepo:
+    """Repository that fails the test if invalid input ever reaches a write."""
+
+    def list_users(self) -> list[UserRecord]:
+        return []
+
+    def insert_user(self, **_: str) -> UserRecord:
+        raise AssertionError("invalid input reached the port")
+
+
+def _submit(at: AppTest, email: str, password: str, name: str = "New") -> AppTest:
+    at.text_input(key="new_user_email").input(email)
+    at.text_input(key="new_user_name").input(name)
+    at.text_input(key=PW_KEY).input(password)
+    next(b for b in at.button if b.label == "Create user").click()
+    return at.run()
+
+
+# QA-045: each invalid input shows the fixed message and no stack trace
+@pytest.mark.parametrize(
+    ("email", "password", "name"),
+    [
+        ("", PASSWORD, "New"),
+        ("no-at.example", PASSWORD, "New"),
+        ("a@@x.com", PASSWORD, "New"),
+        ("a" * 252 + "@x.com", PASSWORD, "New"),
+        ("new@x.com", "p" * (MIN_PASSWORD_CHARS - 1), "New"),
+        ("new@x.com", "p" * (MAX_PASSWORD_BYTES + 1), "New"),
+        ("new@x.com", "ł" * 37, "New"),
+        ("new@x.com", PASSWORD, "n" * 257),
+    ],
+    ids=[
+        "empty-email",
+        "no-at",
+        "two-ats",
+        "long-email",
+        "short-pw",
+        "73-byte-pw",
+        "74-byte-multibyte-pw",
+        "long-name",
+    ],
+)
+def test_invalid_input_shows_fixed_message_and_no_trace(
+    email: str, password: str, name: str
+) -> None:
+    with (
+        patch("core.users.UserService", lambda _repo: _ValidatingService(_NoWriteRepo())),  # type: ignore[arg-type]
+        patch("ui.components.auth._store", lambda: STORE),
+    ):
+        at = _submit(_page(), email, password, name)
+    assert not at.exception
+    assert [e.value for e in at.error] == ["Cannot create this user."]
+    text = _all_text(at)
+    assert "Traceback" not in text
+    assert "password needs" not in text
+    assert "email must hold" not in text
+
+
+def test_bad_role_cannot_be_chosen(service: FakeService) -> None:
+    """The role widget sends an option index, so a role outside the list cannot be sent."""
+    at = _page()
+    at.selectbox(key="new_user_role").select("root")
+    at.text_input(key=PW_KEY).input(PASSWORD)
+    next(b for b in at.button if b.label == "Create user").click()
+    with pytest.raises(ValueError, match="'root' is not in list"):
+        at.run()
+    assert service.created == []
 
 
 def test_create_db_error_shows_generic_message_without_raw_text(service: FakeService) -> None:

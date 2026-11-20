@@ -198,6 +198,36 @@ def test_limits_are_inclusive(
     assert len(repo.writes) == 1
 
 
+# QA-017: the password limit counts UTF-8 bytes, not characters
+@pytest.mark.parametrize(
+    "password",
+    ["p" * MAX_PASSWORD_BYTES, "ł" * (MAX_PASSWORD_BYTES // 2), "€" * (MAX_PASSWORD_BYTES // 3)],
+    ids=["ascii-72-chars", "2-byte-36-chars", "3-byte-24-chars"],
+)
+@pytest.mark.usefixtures("as_admin")
+def test_password_of_72_bytes_is_accepted(
+    service: UserService, repo: FakeRepo, password: str
+) -> None:
+    assert len(password.encode()) == MAX_PASSWORD_BYTES
+    _create(service, password=password)
+    assert check_password(password, repo.writes[0][1]["password_hash"])
+
+
+@pytest.mark.parametrize(
+    "password",
+    ["p" * (MAX_PASSWORD_BYTES + 1), "ł" * (MAX_PASSWORD_BYTES // 2) + "p", "ł" * 37],
+    ids=["ascii-73-chars", "2-byte-37-chars-73-bytes", "2-byte-37-chars-74-bytes"],
+)
+@pytest.mark.usefixtures("as_admin")
+def test_password_over_72_bytes_is_refused(
+    service: UserService, repo: FakeRepo, password: str
+) -> None:
+    assert len(password.encode()) > MAX_PASSWORD_BYTES
+    with pytest.raises(UserCreateRefusedError):
+        _create(service, password=password)
+    assert repo.writes == []
+
+
 @pytest.mark.usefixtures("as_admin")
 def test_admin_role_is_accepted(service: UserService, repo: FakeRepo) -> None:
     _create(service, role="admin")
@@ -216,6 +246,13 @@ def test_email_normalised_and_password_hashed(service: UserService, repo: FakeRe
     assert (args["role"], args["name"]) == ("user", "N")
     assert result["id"] == "U9"
     assert "password_hash" not in result
+
+
+# QA-009: case and surrounding spaces are removed before the port sees the email
+@pytest.mark.usefixtures("as_admin")
+def test_email_case_and_spaces_normalised_before_port(service: UserService, repo: FakeRepo) -> None:
+    _create(service, email=" A@B.com ")
+    assert [args["email"] for name, args in repo.calls if name == "insert_user"] == ["a@b.com"]
 
 
 @pytest.mark.usefixtures("as_admin")
@@ -354,6 +391,29 @@ def test_create_refusal_log_holds_no_email_or_password(
     ]
     dumped = _dumped(caplog)
     assert not any("secret-mail" in t or SHORT_PASSWORD in t for t in dumped)
+
+
+# QA-041: a duplicate refusal logs a WARNING without password, hash or email
+@pytest.mark.usefixtures("as_admin")
+def test_duplicate_refusal_log_holds_no_password_hash_or_email(
+    service: UserService, repo: FakeRepo, caplog: pytest.LogCaptureFixture
+) -> None:
+    hashes: list[str] = []
+
+    def refuse(*, email: str, password_hash: str, role: str, name: str) -> UserRecord:
+        hashes.append(password_hash)
+        raise UserCreateRefusedError(f"email {email} taken")
+
+    repo.insert_user = refuse  # type: ignore[method-assign]
+    caplog.set_level(logging.DEBUG)
+    with pytest.raises(UserCreateRefusedError):
+        _create(service, email="dup-mail@x.pl")
+    assert _refusals(caplog) == [
+        {"actor_id": "A1", "action": "create_user", "error": "UserCreateRefusedError"}
+    ]
+    assert len(hashes) == 1
+    secrets = (GOOD_PASSWORD, hashes[0], "dup-mail", "$2")
+    assert not any(s in t for t in _dumped(caplog) for s in secrets)
 
 
 @pytest.mark.usefixtures("as_admin")
