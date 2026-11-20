@@ -17,7 +17,7 @@
     "note": "unit pass; integration tests not run locally, run in CI"
   },
   "T5": {
-    "state": "doing"
+    "state": "done"
   },
   "T6": {
     "state": "doing"
