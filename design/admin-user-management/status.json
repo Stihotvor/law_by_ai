@@ -1,0 +1,30 @@
+{
+  "T1": {
+    "state": "done"
+  },
+  "T2": {
+    "state": "done",
+    "note": "unit pass; integration tests not run locally (no Docker), run in CI"
+  },
+  "T4": {
+    "state": "done"
+  },
+  "T7": {
+    "state": "done"
+  },
+  "T3": {
+    "state": "done",
+    "note": "unit pass; integration tests not run locally, run in CI"
+  },
+  "T5": {
+    "state": "done"
+  },
+  "T6": {
+    "state": "done",
+    "note": "integration tests not run locally, CI only"
+  },
+  "T8": {
+    "state": "done",
+    "note": "ruff, format, pyright, unit 1557 pass, diff-cover 95%, mutation scope N/A"
+  }
+}

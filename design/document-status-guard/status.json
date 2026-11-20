@@ -1,0 +1,12 @@
+{
+  "T1": {
+    "state": "done"
+  },
+  "T2": {
+    "state": "done",
+    "note": "integration tests pending Docker run"
+  },
+  "T3": {
+    "state": "done"
+  }
+}
