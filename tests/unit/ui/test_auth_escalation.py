@@ -14,33 +14,15 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+from factories.auth import Stopped, login_row
 
-from core.security.principal import RequestPrincipal, get_principal, reset_principal
+from core.security.principal import RequestPrincipal, get_principal
 from ui.components import auth
 
 ADMIN_EMAIL = "admin@x.com"
 VERSION = 3
 ADMIN_REQUIRED = "Admin role required."
 _MISSING = object()
-
-
-class _Stopped(Exception):
-    """Raised by the ``st.stop`` stub."""
-
-
-def _row(**kw: Any) -> dict[str, Any]:
-    """Login row as returned by ``get_login_user`` (local copy of test_ui_auth._row)."""
-    row: dict[str, Any] = {
-        "id": "u-1",
-        "tenant_id": "t-1",
-        "email": ADMIN_EMAIL,
-        "name": "Admin",
-        "role": "admin",
-        "password_hash": "unused",
-        "is_active": True,
-        "session_version": VERSION,
-    }
-    return row | kw
 
 
 @dataclass
@@ -62,26 +44,6 @@ class Env:
     login_form: MagicMock
 
 
-@pytest.fixture(autouse=True)
-def clean_principal() -> Iterator[None]:
-    reset_principal()
-    yield
-    reset_principal()
-
-
-@pytest.fixture
-def fake_st() -> Iterator[MagicMock]:
-    st = MagicMock()
-    st.session_state = {}
-    st.stop.side_effect = _Stopped
-    with (
-        patch.object(auth, "st", st),
-        patch.object(auth, "set_current_tenant"),
-        patch.object(auth, "reset_current_tenant"),
-    ):
-        yield st
-
-
 @pytest.fixture
 def env(fake_st: MagicMock) -> Iterator[Env]:
     """Open admin session: a valid "<email>|<version>" claim with a future expiry."""
@@ -92,7 +54,7 @@ def env(fake_st: MagicMock) -> Iterator[Env]:
             auth.LOGOUT_KEY: False,
         }
     )
-    lookup = Lookup(_row())
+    lookup = Lookup(login_row())
     with (
         patch.object(auth, "get_settings", MagicMock()),
         patch.object(auth, "CookieModel", MagicMock()),
@@ -124,8 +86,8 @@ def _open_admin_session(env: Env) -> None:
 def test_demoted_admin_loses_admin_page(env: Env) -> None:
     _open_admin_session(env)
     assert get_principal() == RequestPrincipal(email=ADMIN_EMAIL, role="admin")
-    env.lookup.row = _row(role="user")
-    with pytest.raises(_Stopped):
+    env.lookup.row = login_row(role="user")
+    with pytest.raises(Stopped):
         _admin_page()
     assert env.lookup.calls == [ADMIN_EMAIL, ADMIN_EMAIL]
     assert env.st.session_state[auth.SESSION_USER_KEY]["role"] == "user"
@@ -135,11 +97,11 @@ def test_demoted_admin_loses_admin_page(env: Env) -> None:
 
 
 def test_stale_admin_session_role_is_replaced_by_database_role(env: Env) -> None:
-    env.st.session_state[auth.SESSION_USER_KEY] = _row(role="admin")
-    env.lookup.row = _row(role="user")
+    env.st.session_state[auth.SESSION_USER_KEY] = login_row(role="admin")
+    env.lookup.row = login_row(role="user")
     assert auth.require_auth()["role"] == "user"
     assert env.st.session_state[auth.SESSION_USER_KEY]["role"] == "user"
-    with pytest.raises(_Stopped):
+    with pytest.raises(Stopped):
         auth.require_admin()
     env.st.warning.assert_called_once_with(ADMIN_REQUIRED)
     env.st.stop.assert_called_once()
@@ -147,8 +109,8 @@ def test_stale_admin_session_role_is_replaced_by_database_role(env: Env) -> None
 
 def test_deactivated_admin_is_signed_out_before_admin_code(env: Env) -> None:
     _open_admin_session(env)
-    env.lookup.row = _row(is_active=False)
-    with pytest.raises(_Stopped):
+    env.lookup.row = login_row(is_active=False)
+    with pytest.raises(Stopped):
         auth.require_auth()  # stops here, so the page never reaches require_admin()
     assert env.lookup.calls == [ADMIN_EMAIL, ADMIN_EMAIL]
     assert auth.SESSION_USER_KEY not in env.st.session_state
@@ -161,10 +123,10 @@ def test_deactivated_admin_is_signed_out_before_admin_code(env: Env) -> None:
 
 def test_deactivated_admin_has_no_admin_access_on_next_rerun(env: Env) -> None:
     _open_admin_session(env)
-    env.lookup.row = _row(is_active=False)
-    with pytest.raises(_Stopped):
+    env.lookup.row = login_row(is_active=False)
+    with pytest.raises(Stopped):
         _admin_page()
-    with pytest.raises(_Stopped):
+    with pytest.raises(Stopped):
         auth.require_admin()
     env.st.warning.assert_called_once_with(ADMIN_REQUIRED)
 
@@ -173,8 +135,8 @@ def test_deactivated_admin_has_no_admin_access_on_next_rerun(env: Env) -> None:
 
 
 def test_user_on_admin_page_is_stopped(env: Env) -> None:
-    env.lookup.row = _row(role="user")
-    with pytest.raises(_Stopped):
+    env.lookup.row = login_row(role="user")
+    with pytest.raises(Stopped):
         _admin_page()
     assert env.st.session_state[auth.SESSION_USER_KEY]["role"] == "user"
     env.st.warning.assert_called_once_with(ADMIN_REQUIRED)
@@ -190,7 +152,7 @@ def test_current_role_fails_closed(fake_st: MagicMock, user: object) -> None:
     if user is not _MISSING:
         fake_st.session_state[auth.SESSION_USER_KEY] = user
     assert auth.current_role() == ""
-    with pytest.raises(_Stopped):
+    with pytest.raises(Stopped):
         auth.require_admin()
     fake_st.warning.assert_called_once_with(ADMIN_REQUIRED)
 
@@ -198,7 +160,7 @@ def test_current_role_fails_closed(fake_st: MagicMock, user: object) -> None:
 def test_current_role_keeps_upper_case_and_admin_guard_stops(fake_st: MagicMock) -> None:
     fake_st.session_state[auth.SESSION_USER_KEY] = {"role": "ADMIN"}
     assert auth.current_role() == "ADMIN"
-    with pytest.raises(_Stopped):
+    with pytest.raises(Stopped):
         auth.require_admin()
     fake_st.warning.assert_called_once_with(ADMIN_REQUIRED)
 

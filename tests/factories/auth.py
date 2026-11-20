@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, ClassVar
+from unittest.mock import MagicMock
 
+import bcrypt
 import jwt
 import streamlit as st
+from streamlit.testing.v1 import AppTest
 
 KEY = "k" * 32
 COOKIE = "law_by_ai_auth"
@@ -50,3 +54,90 @@ class FakeCookie:
     def delete_cookie(self) -> None:
         type(self).deleted += 1
         self.jar.pop(self.name, None)
+
+
+PLAIN = "right-pass"
+HASH = bcrypt.hashpw(PLAIN.encode(), bcrypt.gensalt(rounds=4)).decode()
+
+
+class Stopped(Exception):
+    """Raised by the ``st.stop`` stub."""
+
+
+def login_row(email: str = "admin@x.com", **kw: Any) -> dict[str, Any]:
+    """Login row as returned by ``get_login_user``; ``PLAIN`` is the password."""
+    row = {
+        "id": "u-1",
+        "tenant_id": "t-1",
+        "email": email,
+        "name": "Admin",
+        "role": "admin",
+        "password_hash": HASH,
+        "is_active": True,
+        "session_version": 3,
+    }
+    return row | kw
+
+
+@dataclass
+class FakeStore:
+    rows: dict[str, dict[str, Any]] = field(default_factory=dict)
+    error: Exception | None = None
+    # (user_id, cookie deletes so far) for each bump: proves the bump runs first.
+    bumped: list[tuple[str, int]] = field(default_factory=list)
+
+    bump_error: Exception | None = None
+
+    def bump_session_version(self, user_id: str) -> None:
+        if self.bump_error is not None:
+            raise self.bump_error
+        self.bumped.append((user_id, FakeCookie.deleted))
+        for row in self.rows.values():
+            if row["id"] == user_id:
+                row["session_version"] += 1
+
+    def get_login_user(self, email: str) -> dict[str, Any] | None:
+        if self.error is not None:
+            raise self.error
+        return self.rows.get(email.strip().lower())
+
+
+@dataclass
+class LoginEnv:
+    store: FakeStore
+    set_tenant: MagicMock
+    reset_tenant: MagicMock
+    jar: dict[str, str]
+
+    @property
+    def deleted(self) -> int:
+        return FakeCookie.deleted
+
+
+def auth_script() -> None:
+    import streamlit as st
+
+    from ui.components.auth import get_current_user, require_auth
+
+    user = require_auth()
+    st.markdown(f"hello {user['role']} same={get_current_user() == user}")
+
+
+def text(at: AppTest) -> str:
+    return " ".join(str(m.value) for m in at.markdown)
+
+
+def open_page() -> AppTest:
+    return AppTest.from_function(auth_script).run()
+
+
+def login(at: AppTest, email: str, password: str = PLAIN) -> AppTest:
+    at.text_input(key="login_email").input(email)
+    at.text_input(key="login_password").input(password)
+    at.button[0].click()
+    return at.run()
+
+
+def login_form_shown(at: AppTest) -> bool:
+    keys = {t.key for t in at.text_input}
+    return {"login_email", "login_password"} <= keys and "hello" not in text(at)

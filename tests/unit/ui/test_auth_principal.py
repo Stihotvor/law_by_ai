@@ -6,18 +6,17 @@ function runs in the test thread and the principal context var is visible here.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+from factories.auth import Stopped
 
 from core.security.principal import (
     PrincipalRequiredError,
     RequestPrincipal,
     get_principal,
     require_admin_principal,
-    reset_principal,
     set_principal,
 )
 from ui.components import auth
@@ -29,25 +28,6 @@ ADMIN_USER = {
     "name": "Admin",
     "role": "admin",
 }
-
-
-@pytest.fixture(autouse=True)
-def clean_principal() -> Iterator[None]:
-    reset_principal()
-    yield
-    reset_principal()
-
-
-@pytest.fixture
-def fake_st() -> Iterator[MagicMock]:
-    st = MagicMock()
-    st.session_state = {}
-    with (
-        patch.object(auth, "st", st),
-        patch.object(auth, "set_current_tenant"),
-        patch.object(auth, "reset_current_tenant"),
-    ):
-        yield st
 
 
 def test_require_auth_sets_the_principal(fake_st: MagicMock) -> None:
@@ -63,10 +43,6 @@ def test_require_auth_sets_the_principal(fake_st: MagicMock) -> None:
 
 
 def test_failed_login_sets_no_principal(fake_st: MagicMock) -> None:
-    class _Stopped(Exception):
-        pass
-
-    fake_st.stop.side_effect = _Stopped
     fake_st.form_submit_button.return_value = True
     with (
         patch.object(auth, "get_settings", MagicMock()),
@@ -74,7 +50,7 @@ def test_failed_login_sets_no_principal(fake_st: MagicMock) -> None:
         patch.object(auth, "_session_user", lambda cookie: None),
         patch.object(auth, "_cookie_sent", lambda name: False),
         patch.object(auth, "_attempt", lambda email, password: None),
-        pytest.raises(_Stopped),
+        pytest.raises(Stopped),
     ):
         auth.require_auth()
     fake_st.error.assert_called_once_with(auth._LOGIN_FAILED)
@@ -89,6 +65,7 @@ def test_sign_out_clears_the_principal(fake_st: MagicMock) -> None:
     with (
         patch.object(auth, "_cookie_sent", lambda name: False),
         patch.object(auth, "login_form"),
+        pytest.raises(Stopped),
     ):
         auth._sign_out(MagicMock(), "cookie")
     fake_st.stop.assert_called_once()
