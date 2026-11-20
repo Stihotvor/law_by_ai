@@ -14,7 +14,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 
 from core.security import login_throttle
 from core.security.login_throttle import LoginThrottle, normalise_email
-from plugins.relational_db import postgres
+from plugins.relational_db import postgres, user_store
 
 EMAIL = "user@x.com"
 
@@ -108,7 +108,7 @@ def test_redis_error_propagates(call: Any) -> None:
 
 
 def test_store_login_lookup_uses_shared_normalise_email() -> None:
-    assert postgres.normalise_email is login_throttle.normalise_email
+    assert user_store.normalise_email is login_throttle.normalise_email
 
 
 class _Session:
@@ -132,6 +132,6 @@ def test_store_login_lookup_queries_normalised_email(monkeypatch: pytest.MonkeyP
     store = postgres.PostgreSQLStore.__new__(postgres.PostgreSQLStore)
     monkeypatch.setattr(store, "_ensure_initialized", lambda: None, raising=False)
     monkeypatch.setattr(store, "_engine", None, raising=False)
-    monkeypatch.setattr(postgres, "Session", _Session)
+    monkeypatch.setattr(user_store, "Session", _Session)
     assert store.get_login_user("  User@X.com ") is None
     assert _Session.params == {"email": "user@x.com"}

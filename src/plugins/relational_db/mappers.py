@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from core.users.ports import UserRecord
 from data.models import LegalDocument
 from plugins.relational_db.tenant_models import Tenant, User
 
@@ -71,6 +72,18 @@ def user_to_dict(row: User) -> dict[str, Any]:
         "name": row.name,
         "is_active": row.is_active,
     }
+
+
+def user_to_record(row: User) -> UserRecord:
+    """Public view of a user row: no password hash, no session version."""
+    return UserRecord(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        email=row.email,
+        role=row.role,
+        name=row.name,
+        is_active=row.is_active,
+    )
 
 
 def login_user_to_dict(row: User) -> dict[str, Any]:
