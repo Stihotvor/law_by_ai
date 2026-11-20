@@ -1,0 +1,120 @@
+{
+ "tasks": [
+  {
+   "id": "T1",
+   "title": "Service errors (UserCreateRefusedError, UserNotFoundError, SelfDeactivationError, LastAdminError) and UserRepository port",
+   "size": "S",
+   "depends_on": [],
+   "done_when": "pytest tests/unit/core/users/test_errors_ports.py passes; pyright clean on src/core/users",
+   "files": [
+    "src/core/users/__init__.py",
+    "src/core/users/errors.py",
+    "src/core/users/ports.py",
+    "tests/unit/core/users/test_errors_ports.py"
+   ],
+   "agent": "python-lead"
+  },
+  {
+   "id": "T2",
+   "title": "PostgreSQLStore.insert_user and list_users (reuse list_users, add tenant predicate; map only SQLSTATE 23505 on uq_users_email; create_user keeps its signature)",
+   "size": "M",
+   "depends_on": [
+    "T1"
+   ],
+   "done_when": "pytest tests/integration/test_store_users.py -k 'insert or list or leak' passes: duplicate email in own and other tenant raises the same error, list returns 0 foreign rows; with no tenant set list returns 0 rows and insert raises, at store level; any other IntegrityError is not mapped to the generic message",
+   "files": [
+    "src/plugins/relational_db/postgres.py",
+    "tests/integration/test_store_users.py"
+   ],
+   "agent": "python-lead"
+  },
+  {
+   "id": "T3",
+   "title": "PostgreSQLStore.deactivate_user: lock the tenant's active admin rows in id order first, guarded UPDATE ... WHERE is_active RETURNING id, self before last-admin",
+   "size": "M",
+   "depends_on": [
+    "T1",
+    "T2"
+   ],
+   "done_when": "pytest tests/integration/test_store_deactivate.py passes: foreign id acts as missing, inactive target gives no extra session_version bump, old cookie session_version differs after deactivate, two-session test keeps one active admin; with no tenant set deactivate changes 0 rows",
+   "files": [
+    "src/plugins/relational_db/postgres.py",
+    "tests/integration/test_store_deactivate.py"
+   ],
+   "agent": "python-lead"
+  },
+  {
+   "id": "T4",
+   "title": "User service: create_user and deactivate_user with principal check, email normalisation, role and password validation, audit log; actor row loaded by normalised principal email under the tenant (must be active admin), empty tenant raises PrincipalRequiredError, bcrypt always runs before insert, password limits moved to core.security.passwords",
+   "size": "M",
+   "depends_on": [
+    "T1"
+   ],
+   "done_when": "pytest tests/unit/core/users/test_service.py passes with a fake port: role 'user' gets 0 successful create or deactivate calls, bad role, blank or malformed email, short password refused, password and hash absent from captured logs, audit event holds actor id, target id and action",
+   "files": [
+    "src/core/users/service.py",
+    "tests/unit/core/users/test_service.py",
+    "src/core/security/passwords.py",
+    "src/bootstrap/init_stack.py"
+   ],
+   "agent": "python-lead"
+  },
+  {
+   "id": "T5",
+   "title": "Port and store conformance test",
+   "size": "S",
+   "depends_on": [
+    "T2",
+    "T3"
+   ],
+   "done_when": "pytest tests/unit/core/users/test_port_conformance.py passes: store signatures match UserRepository",
+   "files": [
+    "tests/unit/core/users/test_port_conformance.py"
+   ],
+   "agent": "python-lead"
+  },
+  {
+   "id": "T6",
+   "title": "Service integration tests on real Postgres: create then login, deactivate then login refused, privilege escalation, role user refused",
+   "size": "M",
+   "depends_on": [
+    "T2",
+    "T3",
+    "T4"
+   ],
+   "done_when": "pytest tests/integration/test_user_service.py passes: created user logs in, deactivated user login fails, role user 0 successful calls, each action under 1 second",
+   "files": [
+    "tests/integration/test_user_service.py"
+   ],
+   "agent": "python-lead"
+  },
+  {
+   "id": "T7",
+   "title": "Users Streamlit page (pages/users.py) registered in the is_admin block of app.py, with unit tests",
+   "size": "M",
+   "depends_on": [
+    "T4"
+   ],
+   "done_when": "pytest tests/unit/ui/test_users_page.py passes: role user sees 'Admin role required.' and no data loads, duplicate email shows 'Cannot create this user.', DB error shows a generic message with no stack trace",
+   "files": [
+    "src/ui/pages/users.py",
+    "src/ui/app.py",
+    "tests/unit/ui/test_users_page.py"
+   ],
+   "agent": "python-lead"
+  },
+  {
+   "id": "T8",
+   "title": "Quality gate and coverage and mutation check for new code",
+   "size": "S",
+   "depends_on": [
+    "T5",
+    "T6",
+    "T7"
+   ],
+   "done_when": "ruff check, ruff format --check, pyright and pytest -m 'not integration' exit 0; coverage and mutation gates from CONTRIBUTING.md pass for src/core/users",
+   "files": [],
+   "agent": "python-lead"
+  }
+ ]
+}

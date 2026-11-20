@@ -5,17 +5,17 @@ An admin-only Streamlit page to create and deactivate users. Follow-up left out 
 ## Business Goals
 - A tenant admin adds and removes users from the UI. Today only the seed script creates users.
 - Scope is create, list and deactivate. Reactivate, password reset and role change are out of scope.
-- A new user joins the admin's own tenant. The tenant comes from the admin session, never from the form.
+- A new user joins the admin's own tenant. The tenant comes from the tenant context that login sets, never from the form.
 - Test: an admin creates a user who then logs in. An admin deactivates that user and the user cannot log in again.
 
 ## Technical Constraints
 - ADR-0013: streamlit-authenticator, bcrypt through `hash_password`, RBAC `admin` and `user`. ADR-0003: tenant isolation by `tenant_id` and RLS.
 - Facts in the code: `users.email` is unique across tenants and the DB checks `email = lower(btrim(email))`. The trigger `trg_users_session_version` bumps `session_version` when `is_active` or `password_hash` changes. `PostgreSQLStore` has no `deactivate_user`. `create_user` does not validate the role and does not handle a duplicate email.
 - The admin can create both roles. The server validates the role with `valid_role`. The form never sets the tenant.
-- The admin types the initial password. The server enforces a minimum length, hashes it, and never logs or shows it.
+- The admin types the initial password. The server enforces 12 or more characters and at most 72 UTF-8 bytes (the `init_stack` limits), hashes it, and never logs or shows it. Email is at most 256 characters, name is at most 256.
 - The server refuses self-deactivation and deactivation of the last active admin of the tenant.
 - No change weakens `require_admin`, `require_admin_principal` or `check_privilege_escalation`. The page calls `require_admin()` first, and the service re-checks the principal on the server side.
-- Tenant guard rules apply: the tenant comes from the admin principal. A foreign row behaves as a missing row.
+- Tenant guard rules apply: the tenant comes from `get_current_tenant()`, never an argument. An empty tenant raises an error before any SQL. A foreign row behaves as a missing row.
 - Python 3.13, Streamlit, SQLAlchemy, PostgreSQL. No new dependency.
 
 ## Edge Cases
