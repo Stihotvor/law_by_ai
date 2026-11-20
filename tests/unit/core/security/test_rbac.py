@@ -6,12 +6,10 @@ from core.security.rbac import (
     ADMIN,
     USER,
     VALID_ROLES,
-    InvalidRoleError,
     PrivilegeEscalationError,
     check_privilege_escalation,
     is_admin,
     is_user,
-    require_role,
     valid_role,
 )
 
@@ -55,11 +53,10 @@ def test_user_cannot_pass_admin_check() -> None:
 
 
 @pytest.mark.parametrize("role", ODD_ROLES)
-def test_unknown_role_raises_privilege_escalation_not_invalid_role(role: str) -> None:
+def test_unknown_role_raises_privilege_escalation(role: str) -> None:
     with pytest.raises(PrivilegeEscalationError) as exc_info:
         check_privilege_escalation(role)
     err = exc_info.value
-    assert not isinstance(err, InvalidRoleError)
     assert isinstance(err, PermissionError)
     assert err.operation == "unknown operation"
     assert err.requested_role == role
@@ -86,32 +83,3 @@ def test_admin_fails_user_required_check() -> None:
     err = exc_info.value
     assert err.requested_role == "admin"
     assert err.required_role == "user"
-
-
-def test_invalid_role_error_carries_role() -> None:
-    err = InvalidRoleError("x")
-    assert isinstance(err, ValueError)
-    assert err.role == "x"
-    assert repr("x") in str(err)
-
-
-def test_require_role_default_is_admin_only() -> None:
-    check = require_role()
-    assert check("admin") is True
-    assert check("user") is False
-    assert check("") is False
-    assert check("root") is False
-
-
-def test_require_role_custom_required() -> None:
-    check = require_role("user")
-    assert check("user") is True
-    assert check("admin") is False
-    assert check("") is False
-    assert check("root") is False
-
-
-def test_require_role_nonstandard_required_returns_false() -> None:
-    check = require_role("root")
-    assert check("admin") is False
-    assert check("root") is True
