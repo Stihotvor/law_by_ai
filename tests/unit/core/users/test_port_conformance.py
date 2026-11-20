@@ -46,7 +46,11 @@ def signature_mismatches(port_fn: Callable[..., Any], impl_fn: Callable[..., Any
     port_params, impl_params = _params(port_fn), _params(impl_fn)
     if port_params != impl_params:
         problems.append(f"parameters: port={port_params} impl={impl_params}")
-    port_hints, impl_hints = typing.get_type_hints(port_fn), typing.get_type_hints(impl_fn)
+    # ``self`` may carry a host Protocol annotation on a mixin; it is not part of the contract.
+    port_hints = typing.get_type_hints(port_fn)
+    impl_hints = typing.get_type_hints(impl_fn)
+    port_hints.pop("self", None)
+    impl_hints.pop("self", None)
     if port_hints != impl_hints:
         problems.append(f"annotations: port={port_hints} impl={impl_hints}")
     return problems

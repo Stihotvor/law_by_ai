@@ -135,3 +135,9 @@ def test_store_login_lookup_queries_normalised_email(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(user_store, "Session", _Session)
     assert store.get_login_user("  User@X.com ") is None
     assert _Session.params == {"email": "user@x.com"}
+
+
+def test_login_throttle_reexports_normalise_email_from_emails_module() -> None:
+    from core.security import emails
+
+    assert login_throttle.normalise_email is emails.normalise_email

@@ -10,14 +10,14 @@ Login, which runs before a tenant is known, calls the ``auth_lookup_user`` funct
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import Any, Protocol
 
 from sqlalchemy import Engine, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from core.security import PrincipalRequiredError, get_current_tenant, hash_password
-from core.security.login_throttle import normalise_email
+from core.security.emails import normalise_email
 from core.users.errors import (
     LastAdminError,
     SelfDeactivationError,
@@ -106,16 +106,18 @@ def _set_inactive(session: Session, user_id: str, tenant: str) -> bool:
     return session.execute(stmt).scalar_one_or_none() is not None
 
 
-class UserStoreMixin:
-    """User and tenant queries; the host class supplies the engine and lazy init."""
+class _StoreHost(Protocol):
+    """What the mixin needs from its host class: the engine and lazy init."""
 
     _engine: Engine | None
 
-    if TYPE_CHECKING:
+    def _ensure_initialized(self) -> None: ...
 
-        def _ensure_initialized(self) -> None: ...
 
-    def create_tenant(self, name: str, tenant_id: str | None = None) -> dict[str, Any]:
+class UserStoreMixin:
+    """User and tenant queries; the host class supplies the engine and lazy init."""
+
+    def create_tenant(self: _StoreHost, name: str, tenant_id: str | None = None) -> dict[str, Any]:
         """Create a tenant; returns its record dict."""
         self._ensure_initialized()
         with Session(self._engine) as session:
@@ -125,7 +127,7 @@ class UserStoreMixin:
             return _tenant_to_dict(tenant)
 
     def create_user(
-        self,
+        self: _StoreHost,
         *,
         email: str,
         password: str,
@@ -133,7 +135,11 @@ class UserStoreMixin:
         tenant_id: str,
         name: str = "",
     ) -> dict[str, Any]:
-        """Create a user with a bcrypt-hashed password; returns its record dict."""
+        """Create a user with a bcrypt-hashed password; returns its record dict.
+
+        Seed-only: no admin check and no audit. The admin UI uses ``insert_user``
+        through ``UserService``.
+        """
         self._ensure_initialized()
         with Session(self._engine) as session:
             user = User(
@@ -149,7 +155,7 @@ class UserStoreMixin:
             session.commit()
             return _user_to_dict(user)
 
-    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+    def get_user_by_email(self: _StoreHost, email: str) -> dict[str, Any] | None:
         """Return the user for *email* in the current tenant; ``None`` with no tenant set."""
         self._ensure_initialized()
         stmt = select(User).where(User.email == normalise_email(email))
@@ -157,7 +163,7 @@ class UserStoreMixin:
             row = session.execute(stmt).scalar_one_or_none()
             return _user_to_dict(row) if row is not None else None
 
-    def get_login_user(self, email: str) -> dict[str, Any] | None:
+    def get_login_user(self: _StoreHost, email: str) -> dict[str, Any] | None:
         """Return the login row for *email* across all tenants, or ``None``.
 
         Calls ``auth_lookup_user`` (needs no tenant). Raises ``OperationalError`` when down.
@@ -168,7 +174,7 @@ class UserStoreMixin:
             row = result.mappings().one_or_none()
             return {key: row[key] for key in _LOGIN_KEYS} if row is not None else None
 
-    def bump_session_version(self, user_id: str) -> None:
+    def bump_session_version(self: _StoreHost, user_id: str) -> None:
         """Add one to the user's ``session_version`` under the current tenant.
 
         Every cookie signed with the old version stops working (server-side logout).
@@ -181,7 +187,9 @@ class UserStoreMixin:
             session.execute(stmt)
             session.commit()
 
-    def insert_user(self, *, email: str, password_hash: str, role: str, name: str) -> UserRecord:
+    def insert_user(
+        self: _StoreHost, *, email: str, password_hash: str, role: str, name: str
+    ) -> UserRecord:
         """Insert an active user in the current tenant; the email is stored as given.
 
         Raises ``PrincipalRequiredError`` with no tenant (before any SQL), and
@@ -204,7 +212,7 @@ class UserStoreMixin:
             raise
         return record
 
-    def list_users(self) -> list[UserRecord]:
+    def list_users(self: _StoreHost) -> list[UserRecord]:
         """Users of the current tenant ordered by email; ``[]`` with no tenant set."""
         # Reads return empty (no raise): with no tenant, RLS would show no rows anyway.
         tenant = get_current_tenant()
@@ -215,7 +223,7 @@ class UserStoreMixin:
         with Session(self._engine) as session:
             return [_user_to_record(r) for r in session.execute(stmt).scalars().all()]
 
-    def find_active_admin(self, email: str) -> UserRecord | None:
+    def find_active_admin(self: _StoreHost, email: str) -> UserRecord | None:
         """Active admin of the current tenant with exactly *email*, else ``None``.
 
         Returns ``None`` with no tenant set and runs no SQL.
@@ -232,7 +240,7 @@ class UserStoreMixin:
             row = session.execute(stmt).scalar_one_or_none()
             return _user_to_record(row) if row is not None else None
 
-    def deactivate_user(self, user_id: str, *, actor_id: str) -> bool:
+    def deactivate_user(self: _StoreHost, user_id: str, *, actor_id: str) -> bool:
         """Deactivate *user_id* in the current tenant in one transaction.
 
         Check order: ``PrincipalRequiredError`` with no tenant (before any SQL),
@@ -253,7 +261,7 @@ class UserStoreMixin:
                 _lock_target(session, user_id, tenant)
             return _set_inactive(session, user_id, tenant)
 
-    def list_tenants(self) -> list[dict[str, Any]]:
+    def list_tenants(self: _StoreHost) -> list[dict[str, Any]]:
         """Tenants visible under RLS: the current tenant only, none with no tenant set."""
         self._ensure_initialized()
         with Session(self._engine) as session:

@@ -10,6 +10,10 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Protocol
 
+from .emails import normalise_email
+
+__all__ = ["KEY_PREFIX", "LoginThrottle", "RedisClient", "normalise_email"]  # re-export
+
 KEY_PREFIX = "login:fail:"
 
 
@@ -26,11 +30,6 @@ class RedisClient(Protocol):
     def expire(self, name: str, time: int, /) -> Any: ...
     def delete(self, name: str, /) -> Any: ...
     def pipeline(self, transaction: bool = True) -> _Pipeline: ...
-
-
-def normalise_email(raw: str) -> str:
-    """Return *raw* stripped and lower-cased: the one email form for lookups and keys."""
-    return raw.strip().lower()
 
 
 def _key(email: str) -> str:
