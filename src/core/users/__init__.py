@@ -10,6 +10,7 @@ from .errors import (
     UserNotFoundError,
 )
 from .ports import UserRecord, UserRepository
+from .service import UserService
 
 __all__ = [
     "LastAdminError",
@@ -18,4 +19,5 @@ __all__ = [
     "UserNotFoundError",
     "UserRecord",
     "UserRepository",
+    "UserService",
 ]

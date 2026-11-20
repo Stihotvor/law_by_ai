@@ -24,3 +24,12 @@ def test_hash_round_trip(monkeypatch: pytest.MonkeyPatch) -> None:
     hashed = hash_password("secret")
     assert check_password("secret", hashed) is True
     assert check_password("wrong", hashed) is False
+
+
+def test_password_limits_live_in_core() -> None:
+    from bootstrap import init_stack
+    from core.security import passwords
+
+    assert (passwords.MIN_PASSWORD_CHARS, passwords.MAX_PASSWORD_BYTES) == (12, 72)
+    assert init_stack.MIN_PASSWORD_CHARS is passwords.MIN_PASSWORD_CHARS
+    assert init_stack.MAX_PASSWORD_BYTES is passwords.MAX_PASSWORD_BYTES
