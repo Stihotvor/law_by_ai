@@ -10,6 +10,16 @@
     "state": "done"
   },
   "T7": {
+    "state": "done"
+  },
+  "T3": {
+    "state": "done",
+    "note": "unit pass; integration tests not run locally, run in CI"
+  },
+  "T5": {
+    "state": "doing"
+  },
+  "T6": {
     "state": "doing"
   }
 }
