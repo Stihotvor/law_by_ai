@@ -16,7 +16,6 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 import streamlit as st
-from sqlalchemy.exc import SQLAlchemyError
 
 from core.security import PrincipalRequiredError
 from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
@@ -39,7 +38,8 @@ CLEAR_CRED_KEY = "users_clear_initial_cred"
 FLASH_KEY = "users_flash"
 ROLES = ("user", "admin")
 _PASSWORD_HELP = f"At least {MIN_PASSWORD_CHARS} characters and at most {MAX_PASSWORD_BYTES} bytes."
-_DB_ERROR = "Database error. Try again later."
+# The commit outcome of a failed action can be unknown: ask for a check first.
+_DB_ERROR = "Database error. Check the user list before you try again."
 _MESSAGES: dict[type[Exception], str] = {
     UserCreateRefusedError: "Cannot create this user.",
     UserNotFoundError: "User not found.",
@@ -47,8 +47,6 @@ _MESSAGES: dict[type[Exception], str] = {
     LastAdminError: "Cannot deactivate the last admin.",
     PrincipalRequiredError: "Admin role required.",
 }
-# Errors shown as a fixed message; any other error propagates.
-_HANDLED: tuple[type[Exception], ...] = (*_MESSAGES, SQLAlchemyError)
 _COLUMNS = ("Email", "Name", "Role", "Status", "")
 _WIDTHS = (3, 2, 1, 1, 1)
 
@@ -58,7 +56,7 @@ def _service() -> UserService:
 
 
 def _message(exc: Exception) -> str:
-    """Return the fixed message for *exc*; a DB error logs only its class name."""
+    """Return the fixed message for *exc*; any other error logs only its class name."""
     for kind, text in _MESSAGES.items():
         if isinstance(exc, kind):
             return text
@@ -67,10 +65,14 @@ def _message(exc: Exception) -> str:
 
 
 def _run(action: Callable[[], object], success: str) -> None:
-    """Run one service action, keep its outcome for the next render and rerun."""
+    """Run one service action, keep its outcome for the next render and rerun.
+
+    Every error becomes a fixed message: raw text and stack traces are never shown
+    or logged.
+    """
     try:
         action()
-    except _HANDLED as exc:
+    except Exception as exc:
         st.session_state[FLASH_KEY] = ("error", _message(exc))
     else:
         st.session_state[FLASH_KEY] = ("success", success)
@@ -121,7 +123,7 @@ def _row(user: Mapping[str, Any]) -> None:
 def _user_table() -> None:
     try:
         users = _service().list_users()
-    except _HANDLED as exc:
+    except Exception as exc:
         st.error(_message(exc))
         return
     for cell, title in zip(st.columns(_WIDTHS), _COLUMNS, strict=True):

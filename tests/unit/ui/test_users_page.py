@@ -37,7 +37,7 @@ STORE = object()
 PASSWORD = "very-secret-password-1"  # noqa: S105 (test value)
 HASH = "$2b$12$abcdefghijklmnopqrstuuSECRETHASHVALUEabcdefghijklmnop"
 ADMIN_REQUIRED = "Admin role required."
-DB_ERROR = "Database error. Try again later."
+DB_ERROR = "Database error. Check the user list before you try again."
 PW_KEY = "new_user_initial_cred"
 
 
@@ -202,6 +202,22 @@ def test_list_db_error_shows_generic_message(service: FakeService) -> None:
     assert [e.value for e in at.error] == [DB_ERROR]
     assert "secret_sql" not in _all_text(at)
     assert "Traceback" not in _all_text(at)
+
+
+def test_list_unexpected_error_shows_generic_message_and_logs_only_the_class_name(
+    service: FakeService, caplog: pytest.LogCaptureFixture
+) -> None:
+    service.list_error = RuntimeError("bug with secret detail")
+    at = _page()
+    assert not at.exception
+    assert [e.value for e in at.error] == [DB_ERROR]
+    text = _all_text(at)
+    assert "secret detail" not in text
+    assert "Traceback" not in text
+    logged = " ".join(r.getMessage() for r in caplog.records)
+    assert "RuntimeError" in logged
+    assert "secret detail" not in logged
+    assert all(r.exc_info is None and r.exc_text is None for r in caplog.records)
 
 
 def test_list_principal_error_shows_fixed_message(service: FakeService) -> None:
@@ -394,11 +410,20 @@ def test_db_error_logs_only_the_class_name(
     assert HASH not in logged
 
 
-def test_unexpected_error_is_not_mapped(service: FakeService) -> None:
-    service.deactivate_error = RuntimeError("bug")
+def test_unexpected_error_shows_generic_message_and_logs_only_the_class_name(
+    service: FakeService, caplog: pytest.LogCaptureFixture
+) -> None:
+    service.deactivate_error = RuntimeError("bug with secret detail")
     at = _deactivate(_page(), "u-2")
-    assert at.exception
-    assert DB_ERROR not in _all_text(at)
+    assert not at.exception
+    assert [e.value for e in at.error] == [DB_ERROR]
+    text = _all_text(at)
+    assert "secret detail" not in text
+    assert "Traceback" not in text
+    logged = " ".join(r.getMessage() for r in caplog.records)
+    assert "RuntimeError" in logged
+    assert "secret detail" not in logged
+    assert all(r.exc_info is None and r.exc_text is None for r in caplog.records)
 
 
 # --- registration in app.py -----------------------------------------------------

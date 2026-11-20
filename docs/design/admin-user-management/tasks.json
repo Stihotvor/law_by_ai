@@ -112,7 +112,7 @@
     "T6",
     "T7"
    ],
-   "done_when": "ruff check, ruff format --check, pyright and pytest -m 'not integration' exit 0; coverage and mutation gates from CONTRIBUTING.md pass for src/core/users",
+   "done_when": "ruff check, ruff format --check, pyright and pytest -m 'not integration' exit 0; coverage gates from CONTRIBUTING.md pass for src/core/users (repo 88%, diff-cover 90%); the mutation gate is scoped to src/agents/fetch and does not apply",
    "files": [],
    "agent": "python-lead"
   }

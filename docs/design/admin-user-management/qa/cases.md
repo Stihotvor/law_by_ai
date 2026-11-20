@@ -267,14 +267,15 @@ Tenant A has admins admin1@a.example and admin2@a.example, and user bob@a.exampl
 - Type: failure
 - Given the database raises a connection error during create
 - When admin1 creates ivan@a.example
-- Then the page shows a generic error without a stack trace and ivan does not exist
+- Then the page shows a generic error without a stack trace. When the rollback is confirmed, ivan does not exist
+- And if the commit outcome is unknown (the connection failed after the commit), the message tells the admin to check the user list, and a retry gives the duplicate message, not a second user
 
 ### QA-039 DB error on deactivate changes nothing
 - Covers: Failure Mode 1, T3
 - Type: failure
 - Given the database fails during deactivation of bob
 - When admin1 deactivates bob
-- Then bob stays active and the page shows a generic error
+- Then the page shows a generic error and tells the admin to check the user list. When the rollback is confirmed, bob stays active. A retry after an unknown outcome is an idempotent no-op
 
 ### QA-040 Non-duplicate integrity error is not shown as duplicate
 - Covers: Failure Mode 1, T2

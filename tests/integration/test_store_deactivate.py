@@ -7,10 +7,12 @@ if PostgreSQL is unreachable.
 
 from __future__ import annotations
 
-import threading
 from collections.abc import Iterator
+from threading import Thread
 
 import pytest
+from factories.scratch_db import TENANT_SQL
+from sqlalchemy import create_engine, text
 from users_helpers import OwnerSql, app_store, insert_id
 
 from core.security import PrincipalRequiredError, tenant_context
@@ -22,6 +24,11 @@ pytestmark = pytest.mark.integration
 TENANT_A = "store-deact-a"
 TENANT_B = "store-deact-b"
 MISSING_ID = "00000000-0000-4000-8000-000000000000"
+_LOCK_ADMINS_SQL = (
+    "SELECT id FROM users WHERE tenant_id = :t AND role = 'admin' AND is_active "
+    "ORDER BY id FOR UPDATE"
+)
+_DEACTIVATE_SQL = "UPDATE users SET is_active = false WHERE id = :i"
 
 
 @pytest.fixture
@@ -110,33 +117,64 @@ def test_last_admin_is_refused(store: PostgreSQLStore, owner_sql: OwnerSql) -> N
     assert _state(owner_sql, TENANT_A, admin1)[0] is True
 
 
-def test_two_sessions_race_keeps_one_admin(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
-    """Scenario: Two sessions race (QA-025, QA-028)."""
-    admin1 = insert_id(store, TENANT_A, "admin")
-    admin2 = insert_id(store, TENANT_A, "admin")
-    barrier = threading.Barrier(2)
+def _start_deactivate(
+    store: PostgreSQLStore, target: str, actor: str
+) -> tuple[Thread, list[object]]:
+    """Run ``deactivate_user`` in a thread; its return value or error lands in the list."""
     outcomes: list[object] = []
 
-    def _worker(target: str, actor: str) -> None:
-        # A new thread does not inherit context variables: enter the tenant here.
-        barrier.wait()
+    def _worker() -> None:
+        # A new thread does not inherit context variables: _deactivate enters the tenant.
         try:
             outcomes.append(_deactivate(store, TENANT_A, target, actor))
         except Exception as exc:
             outcomes.append(exc)
 
-    threads = [
-        threading.Thread(target=_worker, args=(admin2, admin1)),
-        threading.Thread(target=_worker, args=(admin1, admin2)),
-    ]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join(timeout=30)
+    thread = Thread(target=_worker, daemon=True)
+    thread.start()
+    return thread, outcomes
 
-    assert sorted(type(o).__name__ for o in outcomes) == ["LastAdminError", "bool"]
-    assert True in outcomes
+
+def test_two_sessions_race_keeps_one_admin(
+    store: PostgreSQLStore, owner_sql: OwnerSql, owner_url: str
+) -> None:
+    """Scenario: Two sessions race (QA-025, QA-028), forced overlap.
+
+    A holder transaction (owner role, tenant set like the store does) locks the
+    tenant's active admins, so ``deactivate_user(A1)`` must wait on its
+    ``FOR UPDATE``. The holder then deactivates A2 and commits. PostgreSQL rechecks
+    the locked rows: the store's locked set is [A1], one row holding the target,
+    so it raises ``LastAdminError``.
+
+    Without ``.with_for_update()`` in ``_lock_admins_or_refuse`` the store reads
+    [A1, A2] from its snapshot without waiting, and its UPDATE of A1 only waits on
+    the holder's row lock; after the commit it deactivates A1 and returns True.
+    The test then fails: no ``LastAdminError`` and zero active admins.
+    """
+    admin1 = insert_id(store, TENANT_A, "admin")
+    admin2 = insert_id(store, TENANT_A, "admin")
+    engine = create_engine(owner_url, future=True)
+    try:
+        with engine.connect() as conn, conn.begin() as holder:
+            conn.execute(text(TENANT_SQL), {"tenant": TENANT_A})
+            locked = conn.execute(text(_LOCK_ADMINS_SQL), {"t": TENANT_A}).scalars().all()
+            assert sorted(locked) == sorted([admin1, admin2])
+
+            thread, outcomes = _start_deactivate(store, admin1, admin2)
+            thread.join(timeout=1)
+            assert thread.is_alive(), "deactivate_user did not wait for the admin row locks"
+
+            conn.execute(text(_DEACTIVATE_SQL), {"i": admin2})
+            holder.commit()
+        thread.join(timeout=30)
+    finally:
+        engine.dispose()
+
+    assert not thread.is_alive()
+    assert len(outcomes) == 1
+    assert isinstance(outcomes[0], LastAdminError)
     assert _active_admins(owner_sql, TENANT_A) == 1
+    assert _state(owner_sql, TENANT_A, admin1)[0] is True
 
 
 @pytest.mark.parametrize("tenant", [None, ""])
