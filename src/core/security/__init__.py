@@ -11,7 +11,6 @@ Authorization (RBAC):
     - ADMIN, USER
     - is_admin(), is_user(), valid_role()
     - check_privilege_escalation(), PrivilegeEscalationError
-    - require_role()
 
 Tenancy:
     - set_current_tenant(), get_current_tenant(), reset_current_tenant()
@@ -37,12 +36,10 @@ from .principal import (
 from .rbac import (
     ADMIN,
     USER,
-    InvalidRoleError,
     PrivilegeEscalationError,
     check_privilege_escalation,
     is_admin,
     is_user,
-    require_role,
     valid_role,
 )
 from .tenant import (
@@ -57,7 +54,6 @@ from .tenant import (
 __all__ = [
     "ADMIN",
     "USER",
-    "InvalidRoleError",
     "PrincipalRequiredError",
     "PrivilegeEscalationError",
     "RequestPrincipal",
@@ -71,7 +67,6 @@ __all__ = [
     "is_user",
     "principal_context",
     "require_admin_principal",
-    "require_role",
     "reset_current_tenant",
     "reset_principal",
     "set_current_tenant",
