@@ -7,6 +7,7 @@ if PostgreSQL is unreachable.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 from threading import Thread
 
@@ -29,6 +30,13 @@ _LOCK_ADMINS_SQL = (
     "ORDER BY id FOR UPDATE"
 )
 _DEACTIVATE_SQL = "UPDATE users SET is_active = false WHERE id = :i"
+_BLOCKED_ON_FOR_UPDATE_SQL = (
+    "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+    "AND pid <> pg_backend_pid() AND wait_event_type = 'Lock' "
+    "AND query ILIKE '%FOR UPDATE%' AND query ILIKE '%users%'"
+)
+_BLOCK_TIMEOUT_S = 5.0
+_BLOCK_POLL_S = 0.05
 
 
 @pytest.fixture
@@ -135,21 +143,46 @@ def _start_deactivate(
     return thread, outcomes
 
 
+def _wait_until_blocked_on_for_update(postgres_url: str) -> None:
+    """Poll as the app role until one other session waits on a lock in a ``FOR UPDATE``.
+
+    The worker runs as the app role, so only the app role (not the owner) can see its
+    ``query`` and ``wait_event_type``. AUTOCOMMIT gives each poll a fresh
+    ``pg_stat_activity`` snapshot.
+    """
+    engine = create_engine(postgres_url, future=True, isolation_level="AUTOCOMMIT")
+    try:
+        deadline = time.monotonic() + _BLOCK_TIMEOUT_S
+        with engine.connect() as monitor:
+            while time.monotonic() < deadline:
+                if monitor.execute(text(_BLOCKED_ON_FOR_UPDATE_SQL)).scalar_one() == 1:
+                    return
+                time.sleep(_BLOCK_POLL_S)
+    finally:
+        engine.dispose()
+    pytest.fail(
+        f"deactivate_user did not block on a SELECT ... FOR UPDATE of users within "
+        f"{_BLOCK_TIMEOUT_S} s; the admin-lock query must use FOR UPDATE"
+    )
+
+
 def test_two_sessions_race_keeps_one_admin(
-    store: PostgreSQLStore, owner_sql: OwnerSql, owner_url: str
+    store: PostgreSQLStore, owner_sql: OwnerSql, owner_url: str, postgres_url: str
 ) -> None:
     """Scenario: Two sessions race (QA-025, QA-028), forced overlap.
 
     A holder transaction (owner role, tenant set like the store does) locks the
     tenant's active admins, so ``deactivate_user(A1)`` must wait on its
-    ``FOR UPDATE``. The holder then deactivates A2 and commits. PostgreSQL rechecks
-    the locked rows: the store's locked set is [A1], one row holding the target,
-    so it raises ``LastAdminError``.
+    ``FOR UPDATE``. A monitor connection (app role, AUTOCOMMIT) polls
+    ``pg_stat_activity`` until the worker is seen waiting on a lock in a
+    ``FOR UPDATE`` query on ``users``. Only then does the holder deactivate A2 and
+    commit. PostgreSQL rechecks the locked rows: the store's locked set is [A1],
+    one row holding the target, so it raises ``LastAdminError``.
 
     Without ``.with_for_update()`` in ``_lock_admins_or_refuse`` the store reads
-    [A1, A2] from its snapshot without waiting, and its UPDATE of A1 only waits on
-    the holder's row lock; after the commit it deactivates A1 and returns True.
-    The test then fails: no ``LastAdminError`` and zero active admins.
+    [A1, A2] from its snapshot without waiting, and the worker waits on its UPDATE
+    of A1 instead, not on a ``FOR UPDATE`` query. The poll then times out and the
+    test fails with a clear message.
     """
     admin1 = insert_id(store, TENANT_A, "admin")
     admin2 = insert_id(store, TENANT_A, "admin")
@@ -161,8 +194,7 @@ def test_two_sessions_race_keeps_one_admin(
             assert sorted(locked) == sorted([admin1, admin2])
 
             thread, outcomes = _start_deactivate(store, admin1, admin2)
-            thread.join(timeout=1)
-            assert thread.is_alive(), "deactivate_user did not wait for the admin row locks"
+            _wait_until_blocked_on_for_update(postgres_url)
 
             conn.execute(text(_DEACTIVATE_SQL), {"i": admin2})
             holder.commit()

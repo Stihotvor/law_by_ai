@@ -262,20 +262,20 @@ Tenant A has admins admin1@a.example and admin2@a.example, and user bob@a.exampl
 - When list runs and insert runs
 - Then 0 tenant B rows are read and the new row has tenant A
 
-### QA-038 DB error on create is generic and creates nothing
+### QA-038 DB error on create is generic and the outcome may be unknown
 - Covers: Failure Mode 1, T7
 - Type: failure
 - Given the database raises a connection error during create
 - When admin1 creates ivan@a.example
 - Then the page shows a generic error without a stack trace. When the rollback is confirmed, ivan does not exist
-- And if the commit outcome is unknown (the connection failed after the commit), the message tells the admin to check the user list, and a retry gives the duplicate message, not a second user
+- And the message says the action may have succeeded and tells the admin to check the user list. If the commit happened (the connection failed after the commit), a retry gives the duplicate message, not a second user. If the rollback happened, a retry creates ivan
 
-### QA-039 DB error on deactivate changes nothing
+### QA-039 DB error on deactivate is generic and the outcome may be unknown
 - Covers: Failure Mode 1, T3
 - Type: failure
 - Given the database fails during deactivation of bob
 - When admin1 deactivates bob
-- Then the page shows a generic error and tells the admin to check the user list. When the rollback is confirmed, bob stays active. A retry after an unknown outcome is an idempotent no-op
+- Then the page shows a generic error, says the action may have succeeded and tells the admin to check the user list. When the rollback is confirmed, bob stays active. If the commit happened, a retry is an idempotent no-op. If the rollback happened, a retry deactivates bob
 
 ### QA-040 Non-duplicate integrity error is not shown as duplicate
 - Covers: Failure Mode 1, T2

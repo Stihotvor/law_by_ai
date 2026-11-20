@@ -30,7 +30,7 @@ An admin-only Streamlit page to create and deactivate users. Follow-up left out 
 
 ## Failure Modes
 - Each action is one transaction. On a DB error the page shows a generic error and no stack trace.
-- A DB error can mean the commit outcome is unknown: PostgreSQL may commit and the connection may fail before the client sees the reply. The page message says so: "Database error. Check the user list before you try again." The admin checks the user table before a retry. A retried create of an existing email gets the generic duplicate message, and a retried deactivate is an idempotent no-op, so a retry is safe.
+- A DB error can mean the commit outcome is unknown: PostgreSQL may commit and the connection may fail before the client sees the reply. The page message says so: "Database error. The action may have succeeded. Check the user list before you try again." The admin checks the user table before a retry. After a commit, a retried create gets the generic duplicate message and a retried deactivate is an idempotent no-op. After a rollback, the retry does the action. Either way a retry does not create a second user.
 - The log never holds a password or a hash.
 - Audit is a structured log event (stdlib `logging`, `extra` fields; structlog is not a dependency yet) with actor id, target id and action. A DB audit table is a follow-up, not in scope.
 - If the redis or login lookup is down, the existing login behaviour stays unchanged.

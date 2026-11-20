@@ -37,7 +37,9 @@ STORE = object()
 PASSWORD = "very-secret-password-1"  # noqa: S105 (test value)
 HASH = "$2b$12$abcdefghijklmnopqrstuuSECRETHASHVALUEabcdefghijklmnop"
 ADMIN_REQUIRED = "Admin role required."
-DB_ERROR = "Database error. Check the user list before you try again."
+DB_ERROR = (
+    "Database error. The action may have succeeded. Check the user list before you try again."
+)
 PW_KEY = "new_user_initial_cred"
 
 

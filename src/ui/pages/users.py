@@ -39,7 +39,9 @@ FLASH_KEY = "users_flash"
 ROLES = ("user", "admin")
 _PASSWORD_HELP = f"At least {MIN_PASSWORD_CHARS} characters and at most {MAX_PASSWORD_BYTES} bytes."
 # The commit outcome of a failed action can be unknown: ask for a check first.
-_DB_ERROR = "Database error. Check the user list before you try again."
+_DB_ERROR = (
+    "Database error. The action may have succeeded. Check the user list before you try again."
+)
 _MESSAGES: dict[type[Exception], str] = {
     UserCreateRefusedError: "Cannot create this user.",
     UserNotFoundError: "User not found.",
