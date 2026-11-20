@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from factories.auth import text
+from auth_page_driver import text
 from streamlit.testing.v1 import AppTest
 
 _UNSET = object()

@@ -2,15 +2,8 @@
 
 from __future__ import annotations
 
-from factories.auth import (
-    COOKIE,
-    LoginEnv,
-    login,
-    login_form_shown,
-    make_token,
-    open_page,
-    text,
-)
+from auth_page_driver import login, login_form_shown, open_page, text
+from factories.auth import COOKIE, LoginEnv, make_token
 from sqlalchemy.exc import OperationalError
 
 from ui.components import auth

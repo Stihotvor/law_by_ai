@@ -1,4 +1,4 @@
-"""Fake auth cookie for the login tests: ``CookieModel`` rules without a browser."""
+"""Auth test doubles: fake cookie, fake login store, login row builder and ``Stopped``."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from unittest.mock import MagicMock
 import bcrypt
 import jwt
 import streamlit as st
-from streamlit.testing.v1 import AppTest
 
 KEY = "k" * 32
 COOKIE = "law_by_ai_auth"
@@ -56,6 +55,7 @@ class FakeCookie:
         self.jar.pop(self.name, None)
 
 
+SESSION_VERSION = 3
 PLAIN = "right-pass"
 HASH = bcrypt.hashpw(PLAIN.encode(), bcrypt.gensalt(rounds=4)).decode()
 
@@ -74,7 +74,7 @@ def login_row(email: str = "admin@x.com", **kw: Any) -> dict[str, Any]:
         "role": "admin",
         "password_hash": HASH,
         "is_active": True,
-        "session_version": 3,
+        "session_version": SESSION_VERSION,
     }
     return row | kw
 
@@ -112,32 +112,3 @@ class LoginEnv:
     @property
     def deleted(self) -> int:
         return FakeCookie.deleted
-
-
-def auth_script() -> None:
-    import streamlit as st
-
-    from ui.components.auth import get_current_user, require_auth
-
-    user = require_auth()
-    st.markdown(f"hello {user['role']} same={get_current_user() == user}")
-
-
-def text(at: AppTest) -> str:
-    return " ".join(str(m.value) for m in at.markdown)
-
-
-def open_page() -> AppTest:
-    return AppTest.from_function(auth_script).run()
-
-
-def login(at: AppTest, email: str, password: str = PLAIN) -> AppTest:
-    at.text_input(key="login_email").input(email)
-    at.text_input(key="login_password").input(password)
-    at.button[0].click()
-    return at.run()
-
-
-def login_form_shown(at: AppTest) -> bool:
-    keys = {t.key for t in at.text_input}
-    return {"login_email", "login_password"} <= keys and "hello" not in text(at)

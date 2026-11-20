@@ -4,17 +4,8 @@ from __future__ import annotations
 
 import jwt
 import pytest
-from factories.auth import (
-    COOKIE,
-    KEY,
-    LoginEnv,
-    auth_script,
-    login,
-    login_form_shown,
-    make_token,
-    open_page,
-    text,
-)
+from auth_page_driver import auth_script, login, login_form_shown, open_page, text
+from factories.auth import COOKIE, KEY, LoginEnv, make_token
 from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 from streamlit.testing.v1 import AppTest
 
@@ -69,7 +60,7 @@ def test_database_down_on_rerun_shows_login_unavailable(login_env: LoginEnv) -> 
     assert "hello" not in text(at)
 
 
-def test_role_comes_only_from_databaselogin_row(login_env: LoginEnv) -> None:
+def test_role_comes_only_from_database_row(login_env: LoginEnv) -> None:
     login_env.jar[COOKIE] = make_token("user@x.com|3", role="admin")
     at = AppTest.from_function(auth_script)
     at.query_params["role"] = "admin"

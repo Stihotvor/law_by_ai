@@ -6,11 +6,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from factories.auth import (
-    LoginEnv,
-    login,
-    login_form_shown,
-)
+from auth_page_driver import login, login_form_shown
+from factories.auth import LoginEnv
 from streamlit.testing.v1 import AppTest
 
 APP = str(Path(__file__).resolve().parents[3] / "src" / "ui" / "app.py")

@@ -14,13 +14,13 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from factories.auth import Stopped, login_row
+from factories.auth import SESSION_VERSION, Stopped, login_row
 
 from core.security.principal import RequestPrincipal, get_principal
 from ui.components import auth
 
 ADMIN_EMAIL = "admin@x.com"
-VERSION = 3
+VERSION = SESSION_VERSION
 ADMIN_REQUIRED = "Admin role required."
 _MISSING = object()
 

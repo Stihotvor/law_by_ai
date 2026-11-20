@@ -8,17 +8,8 @@ from unittest.mock import patch
 import jwt
 import pytest
 import streamlit as st
-from factories.auth import (
-    COOKIE,
-    KEY,
-    LoginEnv,
-    login,
-    login_form_shown,
-    login_row,
-    make_token,
-    open_page,
-    text,
-)
+from auth_page_driver import login, login_form_shown, open_page, text
+from factories.auth import COOKIE, KEY, LoginEnv, login_row, make_token
 from freezegun import freeze_time
 from streamlit.testing.v1 import AppTest
 
