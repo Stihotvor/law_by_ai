@@ -206,6 +206,19 @@ def test_inactive_admin_target_is_a_noop(store_with: MakeStore) -> None:
     assert sessions[0].committed
 
 
+@pytest.mark.parametrize("locked", [[], [ACTOR], ["admin-9"]])
+def test_inactive_admin_target_never_raises_last_admin(
+    store_with: MakeStore, locked: list[str]
+) -> None:
+    """An inactive admin target is outside the locked set: ``False`` even with one row or fewer."""
+    store, sessions = store_with(results=[["admin"], locked, []])
+
+    assert _deactivate(store, "u-inactive") is False
+
+    assert sessions[0].committed
+    assert not sessions[0].rolled_back
+
+
 # --- user target --------------------------------------------------------------
 
 

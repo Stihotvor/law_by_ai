@@ -8,11 +8,10 @@ if PostgreSQL is unreachable.
 from __future__ import annotations
 
 import threading
-import uuid
-from collections.abc import Callable, Iterator
-from typing import Any
+from collections.abc import Iterator
 
 import pytest
+from users_helpers import OwnerSql, app_store, insert_id
 
 from core.security import PrincipalRequiredError, tenant_context
 from core.users.errors import LastAdminError, SelfDeactivationError, UserNotFoundError
@@ -22,28 +21,14 @@ pytestmark = pytest.mark.integration
 
 TENANT_A = "store-deact-a"
 TENANT_B = "store-deact-b"
-HASH = "$2b$12$abcdefghijklmnopqrstuuMlUrPIN6lFpvSu7Nvt3d3PZ7QvYb9W2"
 MISSING_ID = "00000000-0000-4000-8000-000000000000"
-OwnerSql = Callable[..., list[Any]]
 
 
 @pytest.fixture
 def store(postgres_url: str, owner_sql: OwnerSql) -> Iterator[PostgreSQLStore]:
     """Real store as the app role; the owner deletes the rows of both test tenants."""
-    for tenant in (TENANT_A, TENANT_B):
-        owner_sql(tenant, "DELETE FROM users WHERE tenant_id = :t", t=tenant)
-    s = PostgreSQLStore()
-    s.initialize()
-    yield s
-    s.close()
-    for tenant in (TENANT_A, TENANT_B):
-        owner_sql(tenant, "DELETE FROM users WHERE tenant_id = :t", t=tenant)
-
-
-def _insert(store: PostgreSQLStore, tenant: str, role: str = "user") -> str:
-    email = f"{role}-{uuid.uuid4().hex[:12]}@x.pl"
-    with tenant_context(tenant):
-        return store.insert_user(email=email, password_hash=HASH, role=role, name="N")["id"]
+    with app_store(owner_sql, (TENANT_A, TENANT_B)) as s:
+        yield s
 
 
 def _state(owner_sql: OwnerSql, tenant: str, user_id: str) -> tuple[bool, int]:
@@ -64,8 +49,8 @@ def _deactivate(store: PostgreSQLStore, tenant: str | None, user_id: str, actor_
 
 def test_foreign_or_unknown_id_is_not_found(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
     """Scenario: Foreign or unknown id (QA-022, QA-023)."""
-    admin = _insert(store, TENANT_A, "admin")
-    foreign = _insert(store, TENANT_B, "user")
+    admin = insert_id(store, TENANT_A, "admin")
+    foreign = insert_id(store, TENANT_B, "user")
     before = _state(owner_sql, TENANT_B, foreign)
 
     with pytest.raises(UserNotFoundError) as foreign_err:
@@ -79,8 +64,8 @@ def test_foreign_or_unknown_id_is_not_found(store: PostgreSQLStore, owner_sql: O
 
 def test_already_inactive_is_noop_without_bump(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
     """Scenario: Already inactive target (QA-021)."""
-    admin = _insert(store, TENANT_A, "admin")
-    user = _insert(store, TENANT_A, "user")
+    admin = insert_id(store, TENANT_A, "admin")
+    user = insert_id(store, TENANT_A, "user")
     assert _deactivate(store, TENANT_A, user, admin) is True
     _, version = _state(owner_sql, TENANT_A, user)
 
@@ -91,8 +76,8 @@ def test_already_inactive_is_noop_without_bump(store: PostgreSQLStore, owner_sql
 
 def test_deactivate_changes_session_version(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
     """Scenario: Old cookie fails."""
-    admin = _insert(store, TENANT_A, "admin")
-    user = _insert(store, TENANT_A, "user")
+    admin = insert_id(store, TENANT_A, "admin")
+    user = insert_id(store, TENANT_A, "user")
     _, version = _state(owner_sql, TENANT_A, user)
 
     assert _deactivate(store, TENANT_A, user, admin) is True
@@ -102,16 +87,22 @@ def test_deactivate_changes_session_version(store: PostgreSQLStore, owner_sql: O
     assert new_version != version
 
 
-def test_self_then_last_admin(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
-    """Scenario: Self and last admin (QA-024, QA-026, QA-027)."""
-    admin1 = _insert(store, TENANT_A, "admin")
+def test_self_deactivation_is_refused(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
+    """Scenario: Self and last admin, self part (QA-024, QA-026): self is checked first."""
+    admin = insert_id(store, TENANT_A, "admin")
 
     with pytest.raises(SelfDeactivationError):
-        _deactivate(store, TENANT_A, admin1, admin1)
-    assert _state(owner_sql, TENANT_A, admin1)[0] is True
+        _deactivate(store, TENANT_A, admin, admin)
 
-    admin2 = _insert(store, TENANT_A, "admin")
+    assert _state(owner_sql, TENANT_A, admin)[0] is True
+
+
+def test_last_admin_is_refused(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
+    """Scenario: Self and last admin, last admin part (QA-027)."""
+    admin1 = insert_id(store, TENANT_A, "admin")
+    admin2 = insert_id(store, TENANT_A, "admin")
     assert _deactivate(store, TENANT_A, admin2, admin1) is True
+
     with pytest.raises(LastAdminError):
         _deactivate(store, TENANT_A, admin1, admin2)
 
@@ -121,8 +112,8 @@ def test_self_then_last_admin(store: PostgreSQLStore, owner_sql: OwnerSql) -> No
 
 def test_two_sessions_race_keeps_one_admin(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
     """Scenario: Two sessions race (QA-025, QA-028)."""
-    admin1 = _insert(store, TENANT_A, "admin")
-    admin2 = _insert(store, TENANT_A, "admin")
+    admin1 = insert_id(store, TENANT_A, "admin")
+    admin2 = insert_id(store, TENANT_A, "admin")
     barrier = threading.Barrier(2)
     outcomes: list[object] = []
 
@@ -148,14 +139,16 @@ def test_two_sessions_race_keeps_one_admin(store: PostgreSQLStore, owner_sql: Ow
     assert _active_admins(owner_sql, TENANT_A) == 1
 
 
-def test_no_tenant_changes_nothing(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
+@pytest.mark.parametrize("tenant", [None, ""])
+def test_no_tenant_changes_nothing(
+    store: PostgreSQLStore, owner_sql: OwnerSql, tenant: str | None
+) -> None:
     """Scenario: No tenant set."""
-    admin = _insert(store, TENANT_A, "admin")
-    user = _insert(store, TENANT_A, "user")
+    admin = insert_id(store, TENANT_A, "admin")
+    user = insert_id(store, TENANT_A, "user")
     before = _state(owner_sql, TENANT_A, user)
 
-    for tenant in (None, ""):
-        with pytest.raises(PrincipalRequiredError):
-            _deactivate(store, tenant, user, admin)
+    with pytest.raises(PrincipalRequiredError):
+        _deactivate(store, tenant, user, admin)
 
     assert _state(owner_sql, TENANT_A, user) == before

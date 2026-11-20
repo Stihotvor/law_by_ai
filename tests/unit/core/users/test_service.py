@@ -15,6 +15,7 @@ from core.security import (
     principal_context,
     tenant_context,
 )
+from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
 from core.users import (
     LastAdminError,
     SelfDeactivationError,
@@ -26,6 +27,7 @@ from core.users import (
 
 TENANT = "t1"
 GOOD_PASSWORD = "correct-horse-1"  # noqa: S105
+SHORT_PASSWORD = "short-pw"  # noqa: S105
 
 
 def _record(user_id: str, email: str, role: str = "user") -> UserRecord:
@@ -186,7 +188,6 @@ def test_invalid_input_refused(
         {"name": "n" * 256},
         {"password": "p" * 12},
         {"password": "ą" * 36},
-        {"role": "admin"},
     ],
 )
 @pytest.mark.usefixtures("as_admin")
@@ -195,6 +196,12 @@ def test_limits_are_inclusive(
 ) -> None:
     _create(service, **overrides)
     assert len(repo.writes) == 1
+
+
+@pytest.mark.usefixtures("as_admin")
+def test_admin_role_is_accepted(service: UserService, repo: FakeRepo) -> None:
+    _create(service, role="admin")
+    assert repo.writes[0][1]["role"] == "admin"
 
 
 # Scenario: Email is normalised
@@ -247,26 +254,47 @@ def test_list_users_returns_port_records(service: UserService, repo: FakeRepo) -
 
 
 # Scenario: Logs and audit
-def _audit(records: list[logging.LogRecord], action: str) -> logging.LogRecord:
-    return next(r for r in records if getattr(r, "action", None) == action)
+_EXTRA_KEYS = ("actor_id", "target_id", "action", "changed", "error")
+
+
+def _extras(record: logging.LogRecord) -> dict[str, Any]:
+    """Return the ``extra`` fields of *record* that the service sets."""
+    return {key: record.__dict__[key] for key in _EXTRA_KEYS if key in record.__dict__}
+
+
+def _with_action(records: list[logging.LogRecord], action: str) -> list[dict[str, Any]]:
+    return [_extras(r) for r in records if _extras(r).get("action") == action]
+
+
+def _dumped(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [repr(r.__dict__) + r.getMessage() for r in caplog.records]
 
 
 @pytest.mark.usefixtures("as_admin")
-def test_logs_hold_audit_and_no_secrets(
+def test_logs_hold_no_password_or_hash(
+    service: UserService, repo: FakeRepo, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.DEBUG)
+    _create(service)
+    service.deactivate_user("U2")
+    password_hash = repo.writes[0][1]["password_hash"]
+    assert not any(GOOD_PASSWORD in t or password_hash in t for t in _dumped(caplog))
+
+
+@pytest.mark.usefixtures("as_admin")
+def test_audit_holds_actor_target_and_change(
     service: UserService, repo: FakeRepo, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level(logging.DEBUG)
     _create(service)
     repo.deactivate_result = False
     service.deactivate_user("U2")
-    password_hash = repo.writes[0][1]["password_hash"]
-    dumped = [repr(r.__dict__) + r.getMessage() for r in caplog.records]
-    assert not any(GOOD_PASSWORD in text or password_hash in text for text in dumped)
-    created = _audit(caplog.records, "create_user")
-    assert (created.actor_id, created.target_id) == ("A1", "U9")  # type: ignore[attr-defined]
-    deactivated = _audit(caplog.records, "deactivate_user")
-    assert (deactivated.actor_id, deactivated.target_id) == ("A1", "U2")  # type: ignore[attr-defined]
-    assert deactivated.changed is False  # type: ignore[attr-defined]
+    assert _with_action(caplog.records, "create_user") == [
+        {"actor_id": "A1", "target_id": "U9", "action": "create_user", "changed": True}
+    ]
+    assert _with_action(caplog.records, "deactivate_user") == [
+        {"actor_id": "A1", "target_id": "U2", "action": "deactivate_user", "changed": False}
+    ]
 
 
 @pytest.mark.usefixtures("as_admin")
@@ -277,4 +305,60 @@ def test_failed_deactivate_emits_no_audit(
     repo.deactivate_result = LastAdminError("x")
     with pytest.raises(LastAdminError):
         service.deactivate_user("U2")
-    assert not [r for r in caplog.records if hasattr(r, "action")]
+    assert not [r for r in caplog.records if "target_id" in r.__dict__]
+
+
+# Scenario: Refusals are logged
+def _refusals(caplog: pytest.LogCaptureFixture) -> list[dict[str, Any]]:
+    return [_extras(r) for r in caplog.records if r.levelno == logging.WARNING]
+
+
+@pytest.mark.parametrize(
+    "error", [UserNotFoundError, SelfDeactivationError, LastAdminError, PrincipalRequiredError]
+)
+@pytest.mark.usefixtures("as_admin")
+def test_port_refusal_is_logged_with_actor(
+    service: UserService, repo: FakeRepo, caplog: pytest.LogCaptureFixture, error: type[Exception]
+) -> None:
+    repo.deactivate_result = error("detail-U2")
+    with pytest.raises(error):
+        service.deactivate_user("U2")
+    assert _refusals(caplog) == [
+        {"actor_id": "A1", "action": "deactivate_user", "error": error.__name__}
+    ]
+    assert not any("detail-U2" in text for text in _dumped(caplog))
+
+
+def test_principal_refusal_is_logged_without_actor(
+    service: UserService, caplog: pytest.LogCaptureFixture
+) -> None:
+    with (
+        tenant_context(TENANT),
+        principal_context(RequestPrincipal("a@x.pl", "user")),
+        pytest.raises(PrincipalRequiredError),
+    ):
+        _create(service)
+    assert _refusals(caplog) == [
+        {"actor_id": None, "action": "create_user", "error": "PrincipalRequiredError"}
+    ]
+
+
+@pytest.mark.usefixtures("as_admin")
+def test_create_refusal_log_holds_no_email_or_password(
+    service: UserService, caplog: pytest.LogCaptureFixture
+) -> None:
+    with pytest.raises(UserCreateRefusedError):
+        _create(service, email="secret-mail@x.pl", password=SHORT_PASSWORD)
+    assert _refusals(caplog) == [
+        {"actor_id": "A1", "action": "create_user", "error": "UserCreateRefusedError"}
+    ]
+    dumped = _dumped(caplog)
+    assert not any("secret-mail" in t or SHORT_PASSWORD in t for t in dumped)
+
+
+@pytest.mark.usefixtures("as_admin")
+def test_password_rule_names_the_limits(service: UserService) -> None:
+    with pytest.raises(UserCreateRefusedError) as caught:
+        _create(service, password=SHORT_PASSWORD)
+    assert str(MIN_PASSWORD_CHARS) in str(caught.value)
+    assert str(MAX_PASSWORD_BYTES) in str(caught.value)

@@ -5,7 +5,7 @@
 
 
 class UserCreateRefusedError(Exception):
-    """Raised when a new user cannot be created (duplicate email)."""
+    """Raised when a new user is rejected: duplicate email or invalid input."""
 
 
 class UserNotFoundError(Exception):

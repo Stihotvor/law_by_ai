@@ -7,6 +7,7 @@ never an argument. Logs never hold a password or a password hash.
 from __future__ import annotations
 
 import logging
+from types import TracebackType
 
 from core.security import (
     PrincipalRequiredError,
@@ -18,13 +19,30 @@ from core.security import (
 from core.security.login_throttle import normalise_email
 from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
 
-from .errors import UserCreateRefusedError
+from .errors import (
+    LastAdminError,
+    SelfDeactivationError,
+    UserCreateRefusedError,
+    UserNotFoundError,
+)
 from .ports import UserRecord, UserRepository
 
 _log = logging.getLogger(__name__)
 
 MAX_EMAIL_CHARS = 256
 MAX_NAME_CHARS = 256
+PASSWORD_RULE = (
+    f"password needs {MIN_PASSWORD_CHARS} or more characters "
+    f"and {MAX_PASSWORD_BYTES} or fewer bytes"
+)
+# Known refusals: logged at WARNING with the actor id, the action and the class name.
+_REFUSALS: tuple[type[Exception], ...] = (
+    PrincipalRequiredError,
+    LastAdminError,
+    SelfDeactivationError,
+    UserCreateRefusedError,
+    UserNotFoundError,
+)
 
 
 def _check_email(email: str) -> None:
@@ -34,7 +52,7 @@ def _check_email(email: str) -> None:
 
 def _check_password(password: str) -> None:
     if len(password) < MIN_PASSWORD_CHARS or len(password.encode()) > MAX_PASSWORD_BYTES:
-        raise UserCreateRefusedError("password needs 12 or more characters and 72 or fewer bytes")
+        raise UserCreateRefusedError(PASSWORD_RULE)
 
 
 def _check_input(email: str, password: str, role: str, name: str) -> None:
@@ -44,6 +62,33 @@ def _check_input(email: str, password: str, role: str, name: str) -> None:
     if not valid_role(role):
         raise UserCreateRefusedError("role is not valid")
     _check_password(password)
+
+
+class _RefusalLog:
+    """Log a known refusal raised inside the block; never the message or the input."""
+
+    def __init__(self, action: str) -> None:
+        self.action = action
+        self.actor_id: str | None = None
+
+    def __enter__(self) -> _RefusalLog:
+        return self
+
+    def __exit__(
+        self,
+        kind: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        if kind is None or not issubclass(kind, _REFUSALS):
+            return
+        _log.warning(
+            "user action refused action=%s error=%s actor_id=%s",
+            self.action,
+            kind.__name__,
+            self.actor_id,
+            extra={"actor_id": self.actor_id, "action": self.action, "error": kind.__name__},
+        )
 
 
 class UserService:
@@ -68,13 +113,17 @@ class UserService:
         Raises:
             PrincipalRequiredError: no tenant, or the caller is not an active admin.
             UserCreateRefusedError: invalid input or a taken email.
+
+        Known refusals are logged at WARNING before they propagate.
         """
-        actor = self._actor()
-        email = normalise_email(email)
-        _check_input(email, password, role, name)
-        record = self._repo.insert_user(
-            email=email, password_hash=hash_password(password), role=role, name=name
-        )
+        with _RefusalLog("create_user") as refusal:
+            actor = self._actor()
+            refusal.actor_id = actor["id"]
+            email = normalise_email(email)
+            _check_input(email, password, role, name)
+            record = self._repo.insert_user(
+                email=email, password_hash=hash_password(password), role=role, name=name
+            )
         _audit(actor["id"], record["id"], "create_user", changed=True)
         return record
 
@@ -82,15 +131,19 @@ class UserService:
         """Deactivate *user_id*; return ``True`` if the row changed.
 
         Port errors (not found, self, last admin) propagate unchanged.
+        Known refusals are logged at WARNING before they propagate.
         """
-        actor = self._actor()
-        changed = self._repo.deactivate_user(user_id, actor_id=actor["id"])
+        with _RefusalLog("deactivate_user") as refusal:
+            actor = self._actor()
+            refusal.actor_id = actor["id"]
+            changed = self._repo.deactivate_user(user_id, actor_id=actor["id"])
         _audit(actor["id"], user_id, "deactivate_user", changed=changed)
         return changed
 
     def list_users(self) -> list[UserRecord]:
         """Return the users of the current tenant (no password hashes)."""
-        self._actor()
+        with _RefusalLog("list_users"):
+            self._actor()
         return self._repo.list_users()
 
 

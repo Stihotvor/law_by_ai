@@ -48,6 +48,8 @@ class UserRepository(Protocol):
             PrincipalRequiredError: no tenant is set (before any SQL).
             UserNotFoundError: the id is missing or in another tenant.
             SelfDeactivationError: ``user_id == actor_id``.
-            LastAdminError: the locked admin set has one row or fewer.
+            LastAdminError: the target is an admin and the locked active-admin set
+                holds the target and has one row or fewer.
+        An already inactive target is not in the locked set, so it returns ``False``.
         """
         ...

@@ -1,7 +1,8 @@
 """Streamlit users page: admin guard, create form, user table and deactivate action.
 
 No database: ``core.users.UserService`` is replaced with a fake service and
-``ui.components.auth._store`` with a sentinel, so no ``PostgreSQLStore`` is built.
+``ui.components.auth._store`` (behind ``get_store``) with a sentinel, so no
+``PostgreSQLStore`` is built.
 """
 
 from __future__ import annotations
@@ -14,10 +15,12 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+import streamlit as st
 from sqlalchemy.exc import OperationalError
 from streamlit.testing.v1 import AppTest
 
 from core.security import PrincipalRequiredError
+from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
 from core.users import (
     LastAdminError,
     SelfDeactivationError,
@@ -105,13 +108,17 @@ def _page(role: str | None = "admin") -> AppTest:
     return at.run()
 
 
-def _create(at: AppTest, email: str = "new@x.com", role: str = "user") -> AppTest:
+def _fill(at: AppTest, email: str = "new@x.com", role: str = "user") -> AppTest:
     at.text_input(key="new_user_email").input(email)
     at.text_input(key="new_user_name").input("New")
     at.selectbox(key="new_user_role").select(role)
     at.text_input(key=PW_KEY).input(PASSWORD)
     next(b for b in at.button if b.label == "Create user").click()
-    return at.run()
+    return at
+
+
+def _create(at: AppTest, email: str = "new@x.com", role: str = "user") -> AppTest:
+    return _fill(at, email, role).run()
 
 
 def _deactivate(at: AppTest, user_id: str) -> AppTest:
@@ -141,6 +148,24 @@ def test_non_admin_sees_admin_required_and_service_is_not_called(role: str | Non
     store.assert_not_called()
     assert len(at.button) == 0
     assert len(at.text_input) == 0
+
+
+def test_demoted_session_cannot_create(service: FakeService) -> None:
+    """The action runs after ``require_admin``: a session demoted before submit is stopped."""
+    at = _fill(_page())
+    at.session_state["user"] = {"role": "user"}
+    at = at.run()
+    assert service.created == []
+    assert [w.value for w in at.warning] == [ADMIN_REQUIRED]
+
+
+def test_demoted_session_cannot_deactivate(service: FakeService) -> None:
+    at = _page()
+    at.button(key="deactivate_u-2").click()
+    at.session_state["user"] = {"role": "user"}
+    at = at.run()
+    assert service.deactivated == []
+    assert [w.value for w in at.warning] == [ADMIN_REQUIRED]
 
 
 # --- list -----------------------------------------------------------------------
@@ -215,6 +240,19 @@ def test_password_is_cleared_and_never_shown(service: FakeService, error: Except
     assert PASSWORD not in _all_text(at)
 
 
+def test_password_is_cleared_for_the_next_submit(service: FakeService) -> None:
+    at = _create(_page())
+    next(b for b in at.button if b.label == "Create user").click()
+    at.run()
+    assert service.created[-1][1] == ""
+
+
+def test_password_help_names_the_limits(service: FakeService) -> None:
+    help_text = str(_page().text_input(key=PW_KEY).help)
+    assert str(MIN_PASSWORD_CHARS) in help_text
+    assert str(MAX_PASSWORD_BYTES) in help_text
+
+
 def test_duplicate_email_shows_fixed_message(service: FakeService) -> None:
     service.create_error = UserCreateRefusedError("email taken in tenant t-1")
     at = _create(_page())
@@ -252,7 +290,7 @@ def test_deactivate_calls_service_with_row_id(service: FakeService) -> None:
         (SelfDeactivationError("u-2"), "You cannot deactivate yourself."),
         (LastAdminError("t-1"), "Cannot deactivate the last admin."),
         (PrincipalRequiredError("no tenant is set"), ADMIN_REQUIRED),
-        (RuntimeError("UPDATE users raw detail"), DB_ERROR),
+        (OperationalError("UPDATE users raw detail", {}, Exception("boom")), DB_ERROR),
     ],
 )
 def test_deactivate_errors_show_fixed_messages(
@@ -264,6 +302,26 @@ def test_deactivate_errors_show_fixed_messages(
     assert [e.value for e in at.error] == [message]
     assert str(error) not in _all_text(at)
     assert "Traceback" not in _all_text(at)
+
+
+def test_db_error_logs_only_the_class_name(
+    service: FakeService, caplog: pytest.LogCaptureFixture
+) -> None:
+    service.create_error = OperationalError(
+        "INSERT INTO users (password_hash) VALUES (%(h)s)", {"h": HASH}, Exception("boom")
+    )
+    _create(_page())
+    logged = " ".join(r.getMessage() for r in caplog.records)
+    assert "OperationalError" in logged
+    assert "INSERT" not in logged
+    assert HASH not in logged
+
+
+def test_unexpected_error_is_not_mapped(service: FakeService) -> None:
+    service.deactivate_error = RuntimeError("bug")
+    at = _deactivate(_page(), "u-2")
+    assert at.exception
+    assert DB_ERROR not in _all_text(at)
 
 
 # --- registration in app.py -----------------------------------------------------
@@ -290,8 +348,14 @@ def test_admin_has_users_page(service: FakeService) -> None:
 
 
 def test_user_has_no_users_page(service: FakeService) -> None:
-    with _app("user") as at:
+    titles: list[str] = []
+    real = st.navigation
+
+    def spy(pages: list[Any], **kwargs: Any) -> Any:
+        titles.extend(page.title for page in pages)
+        return real(pages, **kwargs)
+
+    with patch("streamlit.navigation", spy), _app("user") as at:
         assert not at.exception
-        with pytest.raises(ValueError, match=r"Known pages: \['Home'\]"):
-            at.switch_page("pages/users.py")
+    assert titles == ["Home"]
     assert service.repos == []

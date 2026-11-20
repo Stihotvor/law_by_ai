@@ -12,7 +12,6 @@ Skipped if PostgreSQL is unreachable.
 from __future__ import annotations
 
 import time
-import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
@@ -22,6 +21,7 @@ import jwt
 import pytest
 from factories.auth import COOKIE, KEY, FakeCookie
 from streamlit.testing.v1 import AppTest
+from users_helpers import OwnerSql, app_store, count_email, unique_email
 
 from core.security import (
     PrincipalRequiredError,
@@ -41,7 +41,6 @@ TENANT_B = "user-service-b"
 SEED_PLAIN = "seed-password-1"
 NEW_PLAIN = "correct-horse-12"
 MAX_SECONDS = 1.0
-OwnerSql = Callable[..., list[Any]]
 
 
 class _OpenThrottle:
@@ -57,11 +56,6 @@ class _OpenThrottle:
         return None
 
 
-def _clean(owner_sql: OwnerSql) -> None:
-    for tenant in (TENANT_A, TENANT_B):
-        owner_sql(tenant, "DELETE FROM users WHERE tenant_id = :t", t=tenant)
-
-
 @pytest.fixture
 def store(
     postgres_url: str, owner_sql: OwnerSql, monkeypatch: pytest.MonkeyPatch
@@ -72,18 +66,14 @@ def store(
     monkeypatch.delenv("AUTH_COOKIE_EXPIRY_DAYS", raising=False)
     monkeypatch.setenv("BCRYPT_ROUNDS", "4")
     FakeCookie.reset()
-    _clean(owner_sql)
-    s = PostgreSQLStore()
-    s.initialize()
     with (
+        app_store(owner_sql, (TENANT_A, TENANT_B)) as s,
         patch.object(auth, "_store", lambda: s),
         patch.object(auth, "CookieModel", FakeCookie),
         patch.object(auth, "_cookie_sent", lambda name: name in FakeCookie.jar),
         patch.object(auth, "_throttle", lambda: _OpenThrottle()),
     ):
         yield s
-    s.close()
-    _clean(owner_sql)
 
 
 @pytest.fixture
@@ -92,7 +82,7 @@ def service(store: PostgreSQLStore) -> UserService:
 
 
 def _email(prefix: str) -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:12]}@example.com"
+    return unique_email(prefix, "example.com")
 
 
 def _seed(store: PostgreSQLStore, tenant: str, role: str) -> tuple[str, str]:
@@ -118,11 +108,6 @@ def _rows(owner_sql: OwnerSql, tenant: str) -> list[tuple[Any, ...]]:
         "FROM users WHERE tenant_id = :t ORDER BY id"
     )
     return [tuple(r) for r in owner_sql(tenant, sql, t=tenant)]
-
-
-def _count(owner_sql: OwnerSql, tenant: str, email: str) -> int:
-    rows = owner_sql(tenant, "SELECT count(*) FROM users WHERE email = :e", e=email)
-    return int(rows[0][0])
 
 
 # --- login through the real auth adapter ------------------------------------
@@ -212,7 +197,7 @@ def test_role_outside_valid_roles_is_refused(
         service.create_user(email, NEW_PLAIN, "superadmin", "Escalate")
 
     for tenant in (TENANT_A, TENANT_B):
-        assert _count(owner_sql, tenant, email) == 0
+        assert count_email(owner_sql, tenant, email) == 0
     assert store.get_login_user(email) is None
 
 

@@ -1,8 +1,12 @@
 """Users page: an admin lists, creates and deactivates users of the current tenant.
 
 The page is a thin layer over ``UserService``. The tenant comes from the login
-context, never from a form field. Every error maps to a fixed message; raw error
-text, stack traces, passwords and password hashes are never shown.
+context, never from a form field. Every known error maps to a fixed message; raw
+error text, stack traces, passwords and password hashes are never shown.
+
+Actions run in the script body after ``require_admin``, never in widget
+callbacks: Streamlit runs callbacks before the script, so a callback would skip
+the auth checks of this rerun.
 """
 
 from __future__ import annotations
@@ -12,8 +16,10 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 import streamlit as st
+from sqlalchemy.exc import SQLAlchemyError
 
 from core.security import PrincipalRequiredError
+from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
 from core.users import (
     LastAdminError,
     SelfDeactivationError,
@@ -21,7 +27,7 @@ from core.users import (
     UserNotFoundError,
     UserService,
 )
-from ui.components.auth import _store, require_admin
+from ui.components.auth import get_store, require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +35,10 @@ EMAIL_KEY = "new_user_email"
 NAME_KEY = "new_user_name"
 ROLE_KEY = "new_user_role"
 INITIAL_CRED_KEY = "new_user_initial_cred"
+CLEAR_CRED_KEY = "users_clear_initial_cred"
 FLASH_KEY = "users_flash"
 ROLES = ("user", "admin")
+_PASSWORD_HELP = f"At least {MIN_PASSWORD_CHARS} characters and at most {MAX_PASSWORD_BYTES} bytes."
 _DB_ERROR = "Database error. Try again later."
 _MESSAGES: dict[type[Exception], str] = {
     UserCreateRefusedError: "Cannot create this user.",
@@ -39,16 +47,18 @@ _MESSAGES: dict[type[Exception], str] = {
     LastAdminError: "Cannot deactivate the last admin.",
     PrincipalRequiredError: "Admin role required.",
 }
+# Errors shown as a fixed message; any other error propagates.
+_HANDLED: tuple[type[Exception], ...] = (*_MESSAGES, SQLAlchemyError)
 _COLUMNS = ("Email", "Name", "Role", "Status", "")
 _WIDTHS = (3, 2, 1, 1, 1)
 
 
 def _service() -> UserService:
-    return UserService(_store())
+    return UserService(get_store())
 
 
 def _message(exc: Exception) -> str:
-    """Return the fixed message for *exc*; log only the class name of unknown errors."""
+    """Return the fixed message for *exc*; a DB error logs only its class name."""
     for kind, text in _MESSAGES.items():
         if isinstance(exc, kind):
             return text
@@ -57,26 +67,14 @@ def _message(exc: Exception) -> str:
 
 
 def _run(action: Callable[[], object], success: str) -> None:
-    """Run one service action and keep its outcome for the next render."""
+    """Run one service action, keep its outcome for the next render and rerun."""
     try:
         action()
-    except Exception as exc:  # every error maps to a fixed message
+    except _HANDLED as exc:
         st.session_state[FLASH_KEY] = ("error", _message(exc))
-        return
-    st.session_state[FLASH_KEY] = ("success", success)
-
-
-def _on_create() -> None:
-    """Form callback: create the user, then clear the password field."""
-    state = st.session_state
-    email, name = str(state.get(EMAIL_KEY, "")), str(state.get(NAME_KEY, ""))
-    role, password = str(state.get(ROLE_KEY, ROLES[0])), str(state.get(INITIAL_CRED_KEY, ""))
-    state[INITIAL_CRED_KEY] = ""
-    _run(lambda: _service().create_user(email, password, role, name), "User created.")
-
-
-def _on_deactivate(user_id: str) -> None:
-    _run(lambda: _service().deactivate_user(user_id), "User deactivated.")
+    else:
+        st.session_state[FLASH_KEY] = ("success", success)
+    st.rerun()
 
 
 def _show_flash() -> None:
@@ -88,14 +86,21 @@ def _show_flash() -> None:
 
 
 def _create_form() -> None:
+    """Show the create form; on submit create the user and clear the password."""
+    if st.session_state.pop(CLEAR_CRED_KEY, False):
+        st.session_state[INITIAL_CRED_KEY] = ""
     with st.form("create_user"):
-        st.text_input("Email", key=EMAIL_KEY)
-        st.text_input("Name", key=NAME_KEY)
-        st.selectbox("Role", ROLES, key=ROLE_KEY)
-        st.text_input(
-            "Password", type="password", key=INITIAL_CRED_KEY, help="At least 12 characters."
+        email = st.text_input("Email", key=EMAIL_KEY)
+        name = st.text_input("Name", key=NAME_KEY)
+        role = str(st.selectbox("Role", ROLES, key=ROLE_KEY))
+        password = st.text_input(
+            "Password", type="password", key=INITIAL_CRED_KEY, help=_PASSWORD_HELP
         )
-        st.form_submit_button("Create user", on_click=_on_create)
+        submitted = st.form_submit_button("Create user")
+    if not submitted:
+        return
+    st.session_state[CLEAR_CRED_KEY] = True
+    _run(lambda: _service().create_user(email, password, role, name), "User created.")
 
 
 def _row(user: Mapping[str, Any]) -> None:
@@ -106,17 +111,17 @@ def _row(user: Mapping[str, Any]) -> None:
     cells[1].text(str(user["name"]))
     cells[2].text(str(user["role"]))
     cells[3].text("active" if active else "inactive")
-    if active:
-        user_id = str(user["id"])
-        cells[4].button(
-            "Deactivate", key=f"deactivate_{user_id}", on_click=_on_deactivate, args=(user_id,)
-        )
+    if not active:
+        return
+    user_id = str(user["id"])
+    if cells[4].button("Deactivate", key=f"deactivate_{user_id}"):
+        _run(lambda: _service().deactivate_user(user_id), "User deactivated.")
 
 
 def _user_table() -> None:
     try:
         users = _service().list_users()
-    except Exception as exc:  # every error maps to a fixed message
+    except _HANDLED as exc:
         st.error(_message(exc))
         return
     for cell, title in zip(st.columns(_WIDTHS), _COLUMNS, strict=True):

@@ -34,8 +34,16 @@ __all__ = ["UserStoreMixin"]
 
 # Login lookup (SECURITY DEFINER): the login columns of one user in any tenant.
 _AUTH_LOOKUP_SQL = text("SELECT * FROM public.auth_lookup_user(:email)")
-_LOGIN_KEYS = ("id", "tenant_id", "email", "role", "name", "is_active")
-_LOGIN_KEYS += ("password_hash", "session_version")
+_LOGIN_KEYS = (
+    "id",
+    "tenant_id",
+    "email",
+    "role",
+    "name",
+    "is_active",
+    "password_hash",
+    "session_version",
+)
 # Only this (SQLSTATE, constraint) pair maps to UserCreateRefusedError.
 _DUPLICATE_EMAIL = ("23505", "uq_users_email")
 
@@ -131,7 +139,7 @@ class UserStoreMixin:
             user = User(
                 id=str(uuid.uuid4()),
                 tenant_id=tenant_id,
-                email=email.strip().lower(),
+                email=normalise_email(email),
                 password_hash=hash_password(password),
                 role=role,
                 name=name,
@@ -144,7 +152,7 @@ class UserStoreMixin:
     def get_user_by_email(self, email: str) -> dict[str, Any] | None:
         """Return the user for *email* in the current tenant; ``None`` with no tenant set."""
         self._ensure_initialized()
-        stmt = select(User).where(User.email == email.strip().lower())
+        stmt = select(User).where(User.email == normalise_email(email))
         with Session(self._engine) as session:
             row = session.execute(stmt).scalar_one_or_none()
             return _user_to_dict(row) if row is not None else None
@@ -198,6 +206,7 @@ class UserStoreMixin:
 
     def list_users(self) -> list[UserRecord]:
         """Users of the current tenant ordered by email; ``[]`` with no tenant set."""
+        # Reads return empty (no raise): with no tenant, RLS would show no rows anyway.
         tenant = get_current_tenant()
         if not tenant:
             return []
@@ -211,6 +220,7 @@ class UserStoreMixin:
 
         Returns ``None`` with no tenant set and runs no SQL.
         """
+        # Reads return empty (no raise): with no tenant, RLS would show no rows anyway.
         tenant = get_current_tenant()
         if not tenant:
             return None
