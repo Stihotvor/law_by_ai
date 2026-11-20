@@ -22,6 +22,8 @@ from config.settings import OWNER_ROLE, get_settings
 from factories.db_probe import is_unreachable
 
 TENANT_SQL = "SELECT set_config('app.current_tenant', :tenant, true)"
+# Owner maintenance skips trg_users_last_admin; the trigger ignores it for any other role.
+SKIP_LAST_ADMIN_SQL = "SELECT set_config('app.skip_last_admin_check', 'on', true)"
 # lawbyai_auth must own auth_lookup_user; docker/initdb/00-roles.sh grants this
 # on the main database only. The scratch database owner grants it itself.
 AUTH_SCHEMA_GRANT = "GRANT CREATE, USAGE ON SCHEMA public TO lawbyai_auth"
@@ -42,6 +44,7 @@ def tenant_sql(url: str, tenant: str, sql: str, **params: Any) -> list[Row[Any]]
     try:
         with engine.begin() as conn:
             conn.execute(text(TENANT_SQL), {"tenant": tenant})
+            conn.execute(text(SKIP_LAST_ADMIN_SQL))
             result = conn.execute(text(sql), params)
             return list(result.all()) if result.returns_rows else []
     finally:

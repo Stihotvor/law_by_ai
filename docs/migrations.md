@@ -199,3 +199,15 @@ COMMIT;
 The block runs in one transaction. If a statement fails, no change stays.
 If the database has more objects that the superuser owns, change their owner
 in the same way before you run the migration.
+
+## Last-admin trigger and the admin audit table
+
+Revision `c4a91e7f2b58` adds `trg_users_last_admin` on `users`. It refuses a change
+that leaves a tenant with no active admin (SQLSTATE 23514, constraint name
+`trg_users_last_admin`). The owner `lawbyai_owner` can skip it for maintenance
+with `SET LOCAL app.skip_last_admin_check = 'on'`. The trigger ignores this setting
+for every other role.
+
+The same revision adds `admin_action_audit`, an append-only log. `lawbyai_app` has
+only SELECT and INSERT. The downgrade stops while the table holds rows. Export the
+rows, purge them as the owner, then run the downgrade again.
