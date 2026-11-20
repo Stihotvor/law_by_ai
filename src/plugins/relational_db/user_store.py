@@ -18,7 +18,12 @@ from sqlalchemy.orm import Session
 
 from core.security import PrincipalRequiredError, get_current_tenant, hash_password
 from core.security.login_throttle import normalise_email
-from core.users.errors import UserCreateRefusedError
+from core.users.errors import (
+    LastAdminError,
+    SelfDeactivationError,
+    UserCreateRefusedError,
+    UserNotFoundError,
+)
 from core.users.ports import UserRecord
 from plugins.relational_db.mappers import tenant_to_dict as _tenant_to_dict
 from plugins.relational_db.mappers import user_to_dict as _user_to_dict
@@ -48,6 +53,49 @@ def _require_tenant() -> str:
     if not tenant:
         raise PrincipalRequiredError("A tenant is required.")
     return tenant
+
+
+def _read_target_role(session: Session, user_id: str, tenant: str) -> str:
+    """Target role by a non-locking read under RLS; missing or foreign -> ``UserNotFoundError``."""
+    stmt = select(User.role).where(User.id == user_id, User.tenant_id == tenant)
+    role = session.execute(stmt).scalar_one_or_none()
+    if role is None:
+        raise UserNotFoundError("The user was not found.")
+    return role
+
+
+def _lock_admins_or_refuse(session: Session, user_id: str, tenant: str) -> None:
+    """Lock the tenant's active admins in id order; refuse removing the last one.
+
+    No ``LIMIT`` and no ``SKIP LOCKED``: two racing sessions queue on the same set.
+    """
+    stmt = (
+        select(User.id)
+        .where(User.tenant_id == tenant, User.role == "admin", User.is_active)
+        .order_by(User.id)
+        .with_for_update()
+    )
+    locked = list(session.execute(stmt).scalars().all())
+    if len(locked) <= 1 and user_id in locked:
+        raise LastAdminError("The last active admin cannot be deactivated.")
+
+
+def _lock_target(session: Session, user_id: str, tenant: str) -> None:
+    """Lock only the target row (role ``user``)."""
+    stmt = select(User.id).where(User.id == user_id, User.tenant_id == tenant).with_for_update()
+    session.execute(stmt)
+
+
+def _set_inactive(session: Session, user_id: str, tenant: str) -> bool:
+    """Flip ``is_active`` off; True when one row changed (the trigger bumps session_version)."""
+    stmt = (
+        update(User)
+        .where(User.id == user_id, User.tenant_id == tenant, User.is_active)
+        .values(is_active=False)
+        .returning(User.id)
+        .execution_options(synchronize_session=False)
+    )
+    return session.execute(stmt).scalar_one_or_none() is not None
 
 
 class UserStoreMixin:
@@ -173,6 +221,27 @@ class UserStoreMixin:
         with Session(self._engine) as session:
             row = session.execute(stmt).scalar_one_or_none()
             return _user_to_record(row) if row is not None else None
+
+    def deactivate_user(self, user_id: str, *, actor_id: str) -> bool:
+        """Deactivate *user_id* in the current tenant in one transaction.
+
+        Check order: ``PrincipalRequiredError`` with no tenant (before any SQL),
+        ``UserNotFoundError`` for a missing or foreign id, ``SelfDeactivationError``
+        when ``user_id == actor_id``, ``LastAdminError`` when the locked active-admin
+        set has one row or fewer and holds the target. Returns ``True`` when one row
+        changed and ``False`` for an already inactive target. Rolls back on every error.
+        """
+        tenant = _require_tenant()
+        self._ensure_initialized()
+        with Session(self._engine) as session, session.begin():
+            role = _read_target_role(session, user_id, tenant)
+            if user_id == actor_id:
+                raise SelfDeactivationError("You cannot deactivate your own account.")
+            if role == "admin":
+                _lock_admins_or_refuse(session, user_id, tenant)
+            else:
+                _lock_target(session, user_id, tenant)
+            return _set_inactive(session, user_id, tenant)
 
     def list_tenants(self) -> list[dict[str, Any]]:
         """Tenants visible under RLS: the current tenant only, none with no tenant set."""
