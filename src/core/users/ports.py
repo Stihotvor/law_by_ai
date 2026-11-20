@@ -24,8 +24,12 @@ class UserRepository(Protocol):
         """
         ...
 
-    def insert_user(self, *, email: str, password_hash: str, role: str, name: str) -> UserRecord:
+    def insert_user(
+        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> UserRecord:
         """Insert an active user in the current tenant and return it.
+
+        Records the admin action *actor_id* in the same transaction.
 
         Raises:
             PrincipalRequiredError: no tenant is set (before any SQL).
