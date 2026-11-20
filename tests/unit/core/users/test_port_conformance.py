@@ -83,7 +83,9 @@ def test_signatures_match(impl: type) -> None:
 class _RenamedParamStore:
     def find_active_admin(self, email: str) -> UserRecord | None: ...
 
-    def insert_user(self, *, email: str, password_hash: str, role: str, name: str) -> UserRecord:
+    def insert_user(
+        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> UserRecord:
         raise NotImplementedError
 
     def list_users(self) -> list[UserRecord]:

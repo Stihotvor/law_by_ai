@@ -24,11 +24,16 @@ class UserRepository(Protocol):
         """
         ...
 
-    def insert_user(self, *, email: str, password_hash: str, role: str, name: str) -> UserRecord:
+    def insert_user(
+        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> UserRecord:
         """Insert an active user in the current tenant and return it.
 
-        Raises:
-            PrincipalRequiredError: no tenant is set (before any SQL).
+        The store re-checks *actor_id* as an active admin in the same transaction.
+
+        Raises, in check order:
+            PrincipalRequiredError: no tenant is set (before any SQL), or the actor
+                is not an active admin of the tenant (nothing is inserted).
             UserCreateRefusedError: the email is taken (``uq_users_email``).
         Other DB errors are re-raised unmapped.
         """
@@ -48,6 +53,7 @@ class UserRepository(Protocol):
             PrincipalRequiredError: no tenant is set (before any SQL).
             UserNotFoundError: the id is missing or in another tenant.
             SelfDeactivationError: ``user_id == actor_id``.
+            PrincipalRequiredError: the actor is not an active admin of the tenant.
             LastAdminError: the target is an admin and the locked active-admin set
                 holds the target and has one row or fewer.
         An already inactive target is not in the locked set, so it returns ``False``.
