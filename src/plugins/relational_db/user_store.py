@@ -72,9 +72,27 @@ def _read_target_role(session: Session, user_id: str, tenant: str) -> str:
     return role
 
 
-def _lock_admins_or_refuse(session: Session, user_id: str, tenant: str) -> None:
-    """Lock the tenant's active admins in id order; refuse removing the last one.
+def _lock_actor(session: Session, actor_id: str, tenant: str) -> None:
+    """Lock the acting admin row ``FOR SHARE``; no row -> ``PrincipalRequiredError``.
 
+    Under READ COMMITTED a concurrent deactivation of the actor either blocks this
+    lock until it commits (the row then drops out) or has not started. Two creates
+    share the lock and do not wait on each other.
+    """
+    stmt = (
+        select(User.id)
+        .where(User.id == actor_id, User.tenant_id == tenant, User.role == "admin", User.is_active)
+        .with_for_update(read=True)
+    )
+    if session.execute(stmt).scalar_one_or_none() is None:
+        raise PrincipalRequiredError("The acting admin is not active.")
+
+
+def _lock_admins_or_refuse(session: Session, user_id: str, actor_id: str, tenant: str) -> None:
+    """Lock the tenant's active admins in id order; check the actor and the last admin.
+
+    The actor is an admin, so this one ordered pass also locks it: refuse with
+    ``PrincipalRequiredError`` when it is not in the set, before the last-admin check.
     No ``LIMIT`` and no ``SKIP LOCKED``: two racing sessions queue on the same set.
     """
     stmt = (
@@ -84,6 +102,8 @@ def _lock_admins_or_refuse(session: Session, user_id: str, tenant: str) -> None:
         .with_for_update()
     )
     locked = list(session.execute(stmt).scalars().all())
+    if actor_id not in locked:
+        raise PrincipalRequiredError("The acting admin is not active.")
     if len(locked) <= 1 and user_id in locked:
         raise LastAdminError("The last active admin cannot be deactivated.")
 
@@ -188,11 +208,13 @@ class UserStoreMixin:
             session.commit()
 
     def insert_user(
-        self: _StoreHost, *, email: str, password_hash: str, role: str, name: str
+        self: _StoreHost, *, email: str, password_hash: str, role: str, name: str, actor_id: str
     ) -> UserRecord:
         """Insert an active user in the current tenant; the email is stored as given.
 
-        Raises ``PrincipalRequiredError`` with no tenant (before any SQL), and
+        The acting admin *actor_id* is locked ``FOR SHARE`` in the same transaction.
+        Check order: ``PrincipalRequiredError`` with no tenant (before any SQL) or when
+        the actor is not an active admin of the tenant (nothing is inserted), then
         ``UserCreateRefusedError`` only for 23505 on ``uq_users_email``. Other errors
         are re-raised unmapped. The transaction rolls back on every error.
         """
@@ -203,6 +225,7 @@ class UserStoreMixin:
         user.is_active = True
         try:
             with Session(self._engine) as session, session.begin():
+                _lock_actor(session, actor_id, tenant)
                 session.add(user)
                 session.flush()
                 record = _user_to_record(user)
@@ -245,7 +268,8 @@ class UserStoreMixin:
 
         Check order: ``PrincipalRequiredError`` with no tenant (before any SQL),
         ``UserNotFoundError`` for a missing or foreign id, ``SelfDeactivationError``
-        when ``user_id == actor_id``, ``LastAdminError`` when the locked active-admin
+        when ``user_id == actor_id``, ``PrincipalRequiredError`` when the actor is not an
+        active admin of the tenant, ``LastAdminError`` when the locked active-admin
         set has one row or fewer and holds the target. Returns ``True`` when one row
         changed and ``False`` for an already inactive target. Rolls back on every error.
         """
@@ -256,8 +280,9 @@ class UserStoreMixin:
             if user_id == actor_id:
                 raise SelfDeactivationError("You cannot deactivate your own account.")
             if role == "admin":
-                _lock_admins_or_refuse(session, user_id, tenant)
+                _lock_admins_or_refuse(session, user_id, actor_id, tenant)
             else:
+                _lock_actor(session, actor_id, tenant)
                 _lock_target(session, user_id, tenant)
             return _set_inactive(session, user_id, tenant)
 

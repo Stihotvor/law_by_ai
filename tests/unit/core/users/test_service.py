@@ -49,8 +49,16 @@ class FakeRepo:
             return None
         return self.admin
 
-    def insert_user(self, *, email: str, password_hash: str, role: str, name: str) -> UserRecord:
-        args = {"email": email, "password_hash": password_hash, "role": role, "name": name}
+    def insert_user(
+        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> UserRecord:
+        args = {
+            "email": email,
+            "password_hash": password_hash,
+            "role": role,
+            "name": name,
+            "actor_id": actor_id,
+        }
         self.calls.append(("insert_user", args))
         self.writes.append(("insert_user", args))
         return UserRecord(
@@ -267,6 +275,32 @@ def test_duplicate_from_port_propagates(service: UserService, repo: FakeRepo) ->
 
 # Scenario: Actor id goes to the port
 @pytest.mark.usefixtures("as_admin")
+def test_actor_id_goes_to_insert_port(service: UserService, repo: FakeRepo) -> None:
+    _create(service)
+    (_, args) = repo.writes[0]
+    assert args["actor_id"] == "A1"
+
+
+@pytest.mark.usefixtures("as_admin")
+def test_actor_deactivated_before_insert_is_refused_logged_and_not_audited(
+    service: UserService, repo: FakeRepo, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The store refuses an actor that is no longer an active admin in the write."""
+
+    def refuse(**_: str) -> UserRecord:
+        raise PrincipalRequiredError("The acting admin is not active.")
+
+    repo.insert_user = refuse  # type: ignore[method-assign]
+    caplog.set_level(logging.DEBUG)
+    with pytest.raises(PrincipalRequiredError):
+        _create(service)
+    assert _refusals(caplog) == [
+        {"actor_id": "A1", "action": "create_user", "error": "PrincipalRequiredError"}
+    ]
+    assert not [r for r in caplog.records if "target_id" in r.__dict__]
+
+
+@pytest.mark.usefixtures("as_admin")
 def test_actor_id_goes_to_port(service: UserService, repo: FakeRepo) -> None:
     assert service.deactivate_user("U2") is True
     assert repo.writes == [("deactivate_user", {"user_id": "U2", "actor_id": "A1"})]
@@ -400,7 +434,9 @@ def test_duplicate_refusal_log_holds_no_password_hash_or_email(
 ) -> None:
     hashes: list[str] = []
 
-    def refuse(*, email: str, password_hash: str, role: str, name: str) -> UserRecord:
+    def refuse(
+        *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> UserRecord:
         hashes.append(password_hash)
         raise UserCreateRefusedError(f"email {email} taken")
 

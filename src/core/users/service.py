@@ -122,7 +122,11 @@ class UserService:
             email = normalise_email(email)
             _check_input(email, password, role, name)
             record = self._repo.insert_user(
-                email=email, password_hash=hash_password(password), role=role, name=name
+                email=email,
+                password_hash=hash_password(password),
+                role=role,
+                name=name,
+                actor_id=actor["id"],
             )
         _audit(actor["id"], record["id"], "create_user", changed=True)
         return record
