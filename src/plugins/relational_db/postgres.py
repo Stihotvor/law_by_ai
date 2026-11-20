@@ -11,7 +11,8 @@ ADR-0014). Schema is managed by Alembic migrations (issue #9) — see
 - Document reject (issue #92): delete the row and write a ``rejected_document``
   audit row in one transaction, then notify an optional deletion hook.
 - User/tenant management (issue #52 / ADR-0013): ``users`` and ``tenants`` tables
-  with PostgreSQL row-level security keyed on the current tenant.
+  with PostgreSQL row-level security keyed on the current tenant. The queries live
+  in :class:`~plugins.relational_db.user_store.UserStoreMixin`.
 
 RLS model: queries are scoped to the tenant stored in the ``app.current_tenant``
 session setting (see :func:`apply_tenant_rls`), which is populated from the
@@ -28,24 +29,22 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import Select, create_engine, delete, event, exists, or_, select, text, update
+from sqlalchemy import Select, create_engine, delete, event, exists, or_, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.sql import ColumnElement
 
 from config.settings import PoolConfig, get_settings
-from core.security import get_current_tenant, hash_password, require_admin_principal
-from core.security.login_throttle import normalise_email
+from core.security import get_current_tenant, require_admin_principal
 from data.models import Base, DocumentStatus, LegalDocument, RejectedDocument
 from plugins.relational_db.mappers import apply_update as _apply_update
 from plugins.relational_db.mappers import doc_to_dict as _doc_to_dict
 from plugins.relational_db.mappers import login_user_to_dict as _login_user_to_dict  # noqa: F401 (re-export)
 from plugins.relational_db.mappers import parse_dt as _parse_dt
-from plugins.relational_db.mappers import tenant_to_dict as _tenant_to_dict
-from plugins.relational_db.mappers import user_to_dict as _user_to_dict
 from plugins.relational_db.schema_check import SchemaNotAtHeadError
 from plugins.relational_db.schema_check import check_schema_head as _check_schema_head
 from plugins.relational_db.tenant_models import Tenant, User
+from plugins.relational_db.user_store import UserStoreMixin
 
 # ``Base`` and ``LegalDocument`` live in ``data.models`` (issue #16); re-exported
 # here so existing imports (e.g. ``migrations/env.py``) keep working.
@@ -65,10 +64,6 @@ __all__ = [
 TENANT_SETTING = "app.current_tenant"
 # Seconds a caller waits for a free pool connection before the pool raises.
 POOL_TIMEOUT_SECONDS = 30
-# Login lookup (SECURITY DEFINER): the login columns of one user in any tenant.
-_AUTH_LOOKUP_SQL = text("SELECT * FROM public.auth_lookup_user(:email)")
-_LOGIN_KEYS = ("id", "tenant_id", "email", "role", "name", "is_active")
-_LOGIN_KEYS += ("password_hash", "session_version")
 _log = logging.getLogger(__name__)
 
 
@@ -181,7 +176,7 @@ def _warn_dropped(operation: str, keys: list[str]) -> None:
 # ---------------------------------------------------------------------------
 
 
-class PostgreSQLStore:
+class PostgreSQLStore(UserStoreMixin):
     """Direct PostgreSQL data store (ADR-0014, replaces the old plugin).
 
     Supports:
@@ -416,85 +411,3 @@ class PostgreSQLStore:
         stmt = select(exists().where(RejectedDocument.source_url == source_url))
         with Session(self._engine) as session:
             return bool(session.execute(stmt).scalar())
-
-    # --- users / tenants (issue #52, ADR-0013) ------------------------------
-
-    def create_tenant(self, name: str, tenant_id: str | None = None) -> dict[str, Any]:
-        """Create a tenant; returns its record dict."""
-        self._ensure_initialized()
-        with Session(self._engine) as session:
-            tenant = Tenant(id=tenant_id or str(uuid.uuid4()), name=name)
-            session.add(tenant)
-            session.commit()
-            return _tenant_to_dict(tenant)
-
-    def create_user(
-        self,
-        *,
-        email: str,
-        password: str,
-        role: str,
-        tenant_id: str,
-        name: str = "",
-    ) -> dict[str, Any]:
-        """Create a user with a bcrypt-hashed password; returns its record dict."""
-        self._ensure_initialized()
-        with Session(self._engine) as session:
-            user = User(
-                id=str(uuid.uuid4()),
-                tenant_id=tenant_id,
-                email=email.strip().lower(),
-                password_hash=hash_password(password),
-                role=role,
-                name=name,
-                is_active=True,
-            )
-            session.add(user)
-            session.commit()
-            return _user_to_dict(user)
-
-    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
-        """Return the user for *email* in the current tenant; ``None`` with no tenant set."""
-        self._ensure_initialized()
-        stmt = select(User).where(User.email == email.strip().lower())
-        with Session(self._engine) as session:
-            row = session.execute(stmt).scalar_one_or_none()
-            return _user_to_dict(row) if row is not None else None
-
-    def get_login_user(self, email: str) -> dict[str, Any] | None:
-        """Return the login row for *email* across all tenants, or ``None``.
-
-        Calls ``auth_lookup_user`` (needs no tenant). Raises ``OperationalError`` when down.
-        """
-        self._ensure_initialized()
-        with Session(self._engine) as session:
-            result = session.execute(_AUTH_LOOKUP_SQL, {"email": normalise_email(email)})
-            row = result.mappings().one_or_none()
-            return {key: row[key] for key in _LOGIN_KEYS} if row is not None else None
-
-    def bump_session_version(self, user_id: str) -> None:
-        """Add one to the user's ``session_version`` under the current tenant.
-
-        Every cookie signed with the old version stops working (server-side logout).
-        """
-        self._ensure_initialized()
-        stmt = (
-            update(User).where(User.id == user_id).values(session_version=User.session_version + 1)
-        )
-        with Session(self._engine) as session:
-            session.execute(stmt)
-            session.commit()
-
-    def list_users(self) -> list[dict[str, Any]]:
-        """All users visible under the current tenant scoping."""
-        self._ensure_initialized()
-        with Session(self._engine) as session:
-            rows = session.execute(select(User).order_by(User.email)).scalars().all()
-            return [_user_to_dict(r) for r in rows]
-
-    def list_tenants(self) -> list[dict[str, Any]]:
-        """Tenants visible under RLS: the current tenant only, none with no tenant set."""
-        self._ensure_initialized()
-        with Session(self._engine) as session:
-            rows = session.execute(select(Tenant).order_by(Tenant.name)).scalars().all()
-            return [_tenant_to_dict(r) for r in rows]

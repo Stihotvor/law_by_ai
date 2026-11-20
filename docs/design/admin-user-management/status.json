@@ -3,9 +3,13 @@
     "state": "done"
   },
   "T2": {
-    "state": "doing"
+    "state": "done",
+    "note": "unit pass; integration tests not run locally (no Docker), run in CI"
   },
   "T4": {
     "state": "done"
+  },
+  "T7": {
+    "state": "doing"
   }
 }
