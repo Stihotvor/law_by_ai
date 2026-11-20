@@ -224,7 +224,8 @@ def test_autogenerate_detects_changed_server_default(
     assert _status_default_arg(Base.metadata) == DocumentStatus.NEEDS_REVIEW.value
 
 
-def test_rls_only_on_tenants_and_users(engine: Engine) -> None:
+def test_rls_only_on_tenant_tables(engine: Engine) -> None:
+    """legal_document and rejected_document have no RLS; the tenant tables and the audit do."""
     with engine.connect() as conn:
         rows = conn.execute(
             text(
@@ -234,4 +235,4 @@ def test_rls_only_on_tenants_and_users(engine: Engine) -> None:
                 "AND c.relrowsecurity"
             )
         ).scalars()
-        assert set(rows) == {"tenants", "users"}
+        assert set(rows) == {"tenants", "users", "admin_action_audit"}
