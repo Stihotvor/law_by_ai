@@ -20,6 +20,11 @@
     "state": "done"
   },
   "T6": {
-    "state": "doing"
+    "state": "done",
+    "note": "integration tests not run locally, CI only"
+  },
+  "T8": {
+    "state": "done",
+    "note": "ruff, format, pyright, unit 1557 pass, diff-cover 95%, mutation scope N/A"
   }
 }

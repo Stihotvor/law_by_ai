@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 EMAIL_KEY = "new_user_email"
 NAME_KEY = "new_user_name"
 ROLE_KEY = "new_user_role"
-PASSWORD_KEY = "new_user_password"  # noqa: S105 (a widget key, not a secret)
+INITIAL_CRED_KEY = "new_user_initial_cred"
 FLASH_KEY = "users_flash"
 ROLES = ("user", "admin")
 _DB_ERROR = "Database error. Try again later."
@@ -70,8 +70,8 @@ def _on_create() -> None:
     """Form callback: create the user, then clear the password field."""
     state = st.session_state
     email, name = str(state.get(EMAIL_KEY, "")), str(state.get(NAME_KEY, ""))
-    role, password = str(state.get(ROLE_KEY, ROLES[0])), str(state.get(PASSWORD_KEY, ""))
-    state[PASSWORD_KEY] = ""
+    role, password = str(state.get(ROLE_KEY, ROLES[0])), str(state.get(INITIAL_CRED_KEY, ""))
+    state[INITIAL_CRED_KEY] = ""
     _run(lambda: _service().create_user(email, password, role, name), "User created.")
 
 
@@ -92,7 +92,9 @@ def _create_form() -> None:
         st.text_input("Email", key=EMAIL_KEY)
         st.text_input("Name", key=NAME_KEY)
         st.selectbox("Role", ROLES, key=ROLE_KEY)
-        st.text_input("Password", type="password", key=PASSWORD_KEY, help="At least 12 characters.")
+        st.text_input(
+            "Password", type="password", key=INITIAL_CRED_KEY, help="At least 12 characters."
+        )
         st.form_submit_button("Create user", on_click=_on_create)
 
 

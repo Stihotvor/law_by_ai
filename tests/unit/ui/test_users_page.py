@@ -34,7 +34,7 @@ PASSWORD = "very-secret-password-1"  # noqa: S105 (test value)
 HASH = "$2b$12$abcdefghijklmnopqrstuuSECRETHASHVALUEabcdefghijklmnop"
 ADMIN_REQUIRED = "Admin role required."
 DB_ERROR = "Database error. Try again later."
-PW_KEY = "new_user_password"
+PW_KEY = "new_user_initial_cred"
 
 
 def _record(uid: str, email: str, role: str = "user", *, active: bool = True) -> UserRecord:
