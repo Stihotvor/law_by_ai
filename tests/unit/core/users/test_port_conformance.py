@@ -5,29 +5,16 @@ Compares signatures with ``inspect`` only. No DB connection is opened.
 
 from __future__ import annotations
 
-import importlib.util
 import inspect
 import typing
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
 import pytest
+from fakes.users import FakeRepo
 
 from core.users import UserRecord, UserRepository
 from plugins.relational_db.postgres import PostgreSQLStore
-
-SERVICE_TESTS = Path(__file__).with_name("test_service.py")
-
-
-def _load_fake_repo() -> type:
-    """Load the FakeRepo that the service unit tests use."""
-    spec = importlib.util.spec_from_file_location("_users_service_tests", SERVICE_TESTS)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.FakeRepo
 
 
 def port_methods() -> list[str]:
@@ -46,7 +33,11 @@ def signature_mismatches(port_fn: Callable[..., Any], impl_fn: Callable[..., Any
     port_params, impl_params = _params(port_fn), _params(impl_fn)
     if port_params != impl_params:
         problems.append(f"parameters: port={port_params} impl={impl_params}")
-    port_hints, impl_hints = typing.get_type_hints(port_fn), typing.get_type_hints(impl_fn)
+    # ``self`` may carry a host Protocol annotation on a mixin; it is not part of the contract.
+    port_hints = typing.get_type_hints(port_fn)
+    impl_hints = typing.get_type_hints(impl_fn)
+    port_hints.pop("self", None)
+    impl_hints.pop("self", None)
     if port_hints != impl_hints:
         problems.append(f"annotations: port={port_hints} impl={impl_hints}")
     return problems
@@ -71,7 +62,7 @@ def test_port_declares_expected_methods() -> None:
 
 
 # Scenario: Signatures match
-@pytest.mark.parametrize("impl", [PostgreSQLStore, _load_fake_repo()], ids=["store", "fake"])
+@pytest.mark.parametrize("impl", [PostgreSQLStore, FakeRepo], ids=["store", "fake"])
 def test_signatures_match(impl: type) -> None:
     assert conformance_report(impl) == {}
 

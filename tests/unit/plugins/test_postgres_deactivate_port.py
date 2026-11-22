@@ -15,7 +15,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import OperationalError
 
 from core.security import PrincipalRequiredError, tenant_context
-from core.users.errors import LastAdminError, SelfDeactivationError, UserNotFoundError
+from core.users.errors import SelfDeactivationError, UserNotFoundError
 from plugins.relational_db import user_store
 from plugins.relational_db.postgres import PostgreSQLStore
 
@@ -177,11 +177,16 @@ def test_admin_target_locks_admin_set_first_without_limit(store_with: MakeStore)
     assert sessions[0].committed
 
 
-def test_sole_admin_target_raises_last_admin(store_with: MakeStore) -> None:
-    """Scenario: Self and last admin (another admin is the sole active admin)."""
+def test_actor_outside_locked_set_is_refused_before_the_last_admin_check(
+    store_with: MakeStore,
+) -> None:
+    """The actor was deactivated after the service check: the locked set holds only the target.
+
+    ``PrincipalRequiredError`` wins over ``LastAdminError``, and nothing is updated.
+    """
     store, sessions = store_with(results=[["admin"], ["u-2"]])
 
-    with pytest.raises(LastAdminError):
+    with pytest.raises(PrincipalRequiredError):
         _deactivate(store, "u-2", actor_id="not-an-admin")
 
     assert len(sessions[0].statements) == 2
@@ -191,7 +196,7 @@ def test_sole_admin_target_raises_last_admin(store_with: MakeStore) -> None:
 
 def test_admin_set_without_target_is_a_noop(store_with: MakeStore) -> None:
     """A racing session deactivated the target after the read: the lock skips it, 0 rows."""
-    store, _ = store_with(results=[["admin"], [], []])
+    store, _ = store_with(results=[["admin"], [ACTOR], []])
 
     assert _deactivate(store, "u-2") is False
 
@@ -206,7 +211,7 @@ def test_inactive_admin_target_is_a_noop(store_with: MakeStore) -> None:
     assert sessions[0].committed
 
 
-@pytest.mark.parametrize("locked", [[], [ACTOR], ["admin-9"]])
+@pytest.mark.parametrize("locked", [[ACTOR], [ACTOR, "admin-9"]])
 def test_inactive_admin_target_never_raises_last_admin(
     store_with: MakeStore, locked: list[str]
 ) -> None:
@@ -222,16 +227,34 @@ def test_inactive_admin_target_never_raises_last_admin(
 # --- user target --------------------------------------------------------------
 
 
-def test_user_target_locks_only_target(store_with: MakeStore) -> None:
-    store, sessions = store_with(results=[["user"], ["u-3"], ["u-3"]])
+def test_user_target_locks_actor_for_share_then_the_target(store_with: MakeStore) -> None:
+    store, sessions = store_with(results=[["user"], [ACTOR], ["u-3"], ["u-3"]])
 
     assert _deactivate(store, "u-3") is True
 
-    _read, lock, _upd, _audit = sessions[0].statements
+    _read, actor_lock, lock, _upd, _audit = sessions[0].statements
+    actor_sql = _sql(actor_lock)
+    assert actor_sql.rstrip().endswith("FOR SHARE")
+    assert "users.role = %(role_1)s" in actor_sql
+    assert "users.is_active" in actor_sql
+    assert _params(actor_lock) == {"id_1": ACTOR, "tenant_id_1": TENANT, "role_1": "admin"}
     sql = _sql(lock)
     assert sql.rstrip().endswith("FOR UPDATE")
     assert "role" not in sql.split("WHERE", 1)[1]
     assert _params(lock) == {"id_1": "u-3", "tenant_id_1": TENANT}
+
+
+def test_user_target_with_inactive_actor_is_refused_before_the_target_lock(
+    store_with: MakeStore,
+) -> None:
+    store, sessions = store_with(results=[["user"], []])
+
+    with pytest.raises(PrincipalRequiredError):
+        _deactivate(store, "u-3")
+
+    assert len(sessions[0].statements) == 2
+    assert sessions[0].rolled_back
+    assert not sessions[0].committed
 
 
 # --- update -------------------------------------------------------------------
@@ -239,11 +262,11 @@ def test_user_target_locks_only_target(store_with: MakeStore) -> None:
 
 def test_update_is_tenant_scoped_and_only_flips_is_active(store_with: MakeStore) -> None:
     """Scenario: Old cookie fails (the DB trigger bumps session_version, not the store)."""
-    store, sessions = store_with(results=[["user"], ["u-3"], ["u-3"]])
+    store, sessions = store_with(results=[["user"], [ACTOR], ["u-3"], ["u-3"]])
 
     _deactivate(store, "u-3")
 
-    upd = sessions[0].statements[2]
+    upd = sessions[0].statements[3]
     sql = _sql(upd)
     assert sql.startswith("UPDATE users SET is_active=")
     assert "session_version" not in sql
@@ -258,7 +281,7 @@ def test_update_is_tenant_scoped_and_only_flips_is_active(store_with: MakeStore)
 
 def test_update_of_zero_rows_returns_false(store_with: MakeStore) -> None:
     """Scenario: Already inactive target."""
-    store, sessions = store_with(results=[["user"], [], []])
+    store, sessions = store_with(results=[["user"], [ACTOR], ["u-3"], []])
 
     assert _deactivate(store, "u-3") is False
     assert sessions[0].committed
@@ -279,7 +302,7 @@ def test_db_error_propagates_and_rolls_back(store_with: MakeStore) -> None:
 
 
 def test_changed_row_appends_one_audit_row_in_the_same_transaction(store_with: MakeStore) -> None:
-    store, sessions = store_with(results=[["user"], ["u-3"], ["u-3"]])
+    store, sessions = store_with(results=[["user"], [ACTOR], ["u-3"], ["u-3"]])
 
     assert _deactivate(store, "u-3") is True
 
@@ -295,18 +318,18 @@ def test_changed_row_appends_one_audit_row_in_the_same_transaction(store_with: M
 
 
 def test_noop_writes_no_audit_row(store_with: MakeStore) -> None:
-    store, sessions = store_with(results=[["user"], ["u-3"], []])
+    store, sessions = store_with(results=[["user"], [ACTOR], ["u-3"], []])
 
     assert _deactivate(store, "u-3") is False
 
-    assert len(sessions[0].statements) == 3
+    assert len(sessions[0].statements) == 4
     assert all("admin_action_audit" not in _sql(s) for s in sessions[0].statements)
 
 
 def test_refusal_writes_no_audit_row(store_with: MakeStore) -> None:
-    store, sessions = store_with(results=[["admin"], ["u-2"]])
+    store, sessions = store_with(results=[["user"], []])
 
-    with pytest.raises(LastAdminError):
-        _deactivate(store, "u-2", actor_id="other")
+    with pytest.raises(PrincipalRequiredError):
+        _deactivate(store, "u-3")
 
     assert all("admin_action_audit" not in _sql(s) for s in sessions[0].statements)

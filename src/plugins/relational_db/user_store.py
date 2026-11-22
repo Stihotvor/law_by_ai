@@ -10,14 +10,14 @@ Login, which runs before a tenant is known, calls the ``auth_lookup_user`` funct
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import Any, Protocol
 
 from sqlalchemy import Engine, insert, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from core.security import PrincipalRequiredError, get_current_tenant, hash_password
-from core.security.login_throttle import normalise_email
+from core.security.emails import normalise_email
 from core.users.errors import (
     LastAdminError,
     SelfDeactivationError,
@@ -72,9 +72,27 @@ def _read_target_role(session: Session, user_id: str, tenant: str) -> str:
     return role
 
 
-def _lock_admins_or_refuse(session: Session, user_id: str, tenant: str) -> None:
-    """Lock the tenant's active admins in id order; refuse removing the last one.
+def _lock_actor(session: Session, actor_id: str, tenant: str) -> None:
+    """Lock the acting admin row ``FOR SHARE``; no row -> ``PrincipalRequiredError``.
 
+    Under READ COMMITTED a concurrent deactivation of the actor either blocks this
+    lock until it commits (the row then drops out) or has not started. Two creates
+    share the lock and do not wait on each other.
+    """
+    stmt = (
+        select(User.id)
+        .where(User.id == actor_id, User.tenant_id == tenant, User.role == "admin", User.is_active)
+        .with_for_update(read=True)
+    )
+    if session.execute(stmt).scalar_one_or_none() is None:
+        raise PrincipalRequiredError("The acting admin is not active.")
+
+
+def _lock_admins_or_refuse(session: Session, user_id: str, actor_id: str, tenant: str) -> None:
+    """Lock the tenant's active admins in id order; check the actor and the last admin.
+
+    The actor is an admin, so this one ordered pass also locks it: refuse with
+    ``PrincipalRequiredError`` when it is not in the set, before the last-admin check.
     No ``LIMIT`` and no ``SKIP LOCKED``: two racing sessions queue on the same set.
     """
     stmt = (
@@ -84,6 +102,8 @@ def _lock_admins_or_refuse(session: Session, user_id: str, tenant: str) -> None:
         .with_for_update()
     )
     locked = list(session.execute(stmt).scalars().all())
+    if actor_id not in locked:
+        raise PrincipalRequiredError("The acting admin is not active.")
     if len(locked) <= 1 and user_id in locked:
         raise LastAdminError("The last active admin cannot be deactivated.")
 
@@ -117,16 +137,18 @@ def _record_action(
     )
 
 
-class UserStoreMixin:
-    """User and tenant queries; the host class supplies the engine and lazy init."""
+class _StoreHost(Protocol):
+    """What the mixin needs from its host class: the engine and lazy init."""
 
     _engine: Engine | None
 
-    if TYPE_CHECKING:
+    def _ensure_initialized(self) -> None: ...
 
-        def _ensure_initialized(self) -> None: ...
 
-    def create_tenant(self, name: str, tenant_id: str | None = None) -> dict[str, Any]:
+class UserStoreMixin:
+    """User and tenant queries; the host class supplies the engine and lazy init."""
+
+    def create_tenant(self: _StoreHost, name: str, tenant_id: str | None = None) -> dict[str, Any]:
         """Create a tenant; returns its record dict."""
         self._ensure_initialized()
         with Session(self._engine) as session:
@@ -136,7 +158,7 @@ class UserStoreMixin:
             return _tenant_to_dict(tenant)
 
     def create_user(
-        self,
+        self: _StoreHost,
         *,
         email: str,
         password: str,
@@ -144,7 +166,11 @@ class UserStoreMixin:
         tenant_id: str,
         name: str = "",
     ) -> dict[str, Any]:
-        """Create a user with a bcrypt-hashed password; returns its record dict."""
+        """Create a user with a bcrypt-hashed password; returns its record dict.
+
+        Seed-only: no admin check and no audit. The admin UI uses ``insert_user``
+        through ``UserService``.
+        """
         self._ensure_initialized()
         with Session(self._engine) as session:
             user = User(
@@ -160,7 +186,7 @@ class UserStoreMixin:
             session.commit()
             return _user_to_dict(user)
 
-    def get_user_by_email(self, email: str) -> dict[str, Any] | None:
+    def get_user_by_email(self: _StoreHost, email: str) -> dict[str, Any] | None:
         """Return the user for *email* in the current tenant; ``None`` with no tenant set."""
         self._ensure_initialized()
         stmt = select(User).where(User.email == normalise_email(email))
@@ -168,7 +194,7 @@ class UserStoreMixin:
             row = session.execute(stmt).scalar_one_or_none()
             return _user_to_dict(row) if row is not None else None
 
-    def get_login_user(self, email: str) -> dict[str, Any] | None:
+    def get_login_user(self: _StoreHost, email: str) -> dict[str, Any] | None:
         """Return the login row for *email* across all tenants, or ``None``.
 
         Calls ``auth_lookup_user`` (needs no tenant). Raises ``OperationalError`` when down.
@@ -179,7 +205,7 @@ class UserStoreMixin:
             row = result.mappings().one_or_none()
             return {key: row[key] for key in _LOGIN_KEYS} if row is not None else None
 
-    def bump_session_version(self, user_id: str) -> None:
+    def bump_session_version(self: _StoreHost, user_id: str) -> None:
         """Add one to the user's ``session_version`` under the current tenant.
 
         Every cookie signed with the old version stops working (server-side logout).
@@ -193,13 +219,14 @@ class UserStoreMixin:
             session.commit()
 
     def insert_user(
-        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+        self: _StoreHost, *, email: str, password_hash: str, role: str, name: str, actor_id: str
     ) -> UserRecord:
         """Insert an active user in the current tenant; the email is stored as given.
 
-        Appends a ``create_user`` audit row for *actor_id* in the same transaction.
-
-        Raises ``PrincipalRequiredError`` with no tenant (before any SQL), and
+        The acting admin *actor_id* is locked ``FOR SHARE`` in the same transaction.
+        Appends a ``create_user`` audit row for it in that transaction.
+        Check order: ``PrincipalRequiredError`` with no tenant (before any SQL) or when
+        the actor is not an active admin of the tenant (nothing is inserted), then
         ``UserCreateRefusedError`` only for 23505 on ``uq_users_email``. Other errors
         are re-raised unmapped. The transaction rolls back on every error.
         """
@@ -210,6 +237,7 @@ class UserStoreMixin:
         user.is_active = True
         try:
             with Session(self._engine) as session, session.begin():
+                _lock_actor(session, actor_id, tenant)
                 session.add(user)
                 session.flush()
                 _record_action(
@@ -226,7 +254,7 @@ class UserStoreMixin:
             raise
         return record
 
-    def list_users(self) -> list[UserRecord]:
+    def list_users(self: _StoreHost) -> list[UserRecord]:
         """Users of the current tenant ordered by email; ``[]`` with no tenant set."""
         # Reads return empty (no raise): with no tenant, RLS would show no rows anyway.
         tenant = get_current_tenant()
@@ -237,7 +265,7 @@ class UserStoreMixin:
         with Session(self._engine) as session:
             return [_user_to_record(r) for r in session.execute(stmt).scalars().all()]
 
-    def find_active_admin(self, email: str) -> UserRecord | None:
+    def find_active_admin(self: _StoreHost, email: str) -> UserRecord | None:
         """Active admin of the current tenant with exactly *email*, else ``None``.
 
         Returns ``None`` with no tenant set and runs no SQL.
@@ -254,12 +282,13 @@ class UserStoreMixin:
             row = session.execute(stmt).scalar_one_or_none()
             return _user_to_record(row) if row is not None else None
 
-    def deactivate_user(self, user_id: str, *, actor_id: str) -> bool:
+    def deactivate_user(self: _StoreHost, user_id: str, *, actor_id: str) -> bool:
         """Deactivate *user_id* in the current tenant in one transaction.
 
         Check order: ``PrincipalRequiredError`` with no tenant (before any SQL),
         ``UserNotFoundError`` for a missing or foreign id, ``SelfDeactivationError``
-        when ``user_id == actor_id``, ``LastAdminError`` when the locked active-admin
+        when ``user_id == actor_id``, ``PrincipalRequiredError`` when the actor is not an
+        active admin of the tenant, ``LastAdminError`` when the locked active-admin
         set has one row or fewer and holds the target. Returns ``True`` when one row
         changed and ``False`` for an already inactive target. Rolls back on every error.
         A changed row appends a ``deactivate_user`` audit row in the same transaction.
@@ -271,8 +300,9 @@ class UserStoreMixin:
             if user_id == actor_id:
                 raise SelfDeactivationError("You cannot deactivate your own account.")
             if role == "admin":
-                _lock_admins_or_refuse(session, user_id, tenant)
+                _lock_admins_or_refuse(session, user_id, actor_id, tenant)
             else:
+                _lock_actor(session, actor_id, tenant)
                 _lock_target(session, user_id, tenant)
             changed = _set_inactive(session, user_id, tenant)
             if changed:
@@ -285,7 +315,7 @@ class UserStoreMixin:
                 )
             return changed
 
-    def list_tenants(self) -> list[dict[str, Any]]:
+    def list_tenants(self: _StoreHost) -> list[dict[str, Any]]:
         """Tenants visible under RLS: the current tenant only, none with no tenant set."""
         self._ensure_initialized()
         with Session(self._engine) as session:

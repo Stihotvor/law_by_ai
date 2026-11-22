@@ -1,8 +1,9 @@
 """Streamlit users page: admin guard, create form, user table and deactivate action.
 
-No database: ``core.users.UserService`` is replaced with a fake service and
-``ui.components.auth._store`` (behind ``get_store``) with a sentinel, so no
-``PostgreSQLStore`` is built.
+No database and no Redis: ``core.users.UserService`` is replaced with a fake
+service, ``ui.components.auth._store`` (behind ``get_store``) with a sentinel,
+so no ``PostgreSQLStore`` is built, and ``_redis_client`` (behind ``get_redis``)
+with another sentinel.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import streamlit as st
+from fakes.valkey import FakeRedis
 from sqlalchemy.exc import OperationalError
 from streamlit.testing.v1 import AppTest
 
@@ -34,6 +36,7 @@ SRC = Path(__file__).resolve().parents[3] / "src"
 PAGE = str(SRC / "ui" / "pages" / "users.py")
 APP = str(SRC / "ui" / "app.py")
 STORE = object()
+REDIS = object()
 PASSWORD = "very-secret-password-1"  # noqa: S105 (test value)
 HASH = "$2b$12$abcdefghijklmnopqrstuuSECRETHASHVALUEabcdefghijklmnop"
 ADMIN_REQUIRED = "Admin role required."
@@ -65,9 +68,11 @@ class FakeService:
     created: list[tuple[str, str, str, str]] = field(default_factory=list)
     deactivated: list[str] = field(default_factory=list)
     repos: list[object] = field(default_factory=list)
+    limiters: list[object] = field(default_factory=list)
 
-    def __call__(self, repo: object) -> FakeService:
+    def __call__(self, repo: object, limiter: object) -> FakeService:
         self.repos.append(repo)
+        self.limiters.append(limiter)
         return self
 
     def list_users(self) -> list[Any]:
@@ -100,6 +105,7 @@ def service() -> Iterator[FakeService]:
     with (
         patch("core.users.UserService", fake),
         patch("ui.components.auth._store", lambda: STORE),
+        patch("ui.components.auth._redis_client", lambda: REDIS),
     ):
         yield fake
 
@@ -144,11 +150,16 @@ def _deactivate_keys(at: AppTest) -> set[str]:
 @pytest.mark.parametrize("role", ["user", None])
 def test_non_admin_sees_admin_required_and_service_is_not_called(role: str | None) -> None:
     factory = MagicMock()
-    with patch("core.users.UserService", factory), patch("ui.components.auth._store") as store:
+    with (
+        patch("core.users.UserService", factory),
+        patch("ui.components.auth._store") as store,
+        patch("ui.components.auth._redis_client") as redis_client,
+    ):
         at = _page(role)
     assert [w.value for w in at.warning] == [ADMIN_REQUIRED]
     factory.assert_not_called()
     store.assert_not_called()
+    redis_client.assert_not_called()
     assert len(at.button) == 0
     assert len(at.text_input) == 0
 
@@ -332,8 +343,12 @@ def test_invalid_input_shows_fixed_message_and_no_trace(
     email: str, password: str, name: str
 ) -> None:
     with (
-        patch("core.users.UserService", lambda _repo: _ValidatingService(_NoWriteRepo())),  # type: ignore[arg-type]
+        patch(
+            "core.users.UserService",
+            lambda _repo, limiter: _ValidatingService(_NoWriteRepo(), limiter),  # type: ignore[arg-type]
+        ),
         patch("ui.components.auth._store", lambda: STORE),
+        patch("ui.components.auth._redis_client", lambda: FakeRedis()),
     ):
         at = _submit(_page(), email, password, name)
     assert not at.exception

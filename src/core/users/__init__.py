@@ -7,15 +7,18 @@ from .errors import (
     LastAdminError,
     SelfDeactivationError,
     UserCreateRefusedError,
+    UserCreateThrottledError,
     UserNotFoundError,
 )
-from .ports import UserRecord, UserRepository
+from .ports import CreateRateLimiter, UserRecord, UserRepository
 from .service import UserService
 
 __all__ = [
+    "CreateRateLimiter",
     "LastAdminError",
     "SelfDeactivationError",
     "UserCreateRefusedError",
+    "UserCreateThrottledError",
     "UserNotFoundError",
     "UserRecord",
     "UserRepository",

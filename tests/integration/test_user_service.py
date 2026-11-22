@@ -5,23 +5,26 @@ Marked ``integration``: the store runs as ``lawbyai_app``; the owner
 service call runs under ``tenant_context`` and ``principal_context``, as
 ``require_auth`` sets them after login. Login uses the real credential lookup
 and ``session_version`` check of ``ui.components.auth``. Only the network edge
-is faked: the browser cookie (``FakeCookie``) and the Redis login throttle.
-Skipped if PostgreSQL is unreachable.
+is faked: the browser cookie (``FakeCookie``), the Redis login throttle and,
+outside the create-limit tests, the create limiter. The create-limit tests use
+the real ``ActorThrottle`` on a live Redis. Skipped if PostgreSQL (or, for the
+create-limit tests, Redis) is unreachable.
 """
 
 from __future__ import annotations
 
+import logging
 import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import jwt
 import pytest
 from factories.auth import COOKIE, KEY, FakeCookie
 from streamlit.testing.v1 import AppTest
-from users_helpers import OwnerSql, app_store, count_email, unique_email
+from users_helpers import CreateKeys, OwnerSql, app_store, count_email, unique_email
 
 from core.security import (
     PrincipalRequiredError,
@@ -29,7 +32,8 @@ from core.security import (
     principal_context,
     tenant_context,
 )
-from core.users.errors import UserCreateRefusedError
+from core.security.actor_throttle import ActorThrottle
+from core.users.errors import UserCreateRefusedError, UserCreateThrottledError
 from core.users.service import UserService
 from plugins.relational_db.postgres import PostgreSQLStore
 from ui.components import auth
@@ -41,6 +45,8 @@ TENANT_B = "user-service-b"
 SEED_PLAIN = "seed-password-1"
 NEW_PLAIN = "correct-horse-12"
 MAX_SECONDS = 1.0
+CREATE_MAX = 2
+CREATE_WINDOW = 3600
 
 
 class _OpenThrottle:
@@ -54,6 +60,13 @@ class _OpenThrottle:
 
     def reset(self, email: str) -> None:
         return None
+
+
+class _OpenLimiter:
+    """Stand-in for the Redis create limiter: never refuses, records nothing."""
+
+    def hit(self, actor_id: str) -> bool:
+        return True
 
 
 @pytest.fixture
@@ -78,7 +91,14 @@ def store(
 
 @pytest.fixture
 def service(store: PostgreSQLStore) -> UserService:
-    return UserService(store)
+    return UserService(store, _OpenLimiter())
+
+
+@pytest.fixture
+def limited(store: PostgreSQLStore, redis_client: CreateKeys) -> UserService:
+    """Service with the real create limit (``CREATE_MAX`` per ``CREATE_WINDOW``) on Redis."""
+    limiter = ActorThrottle(redis_client.client, CREATE_MAX, CREATE_WINDOW, "user:create:")
+    return UserService(store, limiter)
 
 
 def _email(prefix: str) -> str:
@@ -277,3 +297,113 @@ def test_each_action_under_one_second(
     assert create_s < MAX_SECONDS
     assert list_s < MAX_SECONDS
     assert deactivate_s < MAX_SECONDS
+
+
+class _DeactivatesActorBeforeWrite:
+    """Repo wrapper: the acting admin is deactivated right after the service check."""
+
+    def __init__(self, store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
+        self._store, self._owner_sql = store, owner_sql
+
+    def find_active_admin(self, email: str) -> Any:
+        found = self._store.find_active_admin(email)
+        if found is not None:
+            self._owner_sql(
+                TENANT_A, "UPDATE users SET is_active = false WHERE id = :i", i=found["id"]
+            )
+        return found
+
+    def insert_user(
+        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> Any:
+        return self._store.insert_user(
+            email=email, password_hash=password_hash, role=role, name=name, actor_id=actor_id
+        )
+
+    def list_users(self) -> Any:
+        return self._store.list_users()
+
+    def deactivate_user(self, user_id: str, *, actor_id: str) -> bool:
+        return self._store.deactivate_user(user_id, actor_id=actor_id)
+
+
+def test_actor_deactivated_between_check_and_write_is_refused(
+    store: PostgreSQLStore, owner_sql: OwnerSql
+) -> None:
+    """The store re-checks the acting admin in the write transaction."""
+    admin_id, admin_email = _seed(store, TENANT_A, "admin")
+    user_id, _ = _seed(store, TENANT_A, "user")
+    service = UserService(_DeactivatesActorBeforeWrite(store, owner_sql), _OpenLimiter())
+    email = _email("late")
+
+    with _as(admin_email, "admin"), pytest.raises(PrincipalRequiredError):
+        service.create_user(email, NEW_PLAIN, "user", "Late")
+    assert count_email(owner_sql, TENANT_A, email) == 0
+
+    owner_sql(TENANT_A, "UPDATE users SET is_active = true WHERE id = :i", i=admin_id)
+    with _as(admin_email, "admin"), pytest.raises(PrincipalRequiredError):
+        service.deactivate_user(user_id)
+    rows = owner_sql(TENANT_A, "SELECT is_active FROM users WHERE id = :i", i=user_id)
+    assert rows[0][0] is True
+
+
+# --- create limit per acting admin (real ActorThrottle on a live Redis) --------
+
+
+def _count(owner_sql: OwnerSql, tenant: str) -> int:
+    rows = owner_sql(tenant, "SELECT count(*) FROM users WHERE tenant_id = :t", t=tenant)
+    return int(rows[0][0])
+
+
+def test_create_limit_refuses_third_attempt(
+    store: PostgreSQLStore,
+    limited: UserService,
+    redis_client: CreateKeys,
+    owner_sql: OwnerSql,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A refused duplicate counts; the third attempt is throttled and inserts nothing."""
+    admin_id, admin_email = _seed(store, TENANT_A, "admin")
+    _, taken = _seed(store, TENANT_A, "user")
+    key = redis_client.track(admin_id)
+    emails = (_email("first"), _email("third"))
+    before = _count(owner_sql, TENANT_A)
+    caplog.set_level(logging.INFO)
+
+    with _as(admin_email, "admin"):
+        limited.create_user(emails[0], NEW_PLAIN, "user", "First")
+        with pytest.raises(UserCreateRefusedError):
+            limited.create_user(taken, NEW_PLAIN, "user", "Dup")
+        with pytest.raises(UserCreateThrottledError):
+            limited.create_user(emails[1], NEW_PLAIN, "user", "Third")
+
+    assert _count(owner_sql, TENANT_A) == before + 1
+    assert count_email(owner_sql, TENANT_A, emails[1]) == 0
+    assert int(cast("bytes", redis_client.client.get(key))) == CREATE_MAX + 1
+    assert 0 < cast("int", redis_client.client.ttl(key)) <= CREATE_WINDOW
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    throttled = [r for r in warnings if r.__dict__.get("error") == "UserCreateThrottledError"]
+    assert [r.__dict__["actor_id"] for r in throttled] == [admin_id]
+    dumped = [repr(r.__dict__) + r.getMessage() for r in caplog.records]
+    assert not any(e in t for t in dumped for e in (*emails, taken))
+
+
+def test_create_limit_is_per_admin(
+    store: PostgreSQLStore, limited: UserService, redis_client: CreateKeys, owner_sql: OwnerSql
+) -> None:
+    """A throttled admin does not throttle a second admin of the tenant."""
+    first_id, first_email = _seed(store, TENANT_A, "admin")
+    second_id, second_email = _seed(store, TENANT_A, "admin")
+    redis_client.track(first_id)
+    redis_client.track(second_id)
+
+    with _as(first_email, "admin"):
+        for name in ("one", "two"):
+            limited.create_user(_email(name), NEW_PLAIN, "user", name)
+        with pytest.raises(UserCreateThrottledError):
+            limited.create_user(_email("three"), NEW_PLAIN, "user", "three")
+    email = _email("other")
+    with _as(second_email, "admin"):
+        limited.create_user(email, NEW_PLAIN, "user", "Other")
+
+    assert count_email(owner_sql, TENANT_A, email) == 1

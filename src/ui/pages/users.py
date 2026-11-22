@@ -16,17 +16,21 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 import streamlit as st
+from redis.exceptions import RedisError
 
+from config.settings import get_settings
 from core.security import PrincipalRequiredError
+from core.security.actor_throttle import ActorThrottle
 from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
 from core.users import (
     LastAdminError,
     SelfDeactivationError,
     UserCreateRefusedError,
+    UserCreateThrottledError,
     UserNotFoundError,
     UserService,
 )
-from ui.components.auth import get_store, require_admin
+from ui.components.auth import get_redis, get_store, require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +41,17 @@ INITIAL_CRED_KEY = "new_user_initial_cred"
 CLEAR_CRED_KEY = "users_clear_initial_cred"
 FLASH_KEY = "users_flash"
 ROLES = ("user", "admin")
+CREATE_KEY_PREFIX = "user:create:"
 _PASSWORD_HELP = f"At least {MIN_PASSWORD_CHARS} characters and at most {MAX_PASSWORD_BYTES} bytes."
 # The commit outcome of a failed action can be unknown: ask for a check first.
 _DB_ERROR = (
     "Database error. The action may have succeeded. Check the user list before you try again."
 )
+# The create limit lives in Redis: when Redis is down, no user is created (fail closed).
+_LIMIT_DOWN = "User creation unavailable. Try again later."
 _MESSAGES: dict[type[Exception], str] = {
     UserCreateRefusedError: "Cannot create this user.",
+    UserCreateThrottledError: "Too many new users in a short time. Try again later.",
     UserNotFoundError: "User not found.",
     SelfDeactivationError: "You cannot deactivate yourself.",
     LastAdminError: "Cannot deactivate the last admin.",
@@ -54,11 +62,18 @@ _WIDTHS = (3, 2, 1, 1, 1)
 
 
 def _service() -> UserService:
-    return UserService(get_store())
+    s = get_settings()
+    limiter = ActorThrottle(
+        get_redis(), s.user_create_max, s.user_create_window_seconds, CREATE_KEY_PREFIX
+    )
+    return UserService(get_store(), limiter)
 
 
 def _message(exc: Exception) -> str:
     """Return the fixed message for *exc*; any other error logs only its class name."""
+    if isinstance(exc, RedisError):
+        logger.error("user create throttle unavailable: %s", type(exc).__name__)
+        return _LIMIT_DOWN
     for kind, text in _MESSAGES.items():
         if isinstance(exc, kind):
             return text

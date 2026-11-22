@@ -22,7 +22,7 @@ from plugins.relational_db.postgres import PostgreSQLStore, User
 
 TENANT = "t-a"
 HASH = "$2b$12$h"
-ACTOR = "admin-1"
+ACTOR = "u-1"
 RECORD_KEYS = {"id", "tenant_id", "email", "role", "name", "is_active"}
 
 
@@ -46,10 +46,10 @@ def _integrity(sqlstate: str, constraint: str | None) -> IntegrityError:
 
 
 class FakeSession:
-    """Records statements, added rows and rollbacks; raises *error* on flush."""
+    """Records statements, added rows and rollbacks; raises *error* on execute or flush."""
 
-    def __init__(self, rows: list[User], error: Exception | None) -> None:
-        self.rows, self.error = rows, error
+    def __init__(self, rows: list[User], error: Exception | None, at: str = "execute") -> None:
+        self.rows, self.error, self.at = rows, error, at
         self.statements: list[Any] = []
         self.added: list[User] = []
         self.flushed = self.committed = self.rolled_back = False
@@ -67,12 +67,12 @@ class FakeSession:
         self.added.append(row)
 
     def flush(self) -> None:
-        if self.error is not None:
+        if self.error is not None and self.at == "flush":
             raise self.error
         self.flushed = True
 
     def execute(self, stmt: Any) -> FakeSession:
-        if self.error is not None:
+        if self.error is not None and self.at == "execute":
             raise self.error
         self.statements.append(stmt)
         return self
@@ -109,12 +109,12 @@ MakeStore = Callable[..., tuple[PostgreSQLStore, list[FakeSession]]]
 @pytest.fixture
 def store_with(monkeypatch: pytest.MonkeyPatch) -> MakeStore:
     def make(
-        rows: list[User] | None = None, error: Exception | None = None
+        rows: list[User] | None = None, error: Exception | None = None, at: str = "execute"
     ) -> tuple[PostgreSQLStore, list[FakeSession]]:
         sessions: list[FakeSession] = []
 
         def session(_engine: object) -> FakeSession:
-            sessions.append(FakeSession(rows or [], error))
+            sessions.append(FakeSession(rows or [], error, at))
             return sessions[-1]
 
         store = PostgreSQLStore()
@@ -158,7 +158,7 @@ def test_user_to_record_has_no_hash_or_session_version() -> None:
 
 
 def test_insert_writes_active_user_in_current_tenant(store_with: MakeStore) -> None:
-    store, sessions = store_with()
+    store, sessions = store_with(rows=[_user()])
 
     with tenant_context(TENANT):
         record = _insert(store)
@@ -175,12 +175,12 @@ def test_insert_writes_active_user_in_current_tenant(store_with: MakeStore) -> N
 
 
 def test_insert_appends_a_create_audit_row_after_the_flush(store_with: MakeStore) -> None:
-    store, sessions = store_with()
+    store, sessions = store_with(rows=[_user()])
 
     with tenant_context(TENANT):
         record = _insert(store)
 
-    (audit,) = sessions[0].statements
+    _lock, audit = sessions[0].statements
     assert _sql(audit).startswith("INSERT INTO admin_action_audit")
     assert _params(audit) == {
         "tenant_id": TENANT,
@@ -192,7 +192,7 @@ def test_insert_appends_a_create_audit_row_after_the_flush(store_with: MakeStore
 
 
 def test_insert_ids_are_new_each_time(store_with: MakeStore) -> None:
-    store, _ = store_with()
+    store, _ = store_with(rows=[_user()])
 
     with tenant_context(TENANT):
         ids = {_insert(store)["id"], _insert(store)["id"]}
@@ -205,7 +205,7 @@ def test_insert_without_tenant_raises_before_any_sql(
     store_with: MakeStore, tenant: str | None
 ) -> None:
     """Scenario: No tenant set (insert)."""
-    store, sessions = store_with()
+    store, sessions = store_with(rows=[_user()])
 
     with tenant_context(tenant), pytest.raises(PrincipalRequiredError):
         _insert(store)
@@ -215,7 +215,9 @@ def test_insert_without_tenant_raises_before_any_sql(
 
 def test_insert_duplicate_email_maps_to_refused(store_with: MakeStore) -> None:
     """Scenario: Duplicate email gives the same error in any tenant."""
-    store, sessions = store_with(error=_integrity("23505", "uq_users_email"))
+    store, sessions = store_with(
+        rows=[_user()], error=_integrity("23505", "uq_users_email"), at="flush"
+    )
 
     with tenant_context(TENANT), pytest.raises(UserCreateRefusedError) as first:
         _insert(store)
@@ -236,7 +238,7 @@ def test_insert_other_integrity_errors_are_not_mapped(
 ) -> None:
     """Scenario: Other integrity errors are not mapped."""
     error = _integrity(sqlstate, constraint)
-    store, sessions = store_with(error=error)
+    store, sessions = store_with(rows=[_user()], error=error, at="flush")
 
     with tenant_context(TENANT), pytest.raises(IntegrityError) as caught:
         _insert(store)
@@ -250,7 +252,7 @@ def test_insert_integrity_error_without_driver_details_is_not_mapped(
     store_with: MakeStore,
 ) -> None:
     error = IntegrityError("INSERT", {}, Exception("boom"))
-    store, _ = store_with(error=error)
+    store, _ = store_with(rows=[_user()], error=error, at="flush")
 
     with tenant_context(TENANT), pytest.raises(IntegrityError):
         _insert(store)
@@ -258,12 +260,39 @@ def test_insert_integrity_error_without_driver_details_is_not_mapped(
 
 def test_insert_operational_error_propagates_and_rolls_back(store_with: MakeStore) -> None:
     error = OperationalError("INSERT", {}, Exception("down"))
-    store, sessions = store_with(error=error)
+    store, sessions = store_with(rows=[_user()], error=error, at="flush")
 
     with tenant_context(TENANT), pytest.raises(OperationalError):
         _insert(store)
 
     assert sessions[0].rolled_back
+
+
+def test_insert_locks_the_actor_for_share_before_the_insert(store_with: MakeStore) -> None:
+    store, sessions = store_with(rows=[_user()])
+
+    with tenant_context(TENANT):
+        _insert(store)
+
+    stmt, _audit = sessions[0].statements
+    sql = _sql(stmt)
+    assert sql.rstrip().endswith("FOR SHARE")
+    assert "users.role = %(role_1)s" in sql
+    assert "users.is_active" in sql
+    assert _params(stmt) == {"id_1": "u-1", "tenant_id_1": TENANT, "role_1": "admin"}
+    assert len(sessions[0].added) == 1
+
+
+def test_insert_with_inactive_actor_is_refused_and_adds_nothing(store_with: MakeStore) -> None:
+    """The actor was deactivated after the service check: the locked read finds no row."""
+    store, sessions = store_with(rows=[])
+
+    with tenant_context(TENANT), pytest.raises(PrincipalRequiredError):
+        _insert(store)
+
+    assert sessions[0].added == []
+    assert sessions[0].rolled_back
+    assert not sessions[0].committed
 
 
 # --- list_users ---------------------------------------------------------------

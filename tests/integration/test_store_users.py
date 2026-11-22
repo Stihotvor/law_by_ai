@@ -151,9 +151,7 @@ def test_no_tenant_insert_is_refused(
     email = unique_email("ghost")
 
     with tenant_context(tenant), pytest.raises(PrincipalRequiredError):
-        store.insert_user(
-            email=email, password_hash=HASH, role="user", name="N", actor_id="actor-test"
-        )
+        store.insert_user(email=email, password_hash=HASH, role="user", name="N", actor_id="any")
 
     for owner_tenant in (TENANT_A, TENANT_B):
         assert count_email(owner_sql, owner_tenant, email) == 0

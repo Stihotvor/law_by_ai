@@ -63,6 +63,11 @@ def _redis_client() -> redis.Redis:
     )
 
 
+def get_redis() -> redis.Redis:
+    """Return the process-wide Redis client shared by the login throttle and the pages."""
+    return _redis_client()
+
+
 def _cookie_sent(name: str) -> bool:
     """Return True when the browser sent the cookie with the page request."""
     return name in st.context.cookies

@@ -29,10 +29,12 @@ class UserRepository(Protocol):
     ) -> UserRecord:
         """Insert an active user in the current tenant and return it.
 
-        Records the admin action *actor_id* in the same transaction.
+        The store re-checks *actor_id* as an active admin in the same transaction and
+        appends a ``create_user`` audit row for it.
 
-        Raises:
-            PrincipalRequiredError: no tenant is set (before any SQL).
+        Raises, in check order:
+            PrincipalRequiredError: no tenant is set (before any SQL), or the actor
+                is not an active admin of the tenant (nothing is inserted).
             UserCreateRefusedError: the email is taken (``uq_users_email``).
         Other DB errors are re-raised unmapped.
         """
@@ -52,8 +54,20 @@ class UserRepository(Protocol):
             PrincipalRequiredError: no tenant is set (before any SQL).
             UserNotFoundError: the id is missing or in another tenant.
             SelfDeactivationError: ``user_id == actor_id``.
+            PrincipalRequiredError: the actor is not an active admin of the tenant.
             LastAdminError: the target is an admin and the locked active-admin set
                 holds the target and has one row or fewer.
         An already inactive target is not in the locked set, so it returns ``False``.
+        """
+        ...
+
+
+class CreateRateLimiter(Protocol):
+    """Counts user-create attempts per acting admin."""
+
+    def hit(self, actor_id: str) -> bool:
+        """Count one attempt of *actor_id*; return ``False`` when the count is above the limit.
+
+        May raise ``RedisError`` (the limiter store is unreachable).
         """
         ...

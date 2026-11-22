@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from typing import Any
 
 import pytest
+from fakes.users import TENANT, FakeLimiter, FakeRepo
 
 from core.security import (
     PrincipalRequiredError,
@@ -25,78 +26,8 @@ from core.users import (
     UserService,
 )
 
-TENANT = "t1"
 GOOD_PASSWORD = "correct-horse-1"  # noqa: S105
 SHORT_PASSWORD = "short-pw"  # noqa: S105
-
-
-def _record(user_id: str, email: str, role: str = "user") -> UserRecord:
-    return UserRecord(id=user_id, tenant_id=TENANT, email=email, role=role, name="", is_active=True)
-
-
-class FakeRepo:
-    """In-memory UserRepository that records every call."""
-
-    def __init__(self, admin: UserRecord | None = None) -> None:
-        self.admin: UserRecord | None = admin or _record("A1", "a@x.pl", "admin")
-        self.calls: list[tuple[str, dict[str, Any]]] = []
-        self.writes: list[tuple[str, dict[str, Any]]] = []
-        self.deactivate_result: bool | Exception = True
-
-    def find_active_admin(self, email: str) -> UserRecord | None:
-        self.calls.append(("find_active_admin", {"email": email}))
-        if self.admin is None or self.admin["email"] != email:
-            return None
-        return self.admin
-
-    def insert_user(
-        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
-    ) -> UserRecord:
-        args = {
-            "email": email,
-            "password_hash": password_hash,
-            "role": role,
-            "name": name,
-            "actor_id": actor_id,
-        }
-        self.calls.append(("insert_user", args))
-        self.writes.append(("insert_user", args))
-        return UserRecord(
-            id="U9", tenant_id=TENANT, email=email, role=role, name=name, is_active=True
-        )
-
-    def list_users(self) -> list[UserRecord]:
-        self.calls.append(("list_users", {}))
-        return [self.admin] if self.admin else []
-
-    def deactivate_user(self, user_id: str, *, actor_id: str) -> bool:
-        args = {"user_id": user_id, "actor_id": actor_id}
-        self.calls.append(("deactivate_user", args))
-        if isinstance(self.deactivate_result, Exception):
-            raise self.deactivate_result
-        self.writes.append(("deactivate_user", args))
-        return self.deactivate_result
-
-
-@pytest.fixture(autouse=True)
-def _fast_bcrypt(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("BCRYPT_ROUNDS", "4")
-
-
-@pytest.fixture
-def repo() -> FakeRepo:
-    return FakeRepo()
-
-
-@pytest.fixture
-def service(repo: FakeRepo) -> UserService:
-    return UserService(repo)
-
-
-@pytest.fixture
-def as_admin() -> Iterator[None]:
-    with tenant_context(TENANT), principal_context(RequestPrincipal(" A@X.pl ", "admin")):
-        yield
 
 
 def _create(service: UserService, **overrides: str) -> UserRecord:
@@ -154,7 +85,7 @@ def test_actor_not_active_admin(call: str) -> None:
     repo = FakeRepo()
     repo.admin = None
     with pytest.raises(PrincipalRequiredError):
-        CALLS[call](UserService(repo))
+        CALLS[call](UserService(repo, FakeLimiter()))
     assert [name for name, _ in repo.calls] == ["find_active_admin"]
 
 
@@ -252,8 +183,6 @@ def test_email_normalised_and_password_hashed(service: UserService, repo: FakeRe
     assert args["password_hash"].startswith("$2")
     assert check_password(GOOD_PASSWORD, args["password_hash"])
     assert (args["role"], args["name"]) == ("user", "N")
-    assert repo.admin is not None
-    assert args["actor_id"] == repo.admin["id"]
     assert result["id"] == "U9"
     assert "password_hash" not in result
 
@@ -276,6 +205,32 @@ def test_duplicate_from_port_propagates(service: UserService, repo: FakeRepo) ->
 
 
 # Scenario: Actor id goes to the port
+@pytest.mark.usefixtures("as_admin")
+def test_actor_id_goes_to_insert_port(service: UserService, repo: FakeRepo) -> None:
+    _create(service)
+    (_, args) = repo.writes[0]
+    assert args["actor_id"] == "A1"
+
+
+@pytest.mark.usefixtures("as_admin")
+def test_actor_deactivated_before_insert_is_refused_logged_and_not_audited(
+    service: UserService, repo: FakeRepo, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The store refuses an actor that is no longer an active admin in the write."""
+
+    def refuse(**_: str) -> UserRecord:
+        raise PrincipalRequiredError("The acting admin is not active.")
+
+    repo.insert_user = refuse  # type: ignore[method-assign]
+    caplog.set_level(logging.DEBUG)
+    with pytest.raises(PrincipalRequiredError):
+        _create(service)
+    assert _refusals(caplog) == [
+        {"actor_id": "A1", "action": "create_user", "error": "PrincipalRequiredError"}
+    ]
+    assert not [r for r in caplog.records if "target_id" in r.__dict__]
+
+
 @pytest.mark.usefixtures("as_admin")
 def test_actor_id_goes_to_port(service: UserService, repo: FakeRepo) -> None:
     assert service.deactivate_user("U2") is True

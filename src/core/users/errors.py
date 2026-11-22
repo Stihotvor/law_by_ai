@@ -8,6 +8,10 @@ class UserCreateRefusedError(Exception):
     """Raised when a new user is rejected: duplicate email or invalid input."""
 
 
+class UserCreateThrottledError(Exception):
+    """Raised when the acting admin has created too many users in the current window."""
+
+
 class UserNotFoundError(Exception):
     """Raised when the target user does not exist in the current tenant."""
 

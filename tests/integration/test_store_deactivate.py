@@ -17,7 +17,7 @@ from sqlalchemy import create_engine, text
 from users_helpers import OwnerSql, app_store, insert_id
 
 from core.security import PrincipalRequiredError, tenant_context
-from core.users.errors import LastAdminError, SelfDeactivationError, UserNotFoundError
+from core.users.errors import SelfDeactivationError, UserNotFoundError
 from plugins.relational_db.postgres import PostgreSQLStore
 
 pytestmark = pytest.mark.integration
@@ -113,12 +113,16 @@ def test_self_deactivation_is_refused(store: PostgreSQLStore, owner_sql: OwnerSq
 
 
 def test_last_admin_is_refused(store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
-    """Scenario: Self and last admin, last admin part (QA-027)."""
+    """Scenario: Self and last admin, last admin part (QA-027).
+
+    The actor is verified in the same transaction, so a deactivated admin cannot act
+    on the last admin: the store refuses the actor, not the target.
+    """
     admin1 = insert_id(store, TENANT_A, "admin")
     admin2 = insert_id(store, TENANT_A, "admin")
     assert _deactivate(store, TENANT_A, admin2, admin1) is True
 
-    with pytest.raises(LastAdminError):
+    with pytest.raises(PrincipalRequiredError):
         _deactivate(store, TENANT_A, admin1, admin2)
 
     assert _active_admins(owner_sql, TENANT_A) == 1
@@ -177,7 +181,7 @@ def test_two_sessions_race_keeps_one_admin(
     ``pg_stat_activity`` until the worker is seen waiting on a lock in a
     ``FOR UPDATE`` query on ``users``. Only then does the holder deactivate A2 and
     commit. PostgreSQL rechecks the locked rows: the store's locked set is [A1],
-    one row holding the target, so it raises ``LastAdminError``.
+    which does not hold the actor A2, so it raises ``PrincipalRequiredError``.
 
     Without ``.with_for_update()`` in ``_lock_admins_or_refuse`` the store reads
     [A1, A2] from its snapshot without waiting, and the worker waits on its UPDATE
@@ -204,7 +208,7 @@ def test_two_sessions_race_keeps_one_admin(
 
     assert not thread.is_alive()
     assert len(outcomes) == 1
-    assert isinstance(outcomes[0], LastAdminError)
+    assert isinstance(outcomes[0], PrincipalRequiredError)
     assert _active_admins(owner_sql, TENANT_A) == 1
     assert _state(owner_sql, TENANT_A, admin1)[0] is True
 
