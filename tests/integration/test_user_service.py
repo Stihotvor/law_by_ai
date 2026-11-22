@@ -277,3 +277,51 @@ def test_each_action_under_one_second(
     assert create_s < MAX_SECONDS
     assert list_s < MAX_SECONDS
     assert deactivate_s < MAX_SECONDS
+
+
+class _DeactivatesActorBeforeWrite:
+    """Repo wrapper: the acting admin is deactivated right after the service check."""
+
+    def __init__(self, store: PostgreSQLStore, owner_sql: OwnerSql) -> None:
+        self._store, self._owner_sql = store, owner_sql
+
+    def find_active_admin(self, email: str) -> Any:
+        found = self._store.find_active_admin(email)
+        if found is not None:
+            self._owner_sql(
+                TENANT_A, "UPDATE users SET is_active = false WHERE id = :i", i=found["id"]
+            )
+        return found
+
+    def insert_user(
+        self, *, email: str, password_hash: str, role: str, name: str, actor_id: str
+    ) -> Any:
+        return self._store.insert_user(
+            email=email, password_hash=password_hash, role=role, name=name, actor_id=actor_id
+        )
+
+    def list_users(self) -> Any:
+        return self._store.list_users()
+
+    def deactivate_user(self, user_id: str, *, actor_id: str) -> bool:
+        return self._store.deactivate_user(user_id, actor_id=actor_id)
+
+
+def test_actor_deactivated_between_check_and_write_is_refused(
+    store: PostgreSQLStore, owner_sql: OwnerSql
+) -> None:
+    """The store re-checks the acting admin in the write transaction."""
+    admin_id, admin_email = _seed(store, TENANT_A, "admin")
+    user_id, _ = _seed(store, TENANT_A, "user")
+    service = UserService(_DeactivatesActorBeforeWrite(store, owner_sql))
+    email = _email("late")
+
+    with _as(admin_email, "admin"), pytest.raises(PrincipalRequiredError):
+        service.create_user(email, NEW_PLAIN, "user", "Late")
+    assert count_email(owner_sql, TENANT_A, email) == 0
+
+    owner_sql(TENANT_A, "UPDATE users SET is_active = true WHERE id = :i", i=admin_id)
+    with _as(admin_email, "admin"), pytest.raises(PrincipalRequiredError):
+        service.deactivate_user(user_id)
+    rows = owner_sql(TENANT_A, "SELECT is_active FROM users WHERE id = :i", i=user_id)
+    assert rows[0][0] is True
