@@ -59,3 +59,14 @@ class UserRepository(Protocol):
         An already inactive target is not in the locked set, so it returns ``False``.
         """
         ...
+
+
+class CreateRateLimiter(Protocol):
+    """Counts user-create attempts per acting admin."""
+
+    def hit(self, actor_id: str) -> bool:
+        """Count one attempt of *actor_id*; return ``False`` when the count is above the limit.
+
+        May raise ``RedisError`` (the limiter store is unreachable).
+        """
+        ...
