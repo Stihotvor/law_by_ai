@@ -12,6 +12,9 @@ import secrets
 
 import bcrypt
 
+MIN_PASSWORD_CHARS = 12
+MAX_PASSWORD_BYTES = 72  # bcrypt limit
+
 
 def hash_password(plain: str) -> str:
     """Return a bcrypt hash of *plain*.

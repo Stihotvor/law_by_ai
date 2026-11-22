@@ -51,11 +51,21 @@ def _store() -> PostgreSQLStore:
     return PostgreSQLStore()
 
 
+def get_store() -> PostgreSQLStore:
+    """Return the process-wide store shared by the auth adapter and the pages."""
+    return _store()
+
+
 @st.cache_resource
 def _redis_client() -> redis.Redis:
     return redis.Redis.from_url(
         get_settings().redis_url, socket_timeout=1, socket_connect_timeout=1
     )
+
+
+def get_redis() -> redis.Redis:
+    """Return the process-wide Redis client shared by the login throttle and the pages."""
+    return _redis_client()
 
 
 def _cookie_sent(name: str) -> bool:

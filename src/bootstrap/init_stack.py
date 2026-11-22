@@ -31,6 +31,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 
 from config.settings import get_settings
 from core.security import ADMIN, tenant_context
+from core.security.passwords import MAX_PASSWORD_BYTES, MIN_PASSWORD_CHARS
 from plugins.relational_db.postgres import PostgreSQLStore
 
 _log = logging.getLogger(__name__)
@@ -38,8 +39,6 @@ _log = logging.getLogger(__name__)
 OK, BAD_CONFIG, UNREACHABLE, STEP_FAILED = 0, 2, 3, 4
 TRIES = 5
 PLACEHOLDER = "change-me"
-MIN_PASSWORD_CHARS = 12
-MAX_PASSWORD_BYTES = 72  # bcrypt limit
 Transient = tuple[type[Exception], ...]
 PG_DOWN: Transient = (OperationalError,)
 S3_DOWN: Transient = (urllib3.exceptions.HTTPError, ServerError)

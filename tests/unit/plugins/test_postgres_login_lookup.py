@@ -12,7 +12,7 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from core.security import get_current_tenant, set_current_tenant
-from plugins.relational_db import postgres
+from plugins.relational_db import postgres, user_store
 from plugins.relational_db.postgres import PostgreSQLStore, User
 
 BCRYPT_HASH = "$2b$12$hash"
@@ -64,7 +64,7 @@ def store_with(monkeypatch: pytest.MonkeyPatch):
     def make(row: User | None) -> PostgreSQLStore:
         store = PostgreSQLStore()
         monkeypatch.setattr(store, "_ensure_initialized", lambda: None)
-        monkeypatch.setattr(postgres, "Session", lambda engine: FakeSession(engine, row))
+        monkeypatch.setattr(user_store, "Session", lambda engine: FakeSession(engine, row))
         FakeSession.seen = {}
         return store
 
@@ -121,7 +121,7 @@ def login_store_with(monkeypatch: pytest.MonkeyPatch):
 
         store = PostgreSQLStore()
         monkeypatch.setattr(store, "_ensure_initialized", lambda: None)
-        monkeypatch.setattr(postgres, "Session", session)
+        monkeypatch.setattr(user_store, "Session", session)
         FakeSession.seen = {}
         return store
 

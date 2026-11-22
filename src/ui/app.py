@@ -22,4 +22,5 @@ user = require_auth()
 pages = [st.Page(_home, title="Home", default=True)]
 if is_admin(user["role"]):
     pages.append(st.Page("pages/fetch.py", title="Fetch a document"))
+    pages.append(st.Page("pages/users.py", title="Users"))
 st.navigation(pages).run()
