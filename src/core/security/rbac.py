@@ -1,13 +1,10 @@
 """RBAC layer (ADR-0013).
 
-Role constants and a ``require_role`` decorator / predicate usable from
-both the core security module and the Streamlit adapter.
+Role constants, role predicates and the privilege-escalation check, usable
+from both the core security module and the Streamlit adapter.
 
 Design decisions:
 - Roles are plain strings: ``"admin"`` and ``"user"``.
-- ``require_role()`` is a *predicate* — it returns a callable that
-  accepts a ``role`` argument and returns ``True`` / ``False``.
-  This avoids coupling to any particular framework's request cycle.
 - ``is_admin()`` and ``is_user()`` are convenience helpers.
 - Privilege-escalation guard: a ``user``-scoped function that receives an
   ``admin``-level operation must raise ``PermissionError`` (or a subclass)
@@ -15,8 +12,6 @@ Design decisions:
 """
 
 from __future__ import annotations
-
-from collections.abc import Callable
 
 # ---------------------------------------------------------------------------
 # Role constants — importable as ``from core.security import ADMIN, USER``
@@ -50,14 +45,6 @@ def valid_role(role: str) -> bool:
 # ---------------------------------------------------------------------------
 # Privilege-escalation guard
 # ---------------------------------------------------------------------------
-
-
-class InvalidRoleError(ValueError):
-    """Raised when a role is not valid (not ADMIN or USER)."""
-
-    def __init__(self, role: str) -> None:
-        self.role = role
-        super().__init__(f"Invalid role: {role!r}")
 
 
 class PrivilegeEscalationError(PermissionError):
@@ -102,38 +89,3 @@ def check_privilege_escalation(
             requested_role=role,
             required_role=required_role,
         )
-
-
-# ---------------------------------------------------------------------------
-# ``require_role`` — decorator / predicate factory
-# ---------------------------------------------------------------------------
-
-
-def require_role(
-    required: str = ADMIN,
-) -> Callable[[str], bool]:
-    """Factory that returns a ``callable[[role], bool]``.
-
-    The returned callable can be used as a predicate in any context
-    (CLI, Celery, Streamlit, FastAPI, tests). The check is a plain equality
-    comparison, so custom (non-``VALID_ROLES``) requirements work too.
-
-    Example::
-
-        from core.security import require_role
-
-        # Streamlit page guard: use ui.components.auth.require_admin(),
-        # which reads the session role through ui.components.auth.current_role().
-
-        # Celery task guard:
-        # if not require_role(ADMIN)(worker_role):
-        #     raise PrivilegeEscalationError(...)
-
-        # Test assertion:
-        # assert require_role(ADMIN)(user_role)
-    """
-
-    def _check(role: str) -> bool:
-        return role == required
-
-    return _check
