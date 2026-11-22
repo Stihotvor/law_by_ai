@@ -213,13 +213,16 @@ only SELECT and INSERT. The downgrade stops while the table holds rows.
 
 Row level security is forced on this table, so it binds `lawbyai_owner` too. Without
 `app.current_tenant` the owner sees no rows, and a plain export or `DELETE` does
-nothing. To purge, run one owner transaction that lifts FORCE, exports and deletes,
-and restores FORCE before it commits:
+nothing. To purge, run one owner transaction in `psql` that lifts FORCE, exports to
+a client file, checks the export, deletes, and restores FORCE before it commits.
+`\copy` writes on the client. Server-side `COPY ... TO` needs `pg_write_server_files`,
+which the owner does not have.
 
 ```sql
 BEGIN;
 ALTER TABLE public.admin_action_audit NO FORCE ROW LEVEL SECURITY;
--- export the rows first, for example: COPY public.admin_action_audit TO '/path/audit.csv' CSV HEADER;
+\copy public.admin_action_audit TO 'audit.csv' CSV HEADER
+-- Check audit.csv (row count and content) before you go on.
 DELETE FROM public.admin_action_audit;
 ALTER TABLE public.admin_action_audit FORCE ROW LEVEL SECURITY;
 COMMIT;

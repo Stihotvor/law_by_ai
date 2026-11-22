@@ -166,6 +166,8 @@ def test_downgrade_removes_column_and_table_then_upgrade_restores(engine: Engine
 
 
 def test_autogenerate_finds_no_changes(engine: Engine) -> None:
+    """Models and the head schema agree, the admin audit table and its index included."""
+    assert "admin_action_audit" in Base.metadata.tables
     with engine.connect() as conn:
         diff = compare_metadata(
             MigrationContext.configure(conn, opts=dict(AUTOGEN_COMPARE_OPTS)), Base.metadata
