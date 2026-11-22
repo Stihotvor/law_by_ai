@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from auth_page_driver import text
+from auth_page_driver import markdown_text
 from streamlit.testing.v1 import AppTest
 
 _UNSET = object()
@@ -30,28 +30,28 @@ def _run(user: Any) -> AppTest:
 
 def test_admin_sees_page() -> None:
     at = _run({"role": "admin"})
-    assert "role=[admin]" in text(at)
-    assert "admin content" in text(at)
+    assert "role=[admin]" in markdown_text(at)
+    assert "admin content" in markdown_text(at)
     assert len(at.warning) == 0
 
 
 def test_user_is_stopped_with_warning() -> None:
     at = _run({"role": "user"})
-    assert "role=[user]" in text(at)
-    assert "admin content" not in text(at)
+    assert "role=[user]" in markdown_text(at)
+    assert "admin content" not in markdown_text(at)
     assert len(at.warning) == 1
 
 
 def test_no_session_user_is_stopped_with_warning() -> None:
     at = _run(_UNSET)
-    assert "role=[]" in text(at)
-    assert "admin content" not in text(at)
+    assert "role=[]" in markdown_text(at)
+    assert "admin content" not in markdown_text(at)
     assert at.warning[0].value == "Admin role required."
 
 
 @pytest.mark.parametrize("user", ["admin", None, {"role": 1}, {"name": "x"}, ["admin"]])
 def test_malformed_session_user_fails_closed(user: Any) -> None:
     at = _run(user)
-    assert "role=[]" in text(at)
-    assert "admin content" not in text(at)
+    assert "role=[]" in markdown_text(at)
+    assert "admin content" not in markdown_text(at)
     assert len(at.warning) == 1

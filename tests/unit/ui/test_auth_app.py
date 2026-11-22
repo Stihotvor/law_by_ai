@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from auth_page_driver import login, login_form_shown
+from auth_page_driver import login_form_shown, submit_login
 from factories.auth import LoginEnv
 from streamlit.testing.v1 import AppTest
 
@@ -18,14 +18,14 @@ def _app() -> AppTest:
 
 
 def test_admin_reaches_fetch_form(login_env: LoginEnv) -> None:
-    at = login(_app(), "admin@x.com")
+    at = submit_login(_app(), "admin@x.com")
     at.switch_page("pages/fetch.py").run()
     assert not at.exception
     assert any(b.label == "Fetch" for b in at.button)
 
 
 def test_user_has_no_fetch_page(login_env: LoginEnv) -> None:
-    at = login(_app(), "user@x.com")
+    at = submit_login(_app(), "user@x.com")
     assert not at.exception
     assert [t.value for t in at.title] == ["Law by AI"]
     assert not any(b.label == "Fetch" for b in at.button)

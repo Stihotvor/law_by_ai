@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from auth_page_driver import login, login_form_shown, open_page, text
+from auth_page_driver import login_form_shown, markdown_text, open_page, submit_login
 from factories.auth import COOKIE, LoginEnv, make_token
 from sqlalchemy.exc import OperationalError
 
@@ -15,7 +15,7 @@ LOGOUT_WARNING = (
 
 
 def test_logout_clears_session_tenant_and_cookie(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     at.button(key="logout_button").click()
     at.run()
     assert "user" not in at.session_state
@@ -27,7 +27,7 @@ def test_logout_clears_session_tenant_and_cookie(login_env: LoginEnv) -> None:
 
 
 def test_logout_bumps_session_version_before_cookie_delete(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     deleted = login_env.deleted
     at.button(key="logout_button").click()
     at.run()
@@ -36,7 +36,7 @@ def test_logout_bumps_session_version_before_cookie_delete(login_env: LoginEnv) 
 
 
 def test_logout_clears_locally_and_warns_when_bump_fails(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     deleted = login_env.deleted
     login_env.store.bump_error = OperationalError("UPDATE", {}, Exception("down"))
     at.button(key="logout_button").click()
@@ -55,7 +55,7 @@ def test_logout_clears_locally_and_warns_when_bump_fails(login_env: LoginEnv) ->
 
 
 def test_copied_cookie_replayed_in_new_session_after_logout_is_refused(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     token = login_env.jar[COOKIE]
     at.button(key="logout_button").click()
     at.run()
@@ -67,7 +67,7 @@ def test_copied_cookie_replayed_in_new_session_after_logout_is_refused(login_env
 
 
 def test_stale_browser_cookie_does_not_log_in_after_logout(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     token = login_env.jar[COOKIE]
     at.button(key="logout_button").click()
     at.run()
@@ -78,11 +78,11 @@ def test_stale_browser_cookie_does_not_log_in_after_logout(login_env: LoginEnv) 
 
 
 def test_login_after_logout_does_not_delete_new_cookie(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     at.button(key="logout_button").click()
     at.run()
     deleted = login_env.deleted
     login_env.jar[COOKIE] = make_token("admin@x.com|3")  # stale copy still sent
-    at = login(at, "admin@x.com")
-    assert "hello admin" in text(at)
+    at = submit_login(at, "admin@x.com")
+    assert "hello admin" in markdown_text(at)
     assert login_env.deleted == deleted

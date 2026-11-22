@@ -8,7 +8,7 @@ from unittest.mock import patch
 import jwt
 import pytest
 import streamlit as st
-from auth_page_driver import login, login_form_shown, open_page, text
+from auth_page_driver import login_form_shown, markdown_text, open_page, submit_login
 from factories.auth import COOKIE, KEY, LoginEnv, login_row, make_token
 from freezegun import freeze_time
 from streamlit.testing.v1 import AppTest
@@ -19,12 +19,12 @@ from ui.components import auth
 def test_cookie_logs_in_without_form(login_env: LoginEnv) -> None:
     login_env.jar[COOKIE] = make_token("admin@x.com|3")
     at = open_page()
-    assert "hello admin same=True" in text(at)
+    assert "hello admin same=True" in markdown_text(at)
     login_env.set_tenant.assert_called_with("t-1")
 
 
 def test_deactivated_user_loses_session(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     login_env.store.rows["admin@x.com"] = login_row(is_active=False, session_version=4)
     at.run()
     assert login_form_shown(at)
@@ -33,7 +33,7 @@ def test_deactivated_user_loses_session(login_env: LoginEnv) -> None:
 
 
 def test_password_change_ends_live_session(login_env: LoginEnv) -> None:
-    at = login(open_page(), "admin@x.com")
+    at = submit_login(open_page(), "admin@x.com")
     login_env.store.rows["admin@x.com"] = login_row(session_version=4)
     at.run()
     assert login_form_shown(at)
@@ -55,10 +55,10 @@ def test_stale_cookie_is_rejected_and_deleted(login_env: LoginEnv) -> None:
 
 def test_open_session_ends_when_cookie_expiry_passes(login_env: LoginEnv) -> None:
     with freeze_time("2026-01-01") as frozen:
-        at = login(open_page(), "admin@x.com")
+        at = submit_login(open_page(), "admin@x.com")
         frozen.tick(timedelta(days=29))
         at.run()
-        assert "hello admin" in text(at)
+        assert "hello admin" in markdown_text(at)
         frozen.tick(timedelta(days=1, seconds=1))
         at.run()
         assert login_form_shown(at)
@@ -109,7 +109,7 @@ def test_get_current_user_reads_only_session() -> None:
         "st.markdown(f'u={get_current_user()}')\n"
     )
     at.session_state["user"] = ["admin"]
-    assert "u=None" in text(at.run())
+    assert "u=None" in markdown_text(at.run())
 
 
 def test_cookie_sent_reads_request_cookies() -> None:

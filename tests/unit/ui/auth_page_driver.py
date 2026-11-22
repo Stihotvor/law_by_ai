@@ -15,7 +15,7 @@ def auth_script() -> None:
     st.markdown(f"hello {user['role']} same={get_current_user() == user}")
 
 
-def text(at: AppTest) -> str:
+def markdown_text(at: AppTest) -> str:
     return " ".join(str(m.value) for m in at.markdown)
 
 
@@ -23,7 +23,7 @@ def open_page() -> AppTest:
     return AppTest.from_function(auth_script).run()
 
 
-def login(at: AppTest, email: str, password: str = PLAIN) -> AppTest:
+def submit_login(at: AppTest, email: str, password: str = PLAIN) -> AppTest:
     at.text_input(key="login_email").input(email)
     at.text_input(key="login_password").input(password)
     at.button[0].click()
@@ -32,4 +32,4 @@ def login(at: AppTest, email: str, password: str = PLAIN) -> AppTest:
 
 def login_form_shown(at: AppTest) -> bool:
     keys = {t.key for t in at.text_input}
-    return {"login_email", "login_password"} <= keys and "hello" not in text(at)
+    return {"login_email", "login_password"} <= keys and "hello" not in markdown_text(at)
