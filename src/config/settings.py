@@ -77,6 +77,10 @@ Variable                          Purpose                             Default
 ``LOGIN_WINDOW_SECONDS``          seconds in which failures are       ``900``
                                   counted
 ``LOGIN_LOCKOUT_SECONDS``         seconds an email stays locked       ``900``
+``USER_CREATE_MAX``               user-create attempts per admin in   ``10``
+                                  the window
+``USER_CREATE_WINDOW_SECONDS``    seconds in which user-create        ``3600``
+                                  attempts are counted
 ``POSTGRES_POOL_SIZE``            app DB pool size (min 1)            ``3``
 ``POSTGRES_MAX_OVERFLOW``         app DB pool overflow (min 0)        ``2``
 ``WORKER_POSTGRES_POOL_SIZE``     worker DB pool size (min 1)         ``1``
@@ -570,6 +574,17 @@ class Settings:
     def login_lockout_seconds(self) -> int:
         """Seconds an email stays locked after the failure that reaches the limit."""
         return _positive("LOGIN_LOCKOUT_SECONDS", "900", int)
+
+    # --- User create limit -------------------------------------------------------
+    @property
+    def user_create_max(self) -> int:
+        """User-create attempts per acting admin allowed in the window."""
+        return _positive("USER_CREATE_MAX", "10", int)
+
+    @property
+    def user_create_window_seconds(self) -> int:
+        """Seconds in which the user-create attempts of an admin are counted."""
+        return _positive("USER_CREATE_WINDOW_SECONDS", "3600", int)
 
 
 @lru_cache(maxsize=1)
