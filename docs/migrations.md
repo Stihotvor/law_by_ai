@@ -199,3 +199,33 @@ COMMIT;
 The block runs in one transaction. If a statement fails, no change stays.
 If the database has more objects that the superuser owns, change their owner
 in the same way before you run the migration.
+
+## Last-admin trigger and the admin audit table
+
+Revision `c4a91e7f2b58` adds `trg_users_last_admin` on `users`. It refuses a change
+that leaves a tenant with no active admin (SQLSTATE 23514, constraint name
+`trg_users_last_admin`). The owner `lawbyai_owner` can skip it for maintenance
+with `SET LOCAL app.skip_last_admin_check = 'on'`. The trigger ignores this setting
+for every other role.
+
+The same revision adds `admin_action_audit`, an append-only log. `lawbyai_app` has
+only SELECT and INSERT. The downgrade stops while the table holds rows.
+
+Row level security is forced on this table, so it binds `lawbyai_owner` too. Without
+`app.current_tenant` the owner sees no rows, and a plain export or `DELETE` does
+nothing. To purge, run one owner transaction in `psql` that lifts FORCE, exports to
+a client file, checks the export, deletes, and restores FORCE before it commits.
+`\copy` writes on the client. Server-side `COPY ... TO` needs `pg_write_server_files`,
+which the owner does not have.
+
+```sql
+BEGIN;
+ALTER TABLE public.admin_action_audit NO FORCE ROW LEVEL SECURITY;
+\copy public.admin_action_audit TO 'audit.csv' CSV HEADER
+-- Check audit.csv (row count and content) before you go on.
+DELETE FROM public.admin_action_audit;
+ALTER TABLE public.admin_action_audit FORCE ROW LEVEL SECURITY;
+COMMIT;
+```
+
+Then run the downgrade again.

@@ -166,6 +166,8 @@ def test_downgrade_removes_column_and_table_then_upgrade_restores(engine: Engine
 
 
 def test_autogenerate_finds_no_changes(engine: Engine) -> None:
+    """Models and the head schema agree, the admin audit table and its index included."""
+    assert "admin_action_audit" in Base.metadata.tables
     with engine.connect() as conn:
         diff = compare_metadata(
             MigrationContext.configure(conn, opts=dict(AUTOGEN_COMPARE_OPTS)), Base.metadata
@@ -224,7 +226,8 @@ def test_autogenerate_detects_changed_server_default(
     assert _status_default_arg(Base.metadata) == DocumentStatus.NEEDS_REVIEW.value
 
 
-def test_rls_only_on_tenants_and_users(engine: Engine) -> None:
+def test_rls_only_on_tenant_tables(engine: Engine) -> None:
+    """legal_document and rejected_document have no RLS; the tenant tables and the audit do."""
     with engine.connect() as conn:
         rows = conn.execute(
             text(
@@ -234,4 +237,4 @@ def test_rls_only_on_tenants_and_users(engine: Engine) -> None:
                 "AND c.relrowsecurity"
             )
         ).scalars()
-        assert set(rows) == {"tenants", "users"}
+        assert set(rows) == {"tenants", "users", "admin_action_audit"}

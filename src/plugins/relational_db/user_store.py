@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, Protocol
 
-from sqlalchemy import Engine, select, text, update
+from sqlalchemy import Engine, insert, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -28,7 +28,7 @@ from core.users.ports import UserRecord
 from plugins.relational_db.mappers import tenant_to_dict as _tenant_to_dict
 from plugins.relational_db.mappers import user_to_dict as _user_to_dict
 from plugins.relational_db.mappers import user_to_record as _user_to_record
-from plugins.relational_db.tenant_models import Tenant, User
+from plugins.relational_db.tenant_models import AdminActionAudit, Tenant, User
 
 __all__ = ["UserStoreMixin"]
 
@@ -126,6 +126,17 @@ def _set_inactive(session: Session, user_id: str, tenant: str) -> bool:
     return session.execute(stmt).scalar_one_or_none() is not None
 
 
+def _record_action(
+    session: Session, *, tenant: str, actor_id: str, action: str, target_id: str
+) -> None:
+    """Append one ``admin_action_audit`` row in the caller's transaction (append-only table)."""
+    session.execute(
+        insert(AdminActionAudit).values(
+            tenant_id=tenant, actor_id=actor_id, action=action, target_id=target_id
+        )
+    )
+
+
 class _StoreHost(Protocol):
     """What the mixin needs from its host class: the engine and lazy init."""
 
@@ -213,6 +224,7 @@ class UserStoreMixin:
         """Insert an active user in the current tenant; the email is stored as given.
 
         The acting admin *actor_id* is locked ``FOR SHARE`` in the same transaction.
+        Appends a ``create_user`` audit row for it in that transaction.
         Check order: ``PrincipalRequiredError`` with no tenant (before any SQL) or when
         the actor is not an active admin of the tenant (nothing is inserted), then
         ``UserCreateRefusedError`` only for 23505 on ``uq_users_email``. Other errors
@@ -228,6 +240,13 @@ class UserStoreMixin:
                 _lock_actor(session, actor_id, tenant)
                 session.add(user)
                 session.flush()
+                _record_action(
+                    session,
+                    tenant=tenant,
+                    actor_id=actor_id,
+                    action="create_user",
+                    target_id=user.id,
+                )
                 record = _user_to_record(user)
         except IntegrityError as exc:
             if _is_duplicate_email(exc):
@@ -272,6 +291,7 @@ class UserStoreMixin:
         active admin of the tenant, ``LastAdminError`` when the locked active-admin
         set has one row or fewer and holds the target. Returns ``True`` when one row
         changed and ``False`` for an already inactive target. Rolls back on every error.
+        A changed row appends a ``deactivate_user`` audit row in the same transaction.
         """
         tenant = _require_tenant()
         self._ensure_initialized()
@@ -284,7 +304,16 @@ class UserStoreMixin:
             else:
                 _lock_actor(session, actor_id, tenant)
                 _lock_target(session, user_id, tenant)
-            return _set_inactive(session, user_id, tenant)
+            changed = _set_inactive(session, user_id, tenant)
+            if changed:
+                _record_action(
+                    session,
+                    tenant=tenant,
+                    actor_id=actor_id,
+                    action="deactivate_user",
+                    target_id=user_id,
+                )
+            return changed
 
     def list_tenants(self: _StoreHost) -> list[dict[str, Any]]:
         """Tenants visible under RLS: the current tenant only, none with no tenant set."""

@@ -29,7 +29,8 @@ class UserRepository(Protocol):
     ) -> UserRecord:
         """Insert an active user in the current tenant and return it.
 
-        The store re-checks *actor_id* as an active admin in the same transaction.
+        The store re-checks *actor_id* as an active admin in the same transaction and
+        appends a ``create_user`` audit row for it.
 
         Raises, in check order:
             PrincipalRequiredError: no tenant is set (before any SQL), or the actor

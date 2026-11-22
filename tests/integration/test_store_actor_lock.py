@@ -14,7 +14,7 @@ from threading import Thread
 from typing import Any
 
 import pytest
-from factories.scratch_db import TENANT_SQL
+from factories.scratch_db import SKIP_LAST_ADMIN_SQL, TENANT_SQL
 from sqlalchemy import create_engine, text
 from users_helpers import HASH, OwnerSql, app_store, count_email, insert_id, unique_email
 
@@ -170,6 +170,8 @@ def _race(
     try:
         with engine.connect() as conn, conn.begin() as holder:
             conn.execute(text(TENANT_SQL), {"tenant": TENANT_A})
+            # The holder deactivates the only admin: the owner skips the last-admin trigger.
+            conn.execute(text(SKIP_LAST_ADMIN_SQL))
             conn.execute(text(_DEACTIVATE_SQL), {"i": actor})
             thread, outcomes = start_worker()
             _wait_until_blocked(postgres_url, lock)
