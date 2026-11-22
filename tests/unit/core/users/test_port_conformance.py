@@ -5,29 +5,16 @@ Compares signatures with ``inspect`` only. No DB connection is opened.
 
 from __future__ import annotations
 
-import importlib.util
 import inspect
 import typing
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
 import pytest
+from fakes.users import FakeRepo
 
 from core.users import UserRecord, UserRepository
 from plugins.relational_db.postgres import PostgreSQLStore
-
-SERVICE_TESTS = Path(__file__).with_name("test_service.py")
-
-
-def _load_fake_repo() -> type:
-    """Load the FakeRepo that the service unit tests use."""
-    spec = importlib.util.spec_from_file_location("_users_service_tests", SERVICE_TESTS)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.FakeRepo
 
 
 def port_methods() -> list[str]:
@@ -75,7 +62,7 @@ def test_port_declares_expected_methods() -> None:
 
 
 # Scenario: Signatures match
-@pytest.mark.parametrize("impl", [PostgreSQLStore, _load_fake_repo()], ids=["store", "fake"])
+@pytest.mark.parametrize("impl", [PostgreSQLStore, FakeRepo], ids=["store", "fake"])
 def test_signatures_match(impl: type) -> None:
     assert conformance_report(impl) == {}
 

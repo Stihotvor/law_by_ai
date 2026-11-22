@@ -1,4 +1,4 @@
-"""Shared fixtures for integration tests: PostgreSQL URLs and eager Celery.
+"""Shared fixtures for integration tests: PostgreSQL URLs, Redis and eager Celery.
 
 Tests connect as ``lawbyai_app`` (``postgres_url``). The owner ``lawbyai_owner``
 (``owner_url``) only sets up and cleans data. FORCE row level security on
@@ -12,9 +12,14 @@ from collections.abc import Callable, Iterator
 from typing import Any
 
 import pytest
+import redis
 from factories.db_probe import can_connect
 from factories.scratch_db import tenant_sql
+from redis.exceptions import AuthenticationError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import TimeoutError as RedisTimeoutError
 from sqlalchemy import Row
+from users_helpers import CreateKeys
 
 from config.settings import get_settings
 from tasks.celery_app import app
@@ -54,6 +59,30 @@ def owner_sql(owner_url: str) -> OwnerSql:
         return tenant_sql(owner_url, tenant, sql, **params)
 
     return run
+
+
+@pytest.fixture
+def redis_client() -> Iterator[CreateKeys]:
+    """Live Redis from ``settings.redis_url``; skip only when the host is unreachable.
+
+    A wrong password fails the test. Tracked user-create keys are deleted before and after.
+    """
+    client = redis.Redis.from_url(
+        get_settings().redis_url, socket_timeout=1, socket_connect_timeout=1
+    )
+    try:
+        client.ping()
+    except AuthenticationError:
+        raise
+    except (RedisConnectionError, RedisTimeoutError):
+        client.close()
+        pytest.skip("Redis host unreachable")
+    keys = CreateKeys(client)
+    try:
+        yield keys
+    finally:
+        keys.clean()
+        client.close()
 
 
 @pytest.fixture

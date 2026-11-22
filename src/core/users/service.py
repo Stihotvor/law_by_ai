@@ -1,7 +1,7 @@
 """User service: principal binding, input checks, hashing and audit.
 
-Uses only the ``UserRepository`` port. The tenant comes from the context and is
-never an argument. Logs never hold a password or a password hash.
+Uses only the ``UserRepository`` and ``CreateRateLimiter`` ports. The tenant
+comes from the context and is never an argument. Logs never hold a password or a password hash.
 """
 
 from __future__ import annotations
@@ -23,9 +23,10 @@ from .errors import (
     LastAdminError,
     SelfDeactivationError,
     UserCreateRefusedError,
+    UserCreateThrottledError,
     UserNotFoundError,
 )
-from .ports import UserRecord, UserRepository
+from .ports import CreateRateLimiter, UserRecord, UserRepository
 
 _log = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ _REFUSALS: tuple[type[Exception], ...] = (
     LastAdminError,
     SelfDeactivationError,
     UserCreateRefusedError,
+    UserCreateThrottledError,
     UserNotFoundError,
 )
 
@@ -94,8 +96,9 @@ class _RefusalLog:
 class UserService:
     """Admin-only user management in the current tenant."""
 
-    def __init__(self, repo: UserRepository) -> None:
+    def __init__(self, repo: UserRepository, limiter: CreateRateLimiter) -> None:
         self._repo = repo
+        self._limiter = limiter
 
     def _actor(self) -> UserRecord:
         """Return the active admin row of the current principal in the current tenant."""
@@ -108,17 +111,23 @@ class UserService:
         return actor
 
     def create_user(self, email: str, password: str, role: str, name: str) -> UserRecord:
-        """Validate, hash and insert a new active user.
+        """Count the attempt of the acting admin, then validate, hash and insert a new user.
+
+        Every attempt that passes the actor check counts, also one with invalid input.
 
         Raises:
             PrincipalRequiredError: no tenant, or the caller is not an active admin.
+            UserCreateThrottledError: the actor is over the create limit (before input checks).
             UserCreateRefusedError: invalid input or a taken email.
+            RedisError: the limiter is unreachable (fail closed, nothing is inserted).
 
         Known refusals are logged at WARNING before they propagate.
         """
         with _RefusalLog("create_user") as refusal:
             actor = self._actor()
             refusal.actor_id = actor["id"]
+            if not self._limiter.hit(actor["id"]):
+                raise UserCreateThrottledError("too many user creations, try again later")
             email = normalise_email(email)
             _check_input(email, password, role, name)
             record = self._repo.insert_user(
