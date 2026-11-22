@@ -63,6 +63,6 @@ Rules for each method in the store:
 - Unit tests use a fake port. Integration tests use real Postgres, including a two-session test for the last-admin lock and leak tests with no tenant set at store level.
 - A conformance test keeps the port and the store in step.
 - A deactivated user's cookie fails both the `is_active` check and the `session_version` check on the next request.
-- Accepted risk: the generic duplicate message still tells an admin that the email exists somewhere, because email is unique across tenants and login needs that.
+- Accepted risk: the generic duplicate message still tells an admin that the email exists somewhere, because email is unique across tenants and login needs that. The probe is now rate-limited per acting admin (default 10 creates per 3600 s, `USER_CREATE_MAX` and `USER_CREATE_WINDOW_SECONDS`, counted in Redis). When Redis is down, creation is refused (fail closed). Per-tenant email uniqueness stays an open owner decision: it needs a login change and is not part of this change.
 - A future reactivate or demote must take the same admin lock set.
 - Follow-ups, need owner approval: a `trg_users_last_admin` DB backstop, a DB audit table, and a fix of the stale `setting = ''` wording about `users` in the project CLAUDE.md. The wording is wrong for `users` since migration b7e2d41c9a30.

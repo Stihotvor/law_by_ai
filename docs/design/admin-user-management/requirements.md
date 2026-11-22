@@ -19,7 +19,7 @@ An admin-only Streamlit page to create and deactivate users. Follow-up left out 
 - Python 3.13, Streamlit, SQLAlchemy, PostgreSQL. No new dependency.
 
 ## Edge Cases
-- A duplicate email, in the own tenant or another tenant, shows one generic message: "Cannot create this user." The page does not reveal that the email exists elsewhere.
+- A duplicate email, in the own tenant or another tenant, shows one generic message: "Cannot create this user." The message still reveals that the email exists somewhere (email is unique across tenants). The probe is rate-limited per acting admin: see decision.md.
 - Email input is trimmed and lowercased before the write. A blank or malformed email is refused.
 - A role outside `VALID_ROLES` is refused on the server.
 - Deactivating an already inactive user is idempotent: no error and no extra `session_version` bump.
