@@ -209,5 +209,20 @@ with `SET LOCAL app.skip_last_admin_check = 'on'`. The trigger ignores this sett
 for every other role.
 
 The same revision adds `admin_action_audit`, an append-only log. `lawbyai_app` has
-only SELECT and INSERT. The downgrade stops while the table holds rows. Export the
-rows, purge them as the owner, then run the downgrade again.
+only SELECT and INSERT. The downgrade stops while the table holds rows.
+
+Row level security is forced on this table, so it binds `lawbyai_owner` too. Without
+`app.current_tenant` the owner sees no rows, and a plain export or `DELETE` does
+nothing. To purge, run one owner transaction that lifts FORCE, exports and deletes,
+and restores FORCE before it commits:
+
+```sql
+BEGIN;
+ALTER TABLE public.admin_action_audit NO FORCE ROW LEVEL SECURITY;
+-- export the rows first, for example: COPY public.admin_action_audit TO '/path/audit.csv' CSV HEADER;
+DELETE FROM public.admin_action_audit;
+ALTER TABLE public.admin_action_audit FORCE ROW LEVEL SECURITY;
+COMMIT;
+```
+
+Then run the downgrade again.
