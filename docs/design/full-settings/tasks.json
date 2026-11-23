@@ -1,0 +1,42 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Settings: remove 3 Cohere rerank properties, add 8 properties and _float_in_range helper, rename section header, update docstring table (add MIGRATION_LOCK_TIMEOUT_S row), extend _ENV_KEYS in tests",
+      "size": "M",
+      "depends_on": [],
+      "done_when": ".venv/bin/pytest tests/unit/config passes with at least 16 new cases (default and override for each of the 8 keys), MIN_CONFIDENCE rejects abc, -0.1, 1.1, nan, inf and whitespace-only with ValueError naming the variable, accepts 0, 1 and ' 0.5 ', empty uses default, and Settings has no attribute rerank_enabled, rerank_base_url, rerank_api_key or rerank_model; grep -riE 'cohere|rerank_base_url|rerank_api_key' src/config returns 0 lines",
+      "files": [
+        "src/config/settings.py",
+        "tests/unit/config/test_settings.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T2",
+      "title": "docker/.env.example and compose x-app-env: remove 3 RERANK keys, add 8 new keys; drift test for docstring table, env example and compose block",
+      "size": "S",
+      "depends_on": [
+        "T1"
+      ],
+      "done_when": ".venv/bin/pytest tests/unit/config/test_settings_drift.py passes: each of the 8 new keys appears in the Settings docstring table, docker/.env.example and the x-app-env block; grep -riE 'cohere|rerank_base_url|rerank_api_key' docker/.env.example returns 0 lines; grep -c 'RERANK_' docker/docker-compose.yml prints 2 (RERANK_MODEL_NAME and RERANK_MODEL_PATH)",
+      "files": [
+        "docker/.env.example",
+        "docker/docker-compose.yml",
+        "tests/unit/config/test_settings_drift.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T3",
+      "title": "Quality gate on the whole change",
+      "size": "S",
+      "depends_on": [
+        "T2"
+      ],
+      "done_when": "ruff check, ruff format --check, pyright and pytest -m 'not integration' all exit 0, and diff-cover reports 90% or more on changed lines",
+      "files": [],
+      "agent": "py-gate"
+    }
+  ]
+}
