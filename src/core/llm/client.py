@@ -116,7 +116,8 @@ class LLMClient:
         return _parse_content(raw)
 
     def _post(self, url: str, body: object, headers: dict[str, str], timeout: float) -> bytes:
-        # httpx fixes the read timeout once per body, so each phase gets a share:
+        # httpx applies the read timeout to each socket read, not to the whole body,
+        # so each phase gets a share and the deadline is checked between reads:
         # the last read started before the deadline ends by (1 + 1/phases) x timeout.
         deadline = _now() + timeout
         with (

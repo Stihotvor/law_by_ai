@@ -24,6 +24,9 @@ Source: issue "OpenAI-compatible LLM client". Facts come from `src/config/settin
 - Response body larger than 1 MiB: `LLMError` (fixed cap, not configurable).
 - Agent names are the seven code names. The issue Gherkin uses `bureaucracy_assistant` and `document_processor` (owner decision at G1, no alias).
 - Base URL with credentials, a query, a fragment, or a scheme other than http/https: `LLMConfigError` that names the agent. No request is sent.
+- API key set with a plain `http://` base URL to a non-loopback host: `LLMConfigError` that names the agent. No request is sent.
+- API key with a non-ASCII or non-printable character: `LLMConfigError` that names the agent and does not hold the key.
+- `LLM_BASE_URL` unset: the base URL is `http://localhost:11434/v1`.
 - Empty API key: the client sends no `Authorization` header.
 - Response with no `choices`, or a non-string content, or non-JSON body: `LLMError` (status 200 kept on the error).
 - Timeout value not a positive number: `ValueError` from Settings or `resolve` that names the variable.

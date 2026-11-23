@@ -73,10 +73,18 @@ def test_bad_per_agent_timeout(env: pytest.MonkeyPatch) -> None:
         resolve(Settings(), _AGENT)
 
 
-def test_empty_base_url(env: pytest.MonkeyPatch) -> None:
+def test_base_url_defaults_when_unset(env: pytest.MonkeyPatch) -> None:
     _set_agent(env, _AGENT, model="m-a")
-    with pytest.raises(LLMConfigError, match=_AGENT):
+    assert resolve(Settings(), _AGENT).base_url == "http://localhost:11434/v1"
+
+
+@pytest.mark.parametrize("key", ["k\u00e9y-secret", "key-\nsecret"])
+def test_invalid_api_key_is_rejected(env: pytest.MonkeyPatch, key: str) -> None:
+    _set_agent(env, _AGENT, base_url="https://a:1/v1", model="m-a", api_key=key)
+    with pytest.raises(LLMConfigError, match=_AGENT) as info:
         resolve(Settings(), _AGENT)
+    assert key not in str(info.value)
+    assert key not in repr(info.value)
 
 
 @pytest.mark.parametrize(

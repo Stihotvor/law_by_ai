@@ -40,6 +40,8 @@ Variable                          Purpose                             Default
                                   ``BASE_URL``, ``MODEL``, ``API_KEY``
                                   (``llm_setting``)
 ``LLM_TIMEOUT``                   seconds per LLM request             ``60.0``
+``LLM_TIMEOUT_<AGENT>``           per-agent timeout override          ``(LLM_TIMEOUT)``
+                                  (``llm_agent_timeout``)
 ``EMBEDDING_BASE_URL``            embedding provider base URL         ``http://localhost:11434/v1``
 ``EMBEDDING_API_KEY``             embedding API key (empty for        ``(empty)``
                                   local)
@@ -124,6 +126,9 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 # Fixed login roles (docker/initdb/00-roles.sh). Only the passwords come from env.
 APP_ROLE = "lawbyai_app"
 OWNER_ROLE = "lawbyai_owner"
+
+# Defaults for LLM fields read by ``llm_setting`` (keys are lower-case field names).
+_LLM_DEFAULTS: dict[str, str] = {"base_url": "http://localhost:11434/v1"}
 
 
 def load_env(env_file: str | Path | None = None, *, override: bool = False) -> None:
@@ -389,7 +394,7 @@ class Settings:
     @property
     def llm_base_url(self) -> str:
         """Base URL of the OpenAI-compatible LLM/SLM endpoint."""
-        return os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
+        return os.getenv("LLM_BASE_URL", _LLM_DEFAULTS["base_url"])
 
     @property
     def llm_api_key(self) -> str:
@@ -444,12 +449,14 @@ class Settings:
         return f"{name}_{agent.upper()}" if agent is not None else name
 
     def llm_setting(self, field: str, agent: str) -> str:
-        """Return ``LLM_<FIELD>_<AGENT>``, else ``LLM_<FIELD>``, else ``""``.
+        """Return ``LLM_<FIELD>_<AGENT>``, else ``LLM_<FIELD>``, else the default.
 
+        The default comes from ``_LLM_DEFAULTS`` (``""`` when the field has none).
         ``field`` and ``agent`` are upper-cased. An empty value counts as unset.
         """
         per_agent = os.getenv(self.llm_var_name(field, agent))
-        return per_agent or os.getenv(self.llm_var_name(field, None)) or ""
+        global_value = os.getenv(self.llm_var_name(field, None))
+        return per_agent or global_value or _LLM_DEFAULTS.get(field.lower(), "")
 
     def llm_agent_timeout(self, agent: str) -> float:
         """Seconds per LLM request for ``agent``: ``LLM_TIMEOUT_<AGENT>``, else ``llm_timeout``.

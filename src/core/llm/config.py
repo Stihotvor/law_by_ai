@@ -2,7 +2,7 @@
 
 import ipaddress
 from dataclasses import dataclass, field
-from urllib.parse import urlsplit
+from urllib.parse import SplitResult, urlsplit
 
 from config.settings import Settings
 from core.llm.errors import LLMConfigError
@@ -40,6 +40,7 @@ def resolve(settings: Settings, agent_name: str) -> AgentLLMConfig:
     base_url = settings.llm_setting("base_url", agent_name)
     _check_base_url(base_url, agent_name)
     api_key = settings.llm_setting("api_key", agent_name)
+    _check_api_key(api_key, agent_name)
     _check_key_transport(base_url, api_key, agent_name)
     return AgentLLMConfig(
         base_url=base_url,
@@ -64,16 +65,31 @@ def _is_valid_base_url(base_url: str) -> bool:
         return False
     try:
         parts = urlsplit(base_url)
-        _ = parts.port
     except ValueError:
         return False
     return (
-        bool(parts.hostname)
+        _has_valid_port(parts)
+        and bool(parts.hostname)
         and parts.scheme in ("http", "https")
         and "@" not in parts.netloc
         and not parts.query
         and not parts.fragment
     )
+
+
+def _has_valid_port(parts: SplitResult) -> bool:
+    """True when the URL has no port or a numeric port in 0..65535."""
+    try:
+        _ = parts.port
+    except ValueError:
+        return False
+    return True
+
+
+def _check_api_key(api_key: str, agent_name: str) -> None:
+    """Reject a key that is not printable ASCII; the message never holds the key."""
+    if api_key and not (api_key.isascii() and api_key.isprintable()):
+        raise LLMConfigError(f"invalid LLM API key for agent {agent_name!r}")
 
 
 def _check_key_transport(base_url: str, api_key: str, agent_name: str) -> None:

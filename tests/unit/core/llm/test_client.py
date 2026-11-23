@@ -221,6 +221,18 @@ def test_config_errors_hold_no_secret(llm_env: pytest.MonkeyPatch) -> None:
     assert recorder.requests == []
 
 
+@pytest.mark.parametrize("key", ["sekret-k\u00e9y", "sekret-\nkey"])
+def test_invalid_api_key_sends_no_request(llm_env: pytest.MonkeyPatch, key: str) -> None:
+    llm_env.setenv("LLM_API_KEY", key)
+    client, recorder = _client(_answer())
+    with pytest.raises(LLMConfigError) as info:
+        client.chat(_AGENT, _ONE)
+    assert key not in str(info.value)
+    assert key not in repr(info.value)
+    _assert_clean(info.value)
+    assert recorder.requests == []
+
+
 def test_agent_url_and_key_override_global(llm_env: pytest.MonkeyPatch) -> None:
     llm_env.setenv("LLM_BASE_URL_ANALYSIS", "https://b.local/v1")
     llm_env.setenv("LLM_API_KEY_ANALYSIS", "a-key")

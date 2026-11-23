@@ -126,12 +126,12 @@
 - When the caller sends chat("analysis", [{"role":"user","content":"Hi"}])
 - Then the request is sent and the answer is returned
 
-### QA-019 Missing or empty base URL
+### QA-019 Unset base URL uses the default
 - Covers: Edge Cases (base URL checks), OPEN item
 - Type: failure
 - Given LLM_BASE_URL is empty and no per-agent URL
 - When the caller sends chat("analysis", [{"role":"user","content":"Hi"}])
-- Then LLMConfigError names "analysis" and 0 requests are sent (decided in spec T2: an empty base URL is a config error)
+- Then the request goes to http://localhost:11434/v1/chat/completions (LLM_BASE_URL default, changed in the final architect review)
 
 ### QA-020 No choices in response
 - Covers: Edge Cases (bad response)

@@ -20,7 +20,7 @@ QA-015: pass — C::test_bad_base_url_sends_nothing
 QA-016: pass — C::test_bad_base_url_sends_nothing
 QA-017: pass — C::test_bad_base_url_sends_nothing — ftp and file
 QA-018: pass — C::test_http_localhost_is_allowed
-QA-019: pass — G::test_empty_base_url — resolver level
+QA-019: pass — G::test_base_url_defaults_when_unset, S::test_llm_setting_base_url_defaults_when_unset — resolver level
 QA-020: pass — C::test_http_and_transport_failures
 QA-021: pass — C::test_http_and_transport_failures
 QA-022: pass — C::test_http_and_transport_failures — int 5 used, not null

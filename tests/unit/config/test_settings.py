@@ -515,6 +515,14 @@ def test_llm_setting_empty_when_both_unset(monkeypatch: pytest.MonkeyPatch) -> N
     assert Settings().llm_setting("api_key", "document_processor") == ""
 
 
+def test_llm_setting_base_url_defaults_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+
+    settings = Settings()
+    assert settings.llm_setting("base_url", "bureaucracy_assistant") == "http://localhost:11434/v1"
+    assert settings.llm_base_url == "http://localhost:11434/v1"
+
+
 def test_llm_timeout_defaults_to_60(monkeypatch: pytest.MonkeyPatch) -> None:
     _isolate_env(monkeypatch)
 
