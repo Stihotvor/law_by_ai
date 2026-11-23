@@ -49,6 +49,59 @@ def test_env_example_has_no_cohere_key() -> None:
     assert not pattern.search(ENV_EXAMPLE.read_text())
 
 
+def test_qa_037_config_source_has_no_cohere_text() -> None:
+    pattern = re.compile(r"cohere|rerank_base_url|rerank_api_key", re.IGNORECASE)
+    for path in (ROOT_DIR / "src" / "config").rglob("*"):
+        if path.is_file() and path.suffix in {".py", ".txt", ".md", ".toml", ".yml", ".yaml"}:
+            assert not pattern.search(path.read_text()), str(path)
+
+
+def test_qa_039_env_example_has_no_old_rerank_model_key() -> None:
+    assert not re.search(r"^\s*#?\s*RERANK_MODEL=", ENV_EXAMPLE.read_text(), re.MULTILINE)
+
+
+def test_qa_041_env_example_defaults_match_settings() -> None:
+    text = ENV_EXAMPLE.read_text()
+    for line in (
+        "QDRANT_URL=http://localhost:6333",
+        "QDRANT_COLLECTION=legal_documents",
+        "OTEL_SERVICE_NAME=law-by-ai",
+        "MIN_CONFIDENCE=0.5",
+    ):
+        assert re.search(rf"^{re.escape(line)}$", text, re.MULTILINE), line
+    for key in (
+        "QDRANT_API_KEY",
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "RERANK_MODEL_NAME",
+        "RERANK_MODEL_PATH",
+    ):
+        assert re.search(rf"^{key}=$", text, re.MULTILINE), key
+
+
+def test_qa_042_env_example_explains_empty_otel_endpoint() -> None:
+    lines = ENV_EXAMPLE.read_text().splitlines()
+    idx = next(i for i, line in enumerate(lines) if line.startswith("OTEL_EXPORTER_OTLP_ENDPOINT="))
+    comment = " ".join(lines[max(0, idx - 3) : idx]).lower()
+    assert "empty" in comment
+    assert "export off" in comment
+
+
+def test_qa_051_drift_check_catches_missing_key() -> None:
+    lines = ENV_EXAMPLE.read_text().splitlines()
+    text = "\n".join(line for line in lines if not line.startswith("MIN_CONFIDENCE="))
+
+    assert not re.search(r"^(# )?MIN_CONFIDENCE=", text, re.MULTILINE)
+    assert re.search(r"^(# )?QDRANT_URL=", text, re.MULTILINE)
+
+
+def test_qa_052_docstring_lists_migration_lock_key() -> None:
+    docstring = settings_module.__doc__ or ""
+    row = next(
+        (line for line in docstring.splitlines() if "``MIGRATION_LOCK_TIMEOUT_S``" in line), ""
+    )
+    assert "300" in row
+
+
 def test_compose_keeps_only_two_rerank_keys() -> None:
     """Scenario: The compose file keeps only two RERANK keys."""
     lines = [line.strip() for line in COMPOSE.read_text().splitlines() if "RERANK_" in line]

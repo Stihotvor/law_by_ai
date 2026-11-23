@@ -415,3 +415,75 @@ def test_old_rerank_keys_do_no_harm(monkeypatch: pytest.MonkeyPatch) -> None:
 
     for prop in _NEW_PROPERTIES:
         getattr(settings, prop)
+
+
+def test_qa_036_old_rerank_keys_leave_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("RERANK_BASE_URL", "http://old")
+    monkeypatch.setenv("RERANK_API_KEY", "oldkey")
+    monkeypatch.setenv("RERANK_MODEL", "old-model")
+
+    settings = Settings()
+
+    for _, prop, default in _NEW_DEFAULTS:
+        assert getattr(settings, prop) == default
+
+
+def test_qa_028_bad_min_confidence_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_MIN_CONF, "2")
+    settings = Settings()
+
+    for _ in range(2):
+        with pytest.raises(ValueError, match=_MIN_CONF):
+            _ = settings.min_confidence
+
+
+def test_qa_029_value_change_read_on_next_access(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_MIN_CONF, "0.3")
+    settings = Settings()
+    assert settings.min_confidence == 0.3
+
+    monkeypatch.setenv(_MIN_CONF, "0.9")
+
+    assert settings.min_confidence == 0.9
+
+
+def test_qa_031_empty_rerank_values_do_not_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("RERANK_MODEL_NAME", "")
+    monkeypatch.setenv("RERANK_MODEL_PATH", "")
+    settings = Settings()
+
+    assert settings.rerank_model_name == ""
+    assert settings.rerank_model_path == ""
+
+
+def test_qa_033_bad_min_confidence_error_has_no_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("QDRANT_API_KEY", "s3cret-key-123")
+    monkeypatch.setenv(_MIN_CONF, "abc")
+
+    with pytest.raises(ValueError, match=_MIN_CONF) as excinfo:
+        _ = Settings().min_confidence
+
+    assert "s3cret-key-123" not in str(excinfo.value)
+
+
+def test_qa_034_qdrant_api_key_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("QDRANT_API_KEY", "  odd value  ")
+
+    _ = Settings().qdrant_api_key
+
+
+def test_qa_053_developer_env_cannot_change_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(_MIN_CONF, "0.9")
+    monkeypatch.setenv("QDRANT_URL", "http://dev:1")
+    _isolate_env(monkeypatch)
+
+    settings = Settings()
+
+    assert settings.min_confidence == 0.5
+    assert settings.qdrant_url == "http://localhost:6333"
