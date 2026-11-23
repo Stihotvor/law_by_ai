@@ -1,9 +1,9 @@
 # Review: llm-client
 
-Verdict: PASS WITH WARNINGS (2026-11-23, range origin/main..feature/llm-client).
+Verdict: PASS WITH WARNINGS (2026-11-23, range origin/main..feature/llm-client). Final architect review: CLEAR.
 
 ## Gate
-ruff check, ruff format --check, pyright (0 errors), bandit, pytest -m "not integration" (1800 passed), total coverage 98.84 %, diff coverage 100 %. TDD order: pass. `uv lock --check` failed only in the sandbox cache (`pyproject.toml` and `uv.lock` unchanged). pip-audit, mutation testing and the Docker integration suite run in CI (a local hook blocks the Docker env file).
+ruff check, ruff format --check, pyright (0 errors), bandit, pytest -m "not integration" (1830 passed), total coverage 98.88 %, diff coverage 100 %. TDD order: pass. `uv lock --check` failed only in the sandbox cache (`pyproject.toml` and `uv.lock` unchanged). pip-audit, mutation testing and the Docker integration suite run in CI (a local hook blocks the Docker env file).
 
 ## Fixed in review
 - The `AgentLLMConfig` repr hides the key and the base URL.
