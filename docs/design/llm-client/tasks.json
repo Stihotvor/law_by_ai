@@ -1,0 +1,60 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Settings: add llm_setting(field, agent) generic lookup and llm_timeout (default 60, positive float), with unit tests",
+      "size": "S",
+      "depends_on": [],
+      "done_when": ".venv/bin/pytest tests/unit/config/test_settings.py passes with new cases: llm_setting prefers LLM_<FIELD>_<AGENT> over LLM_<FIELD>, falls back to the global value, returns empty when both are unset; llm_timeout defaults to 60.0, accepts ' 0.2 ', and rejects abc, 0, -1, nan and inf with ValueError naming LLM_TIMEOUT; existing llm_model_* properties are unchanged",
+      "files": [
+        "src/config/settings.py",
+        "tests/unit/config/test_settings.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T2",
+      "title": "src/core/llm: errors (LLMError, LLMTimeoutError, LLMConfigError), ChatModel port, LLM_AGENTS, AgentLLMConfig and resolve(), with unit tests",
+      "size": "M",
+      "depends_on": [
+        "T1"
+      ],
+      "done_when": ".venv/bin/pytest tests/unit/core/llm/test_errors.py tests/unit/core/llm/test_config.py passes (the fake ChatModel test lives in test_config.py): LLMTimeoutError is a subclass of LLMError, LLMConfigError is not; the LLM_AGENTS tuple equals the set of seven llm_model_* properties of Settings; resolve applies per-agent then global fallback for base_url, model, timeout and api_key; unknown agent and empty model raise LLMConfigError naming the agent; bad LLM_TIMEOUT_<AGENT> raises ValueError naming that variable; base URL with credentials, query, fragment or a non-http(s) scheme raises LLMConfigError naming the agent; a fake class satisfies ChatModel under pyright; .venv/bin/pyright tests/unit/core/llm src/core/llm reports 0 errors",
+      "files": [
+        "src/core/llm/__init__.py",
+        "src/core/llm/errors.py",
+        "src/core/llm/ports.py",
+        "src/core/llm/config.py",
+        "tests/unit/core/llm/__init__.py",
+        "tests/unit/core/llm/test_errors.py",
+        "tests/unit/core/llm/test_config.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T3",
+      "title": "LLMClient.chat over httpx with MockTransport tests: 5 issue scenarios, timeout, 1 MiB cap, error mapping, no secret in error text",
+      "size": "M",
+      "depends_on": [
+        "T2"
+      ],
+      "done_when": ".venv/bin/pytest tests/unit/core/llm/test_client.py passes: the issue Gherkin scenarios (model per agent for bureaucracy_assistant and document_processor, timeout, HTTP 500, unknown agent; Settings from env is T1); a request posts to {base_url}/chat/completions with a stripped trailing slash and returns choices[0].message.content; no Authorization header when the key is empty; a 0.2 s timeout raises LLMTimeoutError within 1.25 s (httpx.Timeout(timeout / 4) per phase; a stall after one chunk also raises within the bound); body over 1 MiB, non-2xx (status_code kept), transport error (status_code None), no choices, non-string content and non-JSON body raise LLMError; empty messages raise ValueError and unknown agent raises LLMConfigError with no request sent; no raised error text holds the API key or base URL; .venv/bin/pytest tests/unit/core/llm --cov=src/core/llm --cov-fail-under=100 passes; a 302 raises LLMError with status_code 302 and sends exactly one request",
+      "files": [
+        "src/core/llm/client.py",
+        "tests/unit/core/llm/test_client.py"
+      ],
+      "agent": "py-coder"
+    },
+    {
+      "id": "T4",
+      "title": "Quality gate on the whole change",
+      "size": "S",
+      "depends_on": [
+        "T3"
+      ],
+      "done_when": "ruff check, ruff format --check, pyright and pytest -m 'not integration' all exit 0, and diff-cover meets the CONTRIBUTING.md gate",
+      "files": [],
+      "agent": "py-gate"
+    }
+  ]
+}
