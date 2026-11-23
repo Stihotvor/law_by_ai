@@ -1,5 +1,6 @@
 """Resolve one frozen LLM config per agent from Settings."""
 
+import ipaddress
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
@@ -38,11 +39,13 @@ def resolve(settings: Settings, agent_name: str) -> AgentLLMConfig:
         raise LLMConfigError(f"no LLM model for agent {agent_name!r}: set {var} or {fallback}")
     base_url = settings.llm_setting("base_url", agent_name)
     _check_base_url(base_url, agent_name)
+    api_key = settings.llm_setting("api_key", agent_name)
+    _check_key_transport(base_url, api_key, agent_name)
     return AgentLLMConfig(
         base_url=base_url,
         model=model,
         timeout=settings.llm_agent_timeout(agent_name),
-        api_key=settings.llm_setting("api_key", agent_name),
+        api_key=api_key,
     )
 
 
@@ -57,6 +60,8 @@ def _check_base_url(base_url: str, agent_name: str) -> None:
 
 def _is_valid_base_url(base_url: str) -> bool:
     """Require http(s), a hostname, a valid port, no credentials, query or fragment."""
+    if "?" in base_url or "#" in base_url:
+        return False
     try:
         parts = urlsplit(base_url)
         _ = parts.port
@@ -69,3 +74,28 @@ def _is_valid_base_url(base_url: str) -> bool:
         and not parts.query
         and not parts.fragment
     )
+
+
+def _check_key_transport(base_url: str, api_key: str, agent_name: str) -> None:
+    """Refuse to send a key over plain http to a host that is not loopback.
+
+    The message names the agent but never the URL.
+    """
+    parts = urlsplit(base_url)
+    if api_key and parts.scheme == "http" and not _is_loopback(parts.hostname or ""):
+        raise LLMConfigError(
+            f"LLM API key for agent {agent_name!r} needs https for a non-loopback host"
+        )
+
+
+def _is_loopback(host: str) -> bool:
+    """True for ``localhost``, any 127.0.0.0/8 address and ``::1``."""
+    if host == "localhost":
+        return True
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    if isinstance(address, ipaddress.IPv4Address):
+        return address in ipaddress.IPv4Network("127.0.0.0/8")
+    return address == ipaddress.IPv6Address("::1")

@@ -36,10 +36,10 @@ def test_llm_agents_match_settings() -> None:
 
 def test_per_agent_value_wins(env: pytest.MonkeyPatch) -> None:
     env.setenv("LLM_BASE_URL", "http://g:2/v1")
-    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a", timeout="5", api_key="k-a")
+    _set_agent(env, _AGENT, base_url="https://a:1/v1", model="m-a", timeout="5", api_key="k-a")
     config = resolve(Settings(), _AGENT)
     assert config == AgentLLMConfig(
-        base_url="http://a:1/v1", model="m-a", timeout=5.0, api_key="k-a"
+        base_url="https://a:1/v1", model="m-a", timeout=5.0, api_key="k-a"
     )
 
 
@@ -122,7 +122,7 @@ def test_non_numeric_per_agent_timeout(env: pytest.MonkeyPatch) -> None:
 
 
 def test_repr_hides_key_and_url(env: pytest.MonkeyPatch) -> None:
-    _set_agent(env, _AGENT, base_url="http://secret-host:1/v1", model="m-a", api_key="k-secret")
+    _set_agent(env, _AGENT, base_url="https://secret-host:1/v1", model="m-a", api_key="k-secret")
     text = repr(resolve(Settings(), _AGENT))
     assert "k-secret" not in text
     assert "secret-host" not in text
@@ -148,3 +148,62 @@ def test_bad_global_timeout_used_when_agent_timeout_empty(env: pytest.MonkeyPatc
     with pytest.raises(ValueError, match="LLM_TIMEOUT") as info:
         resolve(Settings(), _AGENT)
     assert "LLM_TIMEOUT_" not in str(info.value)
+
+
+@pytest.mark.parametrize(
+    "url", ["http://host/v1?", "http://host/v1#", "http://host/v1?#", "http://host?/v1"]
+)
+def test_empty_query_or_fragment_marker_is_rejected(env: pytest.MonkeyPatch, url: str) -> None:
+    _set_agent(env, _AGENT, base_url=url, model="m-a")
+    with pytest.raises(LLMConfigError) as info:
+        resolve(Settings(), _AGENT)
+    assert _AGENT in str(info.value)
+    assert url not in str(info.value)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://remote-host:8/v1",
+        "http://10.0.0.1/v1",
+        "http://128.0.0.1/v1",
+        "http://[::2]/v1",
+        "http://localhost.evil/v1",
+        "http://[::ffff:127.0.0.1]/v1",
+    ],
+)
+def test_key_over_plain_http_to_remote_host_is_rejected(env: pytest.MonkeyPatch, url: str) -> None:
+    _set_agent(env, _AGENT, base_url=url, model="m-a", api_key="k-secret")
+    with pytest.raises(LLMConfigError) as info:
+        resolve(Settings(), _AGENT)
+    text = str(info.value)
+    assert _AGENT in text
+    assert url not in text
+    assert "k-secret" not in text
+    assert "remote-host" not in text
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://localhost:11434/v1",
+        "http://LOCALHOST/v1",
+        "http://127.0.0.1/v1",
+        "http://127.255.3.9:8/v1",
+        "http://[::1]:8/v1",
+    ],
+)
+def test_key_over_plain_http_to_loopback_is_allowed(env: pytest.MonkeyPatch, url: str) -> None:
+    _set_agent(env, _AGENT, base_url=url, model="m-a", api_key="k-a")
+    assert resolve(Settings(), _AGENT).api_key == "k-a"
+
+
+@pytest.mark.parametrize("url", ["http://remote-host:8/v1", "http://10.0.0.1/v1"])
+def test_plain_http_without_key_is_allowed_for_any_host(env: pytest.MonkeyPatch, url: str) -> None:
+    _set_agent(env, _AGENT, base_url=url, model="m-a")
+    assert resolve(Settings(), _AGENT).base_url == url
+
+
+def test_https_with_key_is_allowed_for_remote_host(env: pytest.MonkeyPatch) -> None:
+    _set_agent(env, _AGENT, base_url="https://remote-host/v1", model="m-a", api_key="k-a")
+    assert resolve(Settings(), _AGENT).api_key == "k-a"

@@ -18,6 +18,7 @@ ruff check, ruff format --check, pyright (0 errors), bandit, pytest -m "not inte
 - low, security: `http://` is allowed for any host, and there is no host allowlist. URLs come only from the environment.
 - low, security: `trust_env=False` ignores custom CA bundles. Add an explicit setting when a private CA is needed.
 - low, security: a server that ignores `identity` and sends gzip is still decoded before the cap.
+- medium, availability (CodeRabbit): a server that sends the response headers one byte at a time, each byte inside the per-phase timeout, is not stopped by the deadline, because httpx yields only after the headers end. The 1.25 x timeout bound holds only for stalls, not for a slow trickle. A hard overall bound needs a thread or async cancel, which the owner did not choose. Endpoints are local and set by the operator.
 - low, structure: the module-level clock `_now` is patched in tests instead of being injected.
 - low, structure: `settings.py` and `test_settings.py` were over 500 lines before this change.
 - QA-046 partial: memory growth is not measured. The thread count is checked.

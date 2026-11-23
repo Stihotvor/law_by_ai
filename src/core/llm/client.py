@@ -49,6 +49,12 @@ def _check_status(response: httpx.Response) -> None:
         raise LLMError(f"LLM HTTP {status}", status_code=status)
 
 
+def _check_encoding(response: httpx.Response) -> None:
+    encoding = response.headers.get("content-encoding")
+    if encoding is not None and encoding.strip().lower() != "identity":
+        raise LLMError("LLM response is compressed", status_code=response.status_code)
+
+
 def _shape_error() -> LLMError:
     return LLMError("unexpected LLM response shape", status_code=200)
 
@@ -56,7 +62,7 @@ def _shape_error() -> LLMError:
 def _loads(raw: bytes) -> object:
     try:
         return json.loads(raw)
-    except ValueError:
+    except (ValueError, RecursionError):
         return None
 
 
@@ -123,4 +129,5 @@ class LLMClient:
             client.stream("POST", url, json=body, headers=headers) as response,
         ):
             _check_status(response)
+            _check_encoding(response)
             return _read_capped(response, deadline)

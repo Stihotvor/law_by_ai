@@ -24,7 +24,7 @@ def llm_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     for name in list(os.environ):
         if name.startswith("LLM_"):
             monkeypatch.delenv(name)
-    monkeypatch.setenv("LLM_BASE_URL", "http://llm.test/v1/")
+    monkeypatch.setenv("LLM_BASE_URL", "https://llm.test/v1/")
     monkeypatch.setenv("LLM_API_KEY", "sekret-key")
     monkeypatch.setenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", "m1")
     return monkeypatch
@@ -70,7 +70,7 @@ def test_bureaucracy_assistant_gets_an_answer(llm_env: pytest.MonkeyPatch) -> No
     assert client.chat(_AGENT, messages) == "hello"
     (request,) = recorder.requests
     assert request.method == "POST"
-    assert str(request.url) == "http://llm.test/v1/chat/completions"
+    assert str(request.url) == "https://llm.test/v1/chat/completions"
     assert json.loads(request.content) == {"model": "m1", "messages": messages}
     assert request.headers["authorization"] == "Bearer sekret-key"
 
@@ -222,13 +222,13 @@ def test_config_errors_hold_no_secret(llm_env: pytest.MonkeyPatch) -> None:
 
 
 def test_agent_url_and_key_override_global(llm_env: pytest.MonkeyPatch) -> None:
-    llm_env.setenv("LLM_BASE_URL_ANALYSIS", "http://b.local/v1")
+    llm_env.setenv("LLM_BASE_URL_ANALYSIS", "https://b.local/v1")
     llm_env.setenv("LLM_API_KEY_ANALYSIS", "a-key")
     llm_env.setenv("LLM_MODEL_ANALYSIS", "m-an")
     client, recorder = _client(_answer())
     client.chat("analysis", _ONE)
     (request,) = recorder.requests
-    assert str(request.url) == "http://b.local/v1/chat/completions"
+    assert str(request.url) == "https://b.local/v1/chat/completions"
     assert request.headers["authorization"] == "Bearer a-key"
 
 
@@ -371,7 +371,7 @@ def test_asks_for_uncompressed_body(llm_env: pytest.MonkeyPatch) -> None:
 
 
 def test_invalid_url_is_wrapped(llm_env: pytest.MonkeyPatch) -> None:
-    llm_env.setenv("LLM_BASE_URL", "http://llm.test/v1\x01")
+    llm_env.setenv("LLM_BASE_URL", "https://llm.test/v1\x01")
     client, recorder = _client(_answer())
     with pytest.raises(LLMError) as info:
         client.chat(_AGENT, _ONE)
@@ -381,3 +381,43 @@ def test_invalid_url_is_wrapped(llm_env: pytest.MonkeyPatch) -> None:
     assert info.value.__context__ is None
     _assert_clean(info.value)
     assert recorder.requests == []
+
+
+class _RecordingStream(httpx.SyncByteStream):
+    def __init__(self, body: bytes) -> None:
+        self.read = False
+        self._body = body
+
+    def __iter__(self) -> Iterator[bytes]:
+        self.read = True
+        yield self._body
+
+
+@pytest.mark.parametrize("encoding", ["gzip", "br", "deflate", "zstd", ""])
+def test_compressed_response_is_rejected_unread(llm_env: pytest.MonkeyPatch, encoding: str) -> None:
+    stream = _RecordingStream(b"private-text")
+    headers = {"content-encoding": encoding}
+    error = _fail(lambda request: httpx.Response(200, headers=headers, stream=stream))
+    assert type(error) is LLMError
+    assert str(error) == "LLM response is compressed"
+    assert error.status_code == 200
+    assert stream.read is False
+    _assert_clean(error)
+
+
+def test_identity_content_encoding_is_accepted(llm_env: pytest.MonkeyPatch) -> None:
+    body = {"choices": [{"message": {"content": "ok"}}]}
+    headers = {"content-encoding": "identity"}
+    client, _ = _client(lambda request: httpx.Response(200, headers=headers, json=body))
+    assert client.chat(_AGENT, _ONE) == "ok"
+
+
+def test_deeply_nested_json_is_a_malformed_response(llm_env: pytest.MonkeyPatch) -> None:
+    body = b"[" * 100000 + b"]" * 100000
+    assert len(body) <= _MAX_RESPONSE_BYTES
+    error = _fail(lambda request: httpx.Response(200, content=body))
+    assert type(error) is LLMError
+    assert error.status_code == 200
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    _assert_clean(error)
