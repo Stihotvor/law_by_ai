@@ -28,5 +28,5 @@ Reviewer changes taken into the design:
 - Owner decisions:
   - The failed-task registry settings are deferred to the registry issue.
   - An empty OTel endpoint means export off. The observability code owns the switch.
-- The plugin-era Cohere leftovers (`plugins.yaml`, `RerankingPlugin`) stay. They are out of scope.
+- The commented-out Cohere block in `plugins.yaml` is deleted, because the issue acceptance grep covers all of `src/config` (found in build). The other plugin-era leftovers (`RerankingPlugin`) stay. They are out of scope.
 - `src/config/.env.example` does not exist. The PR says so.

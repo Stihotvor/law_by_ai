@@ -21,7 +21,7 @@
 - No `rerank_enabled` setting (owner decision in the issue).
 - Keep the LLM and embedding keys unchanged.
 - `src/config/.env.example` does not exist. Update only `docker/.env.example`. The PR says so.
-- Out of scope: the failed-task registry settings (owner decision: the registry issue adds them), the plugin-era Cohere leftovers (`plugins.yaml`, `RerankingPlugin`), the choice of a rerank model.
+- Out of scope: the failed-task registry settings (owner decision: the registry issue adds them), the plugin-era Cohere leftovers outside `src/config` (`RerankingPlugin`), the choice of a rerank model.
 - Decided at G1: keep the plain class (Path 1). No pydantic-settings rewrite.
 
 ## Edge Cases

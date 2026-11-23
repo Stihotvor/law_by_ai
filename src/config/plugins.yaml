@@ -53,8 +53,3 @@ plugins: {}
 #       module: plugins.llm.openai_llm
 #       class: OpenAILLM
 #       active: true
-#   reranking:
-#     cohere:
-#       module: plugins.reranking.cohere_rerank
-#       class: CohereReranker
-#       active: true
