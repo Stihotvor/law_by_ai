@@ -36,6 +36,12 @@ Variable                          Purpose                             Default
                                   overridden)
 ``LLM_MODEL_<AGENT>``             per-agent model override            ``(LLM_MODEL)``
                                   (``LLM_MODEL_LEGAL_RESEARCH``)
+``LLM_<FIELD>_<AGENT>``           per-agent override of               ``(LLM_<FIELD>)``
+                                  ``BASE_URL``, ``MODEL``, ``API_KEY``
+                                  (``llm_setting``)
+``LLM_TIMEOUT``                   seconds per LLM request             ``60.0``
+``LLM_TIMEOUT_<AGENT>``           per-agent timeout override          ``(LLM_TIMEOUT)``
+                                  (``llm_agent_timeout``)
 ``EMBEDDING_BASE_URL``            embedding provider base URL         ``http://localhost:11434/v1``
 ``EMBEDDING_API_KEY``             embedding API key (empty for        ``(empty)``
                                   local)
@@ -121,6 +127,9 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 APP_ROLE = "lawbyai_app"
 OWNER_ROLE = "lawbyai_owner"
 
+# Defaults for LLM fields read by ``llm_setting`` (keys are lower-case field names).
+_LLM_DEFAULTS: dict[str, str] = {"base_url": "http://localhost:11434/v1"}
+
 
 def load_env(env_file: str | Path | None = None, *, override: bool = False) -> None:
     """Load a ``.env`` file into the environment if it exists.
@@ -176,6 +185,24 @@ def _float_in_range(name: str, default: float, low: float, high: float) -> float
         raise ValueError(f"{name} must be a number, got {raw!r}") from None
     if not low <= value <= high:
         raise ValueError(f"{name} must be between {low} and {high}, got {raw!r}")
+    return value
+
+
+def positive_float(name: str, raw: str, default: float) -> float:
+    """Parse ``raw`` (the value of env ``name``) as a positive, finite float.
+
+    An empty ``raw`` gives ``default``. Surrounding whitespace is stripped;
+    a non-number, ``nan``, ``inf``, zero or a negative value raises
+    ``ValueError``. The message names ``name`` but not the raw value.
+    """
+    if raw == "":
+        return default
+    try:
+        value = float(raw.strip())
+    except ValueError:
+        raise ValueError(f"{name} must be a number") from None
+    if not 0 < value < float("inf"):
+        raise ValueError(f"{name} must be positive and finite")
     return value
 
 
@@ -367,7 +394,7 @@ class Settings:
     @property
     def llm_base_url(self) -> str:
         """Base URL of the OpenAI-compatible LLM/SLM endpoint."""
-        return os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
+        return os.getenv("LLM_BASE_URL", _LLM_DEFAULTS["base_url"])
 
     @property
     def llm_api_key(self) -> str:
@@ -414,6 +441,41 @@ class Settings:
     def llm_model_bureaucracy_assistant(self) -> str:
         """Model for the BureaucracyAssistant agent (falls back to ``LLM_MODEL``)."""
         return os.getenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", self.llm_model)
+
+    @staticmethod
+    def llm_var_name(field: str, agent: str | None) -> str:
+        """Return ``LLM_<FIELD>_<AGENT>``, or ``LLM_<FIELD>`` when ``agent`` is ``None``."""
+        name = f"LLM_{field.upper()}"
+        return f"{name}_{agent.upper()}" if agent is not None else name
+
+    def llm_setting(self, field: str, agent: str) -> str:
+        """Return ``LLM_<FIELD>_<AGENT>``, else ``LLM_<FIELD>``, else the default.
+
+        The default comes from ``_LLM_DEFAULTS`` (``""`` when the field has none).
+        ``field`` and ``agent`` are upper-cased. An empty value counts as unset.
+        """
+        per_agent = os.getenv(self.llm_var_name(field, agent))
+        global_value = os.getenv(self.llm_var_name(field, None))
+        return per_agent or global_value or _LLM_DEFAULTS.get(field.lower(), "")
+
+    def llm_agent_timeout(self, agent: str) -> float:
+        """Seconds per LLM request for ``agent``: ``LLM_TIMEOUT_<AGENT>``, else ``llm_timeout``.
+
+        The global value is read only when the per-agent value is empty, so a
+        bad global value does not break a valid per-agent value.
+        """
+        name = self.llm_var_name("timeout", agent)
+        raw = os.getenv(name, "")
+        if raw == "":
+            return self.llm_timeout
+        # raw is not empty here, so the default is never used.
+        return positive_float(name, raw, default=0.0)
+
+    @property
+    def llm_timeout(self) -> float:
+        """Seconds per LLM request (``LLM_TIMEOUT``, positive, default 60)."""
+        name = self.llm_var_name("timeout", None)
+        return positive_float(name, os.getenv(name, ""), 60.0)
 
     @property
     def embedding_base_url(self) -> str:
@@ -652,4 +714,5 @@ __all__ = [
     "Settings",
     "get_settings",
     "load_env",
+    "positive_float",
 ]
