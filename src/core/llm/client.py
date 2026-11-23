@@ -97,10 +97,12 @@ class LLMClient:
         return _content(raw)
 
     def _post(self, url: str, body: object, headers: dict[str, str], timeout: float) -> bytes:
+        # httpx fixes the read timeout once per body, so each phase gets a quarter:
+        # the last read started before the deadline ends by 1.25 x timeout.
         deadline = _now() + timeout
         with (
             httpx.Client(
-                timeout=httpx.Timeout(timeout),
+                timeout=httpx.Timeout(timeout / 4),
                 follow_redirects=False,
                 trust_env=False,
                 transport=self._transport,

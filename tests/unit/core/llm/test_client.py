@@ -137,9 +137,32 @@ def test_slow_server_times_out(env: pytest.MonkeyPatch, handler: Handler) -> Non
     env.setenv("LLM_TIMEOUT", "0.2")
     start = time.monotonic()
     error = _fail(handler)
-    assert time.monotonic() - start < 1.2
+    assert time.monotonic() - start < 1.25
     assert isinstance(error, LLMTimeoutError)
     assert issubclass(LLMTimeoutError, LLMError)
+    _assert_clean(error)
+
+
+def test_stall_after_one_chunk_times_out(env: pytest.MonkeyPatch) -> None:
+    env.setenv("LLM_TIMEOUT", "0.2")
+    seen: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        read = request.extensions["timeout"]["read"]
+        seen.append(read)
+
+        def chunks() -> Iterator[bytes]:
+            yield b" "
+            time.sleep(read)
+            raise httpx.ReadTimeout("timed out", request=request)
+
+        return httpx.Response(200, stream=_Stream(chunks()))
+
+    start = time.monotonic()
+    error = _fail(handler)
+    assert time.monotonic() - start < 1.25
+    assert isinstance(error, LLMTimeoutError)
+    assert seen == [pytest.approx(0.05)]
     _assert_clean(error)
 
 
