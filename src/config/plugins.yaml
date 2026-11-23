@@ -8,7 +8,8 @@
 #
 # Format:
 #   plugins:
-#     <type>:            # one of the seven protocol types below
+#     <type>:            # a key of TYPE_TO_PROTOCOL in core/plugins/manager.py
+#                        # (seven today; `relational_db` is barred, see above)
 #       <name>:          # arbitrary, ops-facing name
 #         module: <python.module.path>   # importable module
 #         class: <ClassName>             # class in that module
@@ -24,9 +25,10 @@
 # Exactly one entry per type may be active.
 
 plugins: {}
-# Example registrations for the remaining six plugin types — uncommenting an
-# entry whose module does not exist yet fails PluginManager.load() validation
-# deliberately.
+# Example registrations for five of the six usable plugin types. `reranking`
+# has no example: the remote reranker was removed and no replacement plugin
+# exists. Uncommenting an entry whose module does not exist yet fails
+# PluginManager.load() validation deliberately.
 # plugins:
 #   vector_db:
 #     qdrant:
@@ -52,9 +54,4 @@ plugins: {}
 #     openai:
 #       module: plugins.llm.openai_llm
 #       class: OpenAILLM
-#       active: true
-#   reranking:
-#     cohere:
-#       module: plugins.reranking.cohere_rerank
-#       class: CohereReranker
 #       active: true

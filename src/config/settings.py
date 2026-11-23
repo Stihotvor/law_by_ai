@@ -40,9 +40,14 @@ Variable                          Purpose                             Default
 ``EMBEDDING_API_KEY``             embedding API key (empty for        ``(empty)``
                                   local)
 ``EMBEDDING_MODEL``               embedding model name                ``nomic-embed-text``
-``RERANK_BASE_URL``               reranking provider base URL         ``https://api.cohere.com/v1``
-``RERANK_API_KEY``                reranking API key                   ``(empty)``
-``RERANK_MODEL``                  reranking model name                ``rerank-v3.5``
+``RERANK_MODEL_NAME``             local rerank model name             *(empty)*
+``RERANK_MODEL_PATH``             local rerank model path             *(empty)*
+``QDRANT_URL``                    Qdrant URL                          ``http://localhost:6333``
+``QDRANT_API_KEY``                Qdrant API key                      *(empty)*
+``QDRANT_COLLECTION``             Qdrant collection name              ``legal_documents``
+``MIN_CONFIDENCE``                minimum confidence (0..1)           ``0.5``
+``OTEL_EXPORTER_OTLP_ENDPOINT``   OTLP endpoint (empty: export off)   *(empty)*
+``OTEL_SERVICE_NAME``             OTel service name                   ``law-by-ai``
 ``OCR_ENABLED``                   send documents to the OCR provider  ``false``
 ``MISTRAL_API_KEY``               Mistral API key (OCR)               ``(empty)``
 ``MISTRAL_BASE_URL``              Mistral API base URL                ``https://api.mistral.ai/v1``
@@ -85,6 +90,8 @@ Variable                          Purpose                             Default
 ``POSTGRES_MAX_OVERFLOW``         app DB pool overflow (min 0)        ``2``
 ``WORKER_POSTGRES_POOL_SIZE``     worker DB pool size (min 1)         ``1``
 ``WORKER_POSTGRES_MAX_OVERFLOW``  worker DB pool overflow (min 0)     ``1``
+``MIGRATION_LOCK_TIMEOUT_S``      seconds to wait for the migration   ``300``
+                                  lock
 ================================  ==================================  =============================
 
 Usage::
@@ -151,6 +158,24 @@ def _int_at_least(name: str, default: int, minimum: int) -> int:
         raise ValueError(f"{name} must be an integer, got {raw!r}") from None
     if value < minimum:
         raise ValueError(f"{name} must be at least {minimum}, got {raw!r}")
+    return value
+
+
+def _float_in_range(name: str, default: float, low: float, high: float) -> float:
+    """Read env ``name`` as a float in ``low..high`` (both ends valid) or raise ``ValueError``.
+
+    An unset or empty value gives ``default``. A value with only whitespace
+    raises. Surrounding whitespace is stripped; ``nan`` and ``inf`` are rejected.
+    """
+    raw = os.getenv(name, "")
+    if raw == "":
+        return default
+    try:
+        value = float(raw.strip())
+    except ValueError:
+        raise ValueError(f"{name} must be a number, got {raw!r}") from None
+    if not low <= value <= high:
+        raise ValueError(f"{name} must be between {low} and {high}, got {raw!r}")
     return value
 
 
@@ -338,7 +363,7 @@ class Settings:
         """Streamlit port (used by the docker-compose ``app`` service)."""
         return int(os.getenv("APP_PORT", "8501"))
 
-    # --- LLM / embeddings / reranking (ADR-0014) ---------------------------
+    # --- LLM / embeddings (ADR-0014) -----------------------------------------
     @property
     def llm_base_url(self) -> str:
         """Base URL of the OpenAI-compatible LLM/SLM endpoint."""
@@ -405,20 +430,48 @@ class Settings:
         """Embedding model name (eval-selected, ADR-0009)."""
         return os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
 
+    # --- Local rerank model ----------------------------------------------------
     @property
-    def rerank_base_url(self) -> str:
-        """Base URL of the reranking provider (Cohere by default)."""
-        return os.getenv("RERANK_BASE_URL", "https://api.cohere.com/v1")
+    def rerank_model_name(self) -> str:
+        """Local rerank model name (empty when unset)."""
+        return os.getenv("RERANK_MODEL_NAME") or ""
 
     @property
-    def rerank_api_key(self) -> str:
-        """API key for the reranking provider."""
-        return os.getenv("RERANK_API_KEY", "")
+    def rerank_model_path(self) -> str:
+        """Local rerank model path (empty when unset)."""
+        return os.getenv("RERANK_MODEL_PATH") or ""
+
+    # --- Qdrant and retrieval ------------------------------------------------
+    @property
+    def qdrant_url(self) -> str:
+        """Qdrant URL (plain string, no scheme check)."""
+        return os.getenv("QDRANT_URL") or "http://localhost:6333"
 
     @property
-    def rerank_model(self) -> str:
-        """Reranking model name (Cohere by default)."""
-        return os.getenv("RERANK_MODEL", "rerank-v3.5")
+    def qdrant_api_key(self) -> str:
+        """Qdrant API key (secret, env only, empty when unset)."""
+        return os.getenv("QDRANT_API_KEY") or ""
+
+    @property
+    def qdrant_collection(self) -> str:
+        """Qdrant collection that holds legal documents."""
+        return os.getenv("QDRANT_COLLECTION") or "legal_documents"
+
+    @property
+    def min_confidence(self) -> float:
+        """Minimum answer confidence (``MIN_CONFIDENCE``, 0.0 to 1.0)."""
+        return _float_in_range("MIN_CONFIDENCE", 0.5, 0.0, 1.0)
+
+    # --- Observability (OpenTelemetry) ---------------------------------------
+    @property
+    def otel_exporter_otlp_endpoint(self) -> str:
+        """OTLP exporter endpoint; empty means export off."""
+        return os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") or ""
+
+    @property
+    def otel_service_name(self) -> str:
+        """Service name reported to OpenTelemetry."""
+        return os.getenv("OTEL_SERVICE_NAME") or "law-by-ai"
 
     # --- OCR ---------------------------------------------------------------
     @property

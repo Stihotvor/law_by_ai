@@ -34,6 +34,14 @@ _ENV_KEYS = (
     "LLM_MODEL_KNOWLEDGE_GRAPH",
     "LLM_MODEL_ANALYSIS",
     "LLM_MODEL_BUREAUCRACY_ASSISTANT",
+    "QDRANT_URL",
+    "QDRANT_API_KEY",
+    "QDRANT_COLLECTION",
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "OTEL_SERVICE_NAME",
+    "MIN_CONFIDENCE",
+    "RERANK_MODEL_NAME",
+    "RERANK_MODEL_PATH",
 )
 
 
@@ -275,3 +283,202 @@ def test_migration_lock_timeout_rejects_invalid_value(
 
     with pytest.raises(ValueError, match=_LOCK_VAR):
         _ = Settings().migration_lock_timeout_s
+
+
+# --- Full settings: Qdrant, OTel, min_confidence, local rerank model ---------
+
+_NEW_DEFAULTS: tuple[tuple[str, str, object], ...] = (
+    ("QDRANT_URL", "qdrant_url", "http://localhost:6333"),
+    ("QDRANT_API_KEY", "qdrant_api_key", ""),
+    ("QDRANT_COLLECTION", "qdrant_collection", "legal_documents"),
+    ("OTEL_EXPORTER_OTLP_ENDPOINT", "otel_exporter_otlp_endpoint", ""),
+    ("OTEL_SERVICE_NAME", "otel_service_name", "law-by-ai"),
+    ("MIN_CONFIDENCE", "min_confidence", 0.5),
+    ("RERANK_MODEL_NAME", "rerank_model_name", ""),
+    ("RERANK_MODEL_PATH", "rerank_model_path", ""),
+)
+
+_NEW_OVERRIDES: tuple[tuple[str, str, str, object], ...] = (
+    ("QDRANT_URL", "qdrant_url", "qdrant:6333", "qdrant:6333"),
+    ("QDRANT_API_KEY", "qdrant_api_key", "k1", "k1"),
+    ("QDRANT_COLLECTION", "qdrant_collection", "c1", "c1"),
+    (
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "otel_exporter_otlp_endpoint",
+        "http://alloy:4317",
+        "http://alloy:4317",
+    ),
+    ("OTEL_SERVICE_NAME", "otel_service_name", "svc", "svc"),
+    ("MIN_CONFIDENCE", "min_confidence", "0.8", 0.8),
+    ("RERANK_MODEL_NAME", "rerank_model_name", "bge-reranker", "bge-reranker"),
+    ("RERANK_MODEL_PATH", "rerank_model_path", "/models/rerank", "/models/rerank"),
+)
+
+_NEW_PROPERTIES = tuple(prop for _, prop, _ in _NEW_DEFAULTS)
+_MIN_CONF = "MIN_CONFIDENCE"
+
+
+def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clear the known keys and stop Settings() from loading a developer .env."""
+    _clear_env(monkeypatch)
+    monkeypatch.setattr("config.settings.load_env", lambda: None)
+
+
+def test_env_keys_cover_new_keys() -> None:
+    for key, _, _ in _NEW_DEFAULTS:
+        assert key in _ENV_KEYS
+
+
+def test_clear_env_removes_new_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key, _, _ in _NEW_DEFAULTS:
+        monkeypatch.setenv(key, "x")
+
+    _clear_env(monkeypatch)
+
+    for key, _, _ in _NEW_DEFAULTS:
+        assert key not in os.environ
+
+
+@pytest.mark.parametrize(("key", "prop", "default"), _NEW_DEFAULTS)
+def test_new_key_uses_default_when_unset(
+    monkeypatch: pytest.MonkeyPatch, key: str, prop: str, default: object
+) -> None:
+    _isolate_env(monkeypatch)
+
+    assert key not in os.environ
+    assert getattr(Settings(), prop) == default
+
+
+@pytest.mark.parametrize(("key", "prop", "default"), _NEW_DEFAULTS)
+def test_new_key_empty_value_uses_default(
+    monkeypatch: pytest.MonkeyPatch, key: str, prop: str, default: object
+) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(key, "")
+
+    assert getattr(Settings(), prop) == default
+
+
+@pytest.mark.parametrize(("key", "prop", "value", "expected"), _NEW_OVERRIDES)
+def test_new_key_takes_environment_value(
+    monkeypatch: pytest.MonkeyPatch, key: str, prop: str, value: str, expected: object
+) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(key, value)
+
+    assert getattr(Settings(), prop) == expected
+
+
+@pytest.mark.parametrize("value", ["abc", "-0.1", "1.1", "nan", "inf", "   "])
+def test_min_confidence_rejects_bad_value(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_MIN_CONF, value)
+
+    with pytest.raises(ValueError, match=_MIN_CONF):
+        _ = Settings().min_confidence
+
+
+@pytest.mark.parametrize(("value", "expected"), [("0", 0.0), ("1", 1.0), (" 0.5 ", 0.5)])
+def test_min_confidence_accepts_valid_value(
+    monkeypatch: pytest.MonkeyPatch, value: str, expected: float
+) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_MIN_CONF, value)
+
+    assert Settings().min_confidence == expected
+
+
+def test_min_confidence_empty_uses_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_MIN_CONF, "")
+
+    assert Settings().min_confidence == 0.5
+
+
+@pytest.mark.parametrize(
+    "name", ["rerank_enabled", "rerank_base_url", "rerank_api_key", "rerank_model"]
+)
+def test_cohere_settings_are_gone(monkeypatch: pytest.MonkeyPatch, name: str) -> None:
+    _isolate_env(monkeypatch)
+
+    assert not hasattr(Settings, name)
+    assert not hasattr(Settings(), name)
+
+
+def test_old_rerank_keys_do_no_harm(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-036. Old Cohere rerank keys raise nothing and leave the new defaults."""
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("RERANK_BASE_URL", "https://api.cohere.com/v1")
+    monkeypatch.setenv("RERANK_API_KEY", "old-key")
+    monkeypatch.setenv("RERANK_MODEL", "rerank-v3.5")
+
+    settings = Settings()
+
+    for _, prop, default in _NEW_DEFAULTS:
+        assert getattr(settings, prop) == default
+
+
+def test_bad_min_confidence_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-028. A bad MIN_CONFIDENCE raises on every read, never a fallback."""
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_MIN_CONF, "2")
+    settings = Settings()
+
+    for _ in range(2):
+        with pytest.raises(ValueError, match=_MIN_CONF):
+            _ = settings.min_confidence
+
+
+def test_value_change_read_on_next_access(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-029. A changed MIN_CONFIDENCE is read on the next access."""
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_MIN_CONF, "0.3")
+    settings = Settings()
+    assert settings.min_confidence == 0.3
+
+    monkeypatch.setenv(_MIN_CONF, "0.9")
+
+    assert settings.min_confidence == 0.9
+
+
+def test_empty_rerank_values_do_not_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-031. Empty RERANK_MODEL_NAME and RERANK_MODEL_PATH read as empty."""
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("RERANK_MODEL_NAME", "")
+    monkeypatch.setenv("RERANK_MODEL_PATH", "")
+    settings = Settings()
+
+    assert settings.rerank_model_name == ""
+    assert settings.rerank_model_path == ""
+
+
+def test_bad_min_confidence_error_has_no_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-033. The MIN_CONFIDENCE error does not contain the Qdrant API key."""
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("QDRANT_API_KEY", "s3cret-key-123")
+    monkeypatch.setenv(_MIN_CONF, "abc")
+
+    with pytest.raises(ValueError, match=_MIN_CONF) as excinfo:
+        _ = Settings().min_confidence
+
+    assert "s3cret-key-123" not in str(excinfo.value)
+
+
+def test_qdrant_api_key_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-034. Any QDRANT_API_KEY value reads without error."""
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("QDRANT_API_KEY", "  odd value  ")
+
+    _ = Settings().qdrant_api_key
+
+
+def test_developer_env_cannot_change_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-053. Values set before isolation do not leak into the defaults."""
+    monkeypatch.setenv(_MIN_CONF, "0.9")
+    monkeypatch.setenv("QDRANT_URL", "http://dev:1")
+    _isolate_env(monkeypatch)
+
+    settings = Settings()
+
+    assert settings.min_confidence == 0.5
+    assert settings.qdrant_url == "http://localhost:6333"
