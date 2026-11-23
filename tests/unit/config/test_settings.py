@@ -406,6 +406,7 @@ def test_cohere_settings_are_gone(monkeypatch: pytest.MonkeyPatch, name: str) ->
 
 
 def test_old_rerank_keys_do_no_harm(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-036. Old Cohere rerank keys raise nothing and leave the new defaults."""
     _isolate_env(monkeypatch)
     monkeypatch.setenv("RERANK_BASE_URL", "https://api.cohere.com/v1")
     monkeypatch.setenv("RERANK_API_KEY", "old-key")
@@ -413,23 +414,12 @@ def test_old_rerank_keys_do_no_harm(monkeypatch: pytest.MonkeyPatch) -> None:
 
     settings = Settings()
 
-    for prop in _NEW_PROPERTIES:
-        getattr(settings, prop)
-
-
-def test_qa_036_old_rerank_keys_leave_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
-    _isolate_env(monkeypatch)
-    monkeypatch.setenv("RERANK_BASE_URL", "http://old")
-    monkeypatch.setenv("RERANK_API_KEY", "oldkey")
-    monkeypatch.setenv("RERANK_MODEL", "old-model")
-
-    settings = Settings()
-
     for _, prop, default in _NEW_DEFAULTS:
         assert getattr(settings, prop) == default
 
 
-def test_qa_028_bad_min_confidence_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_bad_min_confidence_never_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-028. A bad MIN_CONFIDENCE raises on every read, never a fallback."""
     _isolate_env(monkeypatch)
     monkeypatch.setenv(_MIN_CONF, "2")
     settings = Settings()
@@ -439,7 +429,8 @@ def test_qa_028_bad_min_confidence_never_falls_back(monkeypatch: pytest.MonkeyPa
             _ = settings.min_confidence
 
 
-def test_qa_029_value_change_read_on_next_access(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_value_change_read_on_next_access(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-029. A changed MIN_CONFIDENCE is read on the next access."""
     _isolate_env(monkeypatch)
     monkeypatch.setenv(_MIN_CONF, "0.3")
     settings = Settings()
@@ -450,7 +441,8 @@ def test_qa_029_value_change_read_on_next_access(monkeypatch: pytest.MonkeyPatch
     assert settings.min_confidence == 0.9
 
 
-def test_qa_031_empty_rerank_values_do_not_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_empty_rerank_values_do_not_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-031. Empty RERANK_MODEL_NAME and RERANK_MODEL_PATH read as empty."""
     _isolate_env(monkeypatch)
     monkeypatch.setenv("RERANK_MODEL_NAME", "")
     monkeypatch.setenv("RERANK_MODEL_PATH", "")
@@ -460,7 +452,8 @@ def test_qa_031_empty_rerank_values_do_not_fail(monkeypatch: pytest.MonkeyPatch)
     assert settings.rerank_model_path == ""
 
 
-def test_qa_033_bad_min_confidence_error_has_no_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_bad_min_confidence_error_has_no_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-033. The MIN_CONFIDENCE error does not contain the Qdrant API key."""
     _isolate_env(monkeypatch)
     monkeypatch.setenv("QDRANT_API_KEY", "s3cret-key-123")
     monkeypatch.setenv(_MIN_CONF, "abc")
@@ -471,14 +464,16 @@ def test_qa_033_bad_min_confidence_error_has_no_api_key(monkeypatch: pytest.Monk
     assert "s3cret-key-123" not in str(excinfo.value)
 
 
-def test_qa_034_qdrant_api_key_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_qdrant_api_key_never_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-034. Any QDRANT_API_KEY value reads without error."""
     _isolate_env(monkeypatch)
     monkeypatch.setenv("QDRANT_API_KEY", "  odd value  ")
 
     _ = Settings().qdrant_api_key
 
 
-def test_qa_053_developer_env_cannot_change_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_developer_env_cannot_change_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    """QA-053. Values set before isolation do not leak into the defaults."""
     monkeypatch.setenv(_MIN_CONF, "0.9")
     monkeypatch.setenv("QDRANT_URL", "http://dev:1")
     _isolate_env(monkeypatch)
