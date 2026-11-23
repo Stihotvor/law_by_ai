@@ -542,3 +542,24 @@ def test_llm_model_property_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", "m1")
 
     assert Settings().llm_model_bureaucracy_assistant == "m1"
+
+
+def test_qa_042_llm_model_global_and_agent_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("LLM_MODEL", "g")
+    monkeypatch.setenv("LLM_MODEL_ANALYSIS", "x1")
+
+    settings = Settings()
+
+    assert settings.llm_model_analysis == "x1"
+    assert settings.llm_model == "g"
+
+
+def test_qa_045_settings_raises_only_value_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_LLM_TIMEOUT, "abc")
+
+    with pytest.raises(ValueError, match="LLM_TIMEOUT") as info:
+        _ = Settings().llm_timeout
+
+    assert type(info.value) is ValueError
