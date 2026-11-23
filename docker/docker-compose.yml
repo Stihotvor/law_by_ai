@@ -92,7 +92,7 @@ services:
     <<: *hardening
     # Valkey (BSD-3-Clause) replaces Redis 8 to avoid license risk (ADR-0018).
     # The service keeps the name `redis`. The image has no default user.
-    image: valkey/valkey:8.1.11-alpine@sha256:2602ace2be6569bc2bbb06f873776516ab9089821525be34f4305c67eb9db02a
+    image: valkey/valkey:9.2.0-alpine@sha256:c8e2d17498838af5d91e12eb7c11220b3434a7b7131a333e3af52ad5e0b80882
     user: "999:999"
     command: ["sh", "-c", "exec valkey-server --requirepass \"$$REDIS_PASSWORD\" --save \"\" --appendonly no"]
     environment:
