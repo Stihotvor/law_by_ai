@@ -34,6 +34,11 @@ _ENV_KEYS = (
     "LLM_MODEL_KNOWLEDGE_GRAPH",
     "LLM_MODEL_ANALYSIS",
     "LLM_MODEL_BUREAUCRACY_ASSISTANT",
+    "LLM_API_KEY",
+    "LLM_API_KEY_DOCUMENT_PROCESSOR",
+    "LLM_BASE_URL",
+    "LLM_BASE_URL_BUREAUCRACY_ASSISTANT",
+    "LLM_TIMEOUT",
     "QDRANT_URL",
     "QDRANT_API_KEY",
     "QDRANT_COLLECTION",
@@ -482,3 +487,58 @@ def test_developer_env_cannot_change_defaults(monkeypatch: pytest.MonkeyPatch) -
 
     assert settings.min_confidence == 0.5
     assert settings.qdrant_url == "http://localhost:6333"
+
+
+# --- LLM client: llm_setting and llm_timeout (T1) ----------------------------
+
+_LLM_TIMEOUT = "LLM_TIMEOUT"
+
+
+def test_llm_setting_prefers_agent_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("LLM_MODEL", "global-m")
+    monkeypatch.setenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", "agent-m")
+
+    assert Settings().llm_setting("model", "bureaucracy_assistant") == "agent-m"
+
+
+def test_llm_setting_falls_back_to_global(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("LLM_MODEL", "global-m")
+
+    assert Settings().llm_setting("model", "document_processor") == "global-m"
+
+
+def test_llm_setting_empty_when_both_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+
+    assert Settings().llm_setting("api_key", "document_processor") == ""
+
+
+def test_llm_timeout_defaults_to_60(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+
+    assert Settings().llm_timeout == 60.0
+
+
+def test_llm_timeout_accepts_padded_number(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_LLM_TIMEOUT, " 0.2 ")
+
+    assert Settings().llm_timeout == 0.2
+
+
+@pytest.mark.parametrize("value", ["abc", "0", "-1", "nan", "inf"])
+def test_llm_timeout_rejects_bad_value(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_LLM_TIMEOUT, value)
+
+    with pytest.raises(ValueError, match=_LLM_TIMEOUT):
+        _ = Settings().llm_timeout
+
+
+def test_llm_model_property_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", "m1")
+
+    assert Settings().llm_model_bureaucracy_assistant == "m1"

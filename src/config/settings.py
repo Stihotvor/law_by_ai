@@ -36,6 +36,10 @@ Variable                          Purpose                             Default
                                   overridden)
 ``LLM_MODEL_<AGENT>``             per-agent model override            ``(LLM_MODEL)``
                                   (``LLM_MODEL_LEGAL_RESEARCH``)
+``LLM_<FIELD>_<AGENT>``           per-agent override of               ``(LLM_<FIELD>)``
+                                  ``BASE_URL``, ``MODEL``, ``API_KEY``
+                                  (``llm_setting``)
+``LLM_TIMEOUT``                   seconds per LLM request             ``60.0``
 ``EMBEDDING_BASE_URL``            embedding provider base URL         ``http://localhost:11434/v1``
 ``EMBEDDING_API_KEY``             embedding API key (empty for        ``(empty)``
                                   local)
@@ -176,6 +180,24 @@ def _float_in_range(name: str, default: float, low: float, high: float) -> float
         raise ValueError(f"{name} must be a number, got {raw!r}") from None
     if not low <= value <= high:
         raise ValueError(f"{name} must be between {low} and {high}, got {raw!r}")
+    return value
+
+
+def _positive_or_default(name: str, default: float) -> float:
+    """Read env ``name`` as a positive, finite float or raise ``ValueError``.
+
+    An unset or empty value gives ``default``. Surrounding whitespace is
+    stripped; ``nan``, ``inf``, zero and negative values are rejected.
+    """
+    raw = os.getenv(name, "")
+    if raw == "":
+        return default
+    try:
+        value = float(raw.strip())
+    except ValueError:
+        raise ValueError(f"{name} must be a number, got {raw!r}") from None
+    if not 0 < value < float("inf"):
+        raise ValueError(f"{name} must be positive and finite, got {raw!r}")
     return value
 
 
@@ -414,6 +436,19 @@ class Settings:
     def llm_model_bureaucracy_assistant(self) -> str:
         """Model for the BureaucracyAssistant agent (falls back to ``LLM_MODEL``)."""
         return os.getenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", self.llm_model)
+
+    def llm_setting(self, field: str, agent: str) -> str:
+        """Return ``LLM_<FIELD>_<AGENT>``, else ``LLM_<FIELD>``, else ``""``.
+
+        ``field`` and ``agent`` are upper-cased. An empty value counts as unset.
+        """
+        key = f"LLM_{field.upper()}"
+        return os.getenv(f"{key}_{agent.upper()}") or os.getenv(key) or ""
+
+    @property
+    def llm_timeout(self) -> float:
+        """Seconds per LLM request (``LLM_TIMEOUT``, positive, default 60)."""
+        return _positive_or_default("LLM_TIMEOUT", 60.0)
 
     @property
     def embedding_base_url(self) -> str:
