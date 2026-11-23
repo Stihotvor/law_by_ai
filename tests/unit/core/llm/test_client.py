@@ -9,7 +9,7 @@ import httpx
 import pytest
 
 from config.settings import Settings
-from core.llm.client import LLMClient
+from core.llm.client import _MAX_RESPONSE_BYTES, LLMClient
 from core.llm.errors import LLMConfigError, LLMError, LLMTimeoutError
 
 _AGENT = "bureaucracy_assistant"
@@ -18,7 +18,7 @@ Handler = Callable[[httpx.Request], httpx.Response]
 
 
 @pytest.fixture
-def env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
+def llm_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     """No env file; base URL, key and model set for bureaucracy_assistant."""
     monkeypatch.setattr("config.settings.load_env", lambda *a, **k: None)
     for name in list(os.environ):
@@ -64,7 +64,7 @@ def _assert_clean(error: Exception) -> None:
         assert secret not in str(error)
 
 
-def test_bureaucracy_assistant_gets_an_answer(env: pytest.MonkeyPatch) -> None:
+def test_bureaucracy_assistant_gets_an_answer(llm_env: pytest.MonkeyPatch) -> None:
     client, recorder = _client(_answer("hello"))
     messages = [{"role": "user", "content": "hi"}]
     assert client.chat(_AGENT, messages) == "hello"
@@ -75,9 +75,9 @@ def test_bureaucracy_assistant_gets_an_answer(env: pytest.MonkeyPatch) -> None:
     assert request.headers["authorization"] == "Bearer sekret-key"
 
 
-def test_document_processor_uses_its_own_model_and_key(env: pytest.MonkeyPatch) -> None:
-    env.setenv("LLM_MODEL_DOCUMENT_PROCESSOR", "m2")
-    env.setenv("LLM_API_KEY_DOCUMENT_PROCESSOR", "k2")
+def test_document_processor_uses_its_own_model_and_key(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_MODEL_DOCUMENT_PROCESSOR", "m2")
+    llm_env.setenv("LLM_API_KEY_DOCUMENT_PROCESSOR", "k2")
     client, recorder = _client(_answer())
     client.chat("document_processor", _ONE)
     (request,) = recorder.requests
@@ -85,21 +85,21 @@ def test_document_processor_uses_its_own_model_and_key(env: pytest.MonkeyPatch) 
     assert request.headers["authorization"] == "Bearer k2"
 
 
-def test_empty_key_sends_no_authorization_header(env: pytest.MonkeyPatch) -> None:
-    env.delenv("LLM_API_KEY")
+def test_empty_key_sends_no_authorization_header(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.delenv("LLM_API_KEY")
     client, recorder = _client(_answer())
     client.chat(_AGENT, _ONE)
     assert "authorization" not in recorder.requests[0].headers
 
 
-def test_unknown_agent_sends_no_request(env: pytest.MonkeyPatch) -> None:
+def test_unknown_agent_sends_no_request(llm_env: pytest.MonkeyPatch) -> None:
     client, recorder = _client(_answer())
     with pytest.raises(LLMConfigError, match="nope"):
         client.chat("nope", _ONE)
     assert recorder.requests == []
 
 
-def test_empty_messages_send_no_request(env: pytest.MonkeyPatch) -> None:
+def test_empty_messages_send_no_request(llm_env: pytest.MonkeyPatch) -> None:
     client, recorder = _client(_answer())
     with pytest.raises(ValueError, match="messages"):
         client.chat(_AGENT, [])
@@ -133,8 +133,8 @@ def _read_timeout(request: httpx.Request) -> httpx.Response:
 
 
 @pytest.mark.parametrize("handler", [_slow_handler, _slow_body, _read_timeout])
-def test_slow_server_times_out(env: pytest.MonkeyPatch, handler: Handler) -> None:
-    env.setenv("LLM_TIMEOUT", "0.2")
+def test_slow_server_times_out(llm_env: pytest.MonkeyPatch, handler: Handler) -> None:
+    llm_env.setenv("LLM_TIMEOUT", "0.2")
     start = time.monotonic()
     error = _fail(handler)
     assert time.monotonic() - start < 1.25
@@ -143,8 +143,8 @@ def test_slow_server_times_out(env: pytest.MonkeyPatch, handler: Handler) -> Non
     _assert_clean(error)
 
 
-def test_stall_after_one_chunk_times_out(env: pytest.MonkeyPatch) -> None:
-    env.setenv("LLM_TIMEOUT", "0.2")
+def test_stall_after_one_chunk_times_out(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_TIMEOUT", "0.2")
     seen: list[float] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -166,8 +166,8 @@ def test_stall_after_one_chunk_times_out(env: pytest.MonkeyPatch) -> None:
     _assert_clean(error)
 
 
-def test_body_over_one_mib(env: pytest.MonkeyPatch) -> None:
-    error = _fail(lambda request: httpx.Response(200, content=b"x" * 1048577))
+def test_body_over_max_size_is_rejected(llm_env: pytest.MonkeyPatch) -> None:
+    error = _fail(lambda request: httpx.Response(200, content=b"x" * (_MAX_RESPONSE_BYTES + 1)))
     assert type(error) is LLMError
     _assert_clean(error)
 
@@ -185,12 +185,14 @@ def _refuse(request: httpx.Request) -> httpx.Response:
         (lambda request: httpx.Response(200, json={"id": "x"}), 200),
         (lambda request: httpx.Response(200, json={"choices": []}), 200),
         (lambda request: httpx.Response(200, json=[1]), 200),
+        (lambda request: httpx.Response(200, json={"choices": [1]}), 200),
+        (lambda request: httpx.Response(200, json={"choices": [{"message": "m"}]}), 200),
         (_answer(5), 200),
         (lambda request: httpx.Response(200, text="x"), 200),
     ],
 )
 def test_http_and_transport_failures(
-    env: pytest.MonkeyPatch, handler: Handler, status: int | None
+    llm_env: pytest.MonkeyPatch, handler: Handler, status: int | None
 ) -> None:
     error = _fail(handler)
     assert type(error) is LLMError
@@ -200,7 +202,7 @@ def test_http_and_transport_failures(
     assert error.__context__ is None
 
 
-def test_redirect_is_not_followed(env: pytest.MonkeyPatch) -> None:
+def test_redirect_is_not_followed(llm_env: pytest.MonkeyPatch) -> None:
     location = {"location": "http://llm.test/v1/other"}
     client, recorder = _client(lambda request: httpx.Response(302, headers=location))
     with pytest.raises(LLMError) as info:
@@ -210,8 +212,8 @@ def test_redirect_is_not_followed(env: pytest.MonkeyPatch) -> None:
     _assert_clean(info.value)
 
 
-def test_config_errors_hold_no_secret(env: pytest.MonkeyPatch) -> None:
-    env.setenv("LLM_BASE_URL", "ftp://llm.test/v1")
+def test_config_errors_hold_no_secret(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_BASE_URL", "ftp://llm.test/v1")
     client, recorder = _client(_answer())
     with pytest.raises(LLMConfigError) as info:
         client.chat(_AGENT, _ONE)
@@ -219,10 +221,10 @@ def test_config_errors_hold_no_secret(env: pytest.MonkeyPatch) -> None:
     assert recorder.requests == []
 
 
-def test_qa_004_agent_url_and_key_override_global(env: pytest.MonkeyPatch) -> None:
-    env.setenv("LLM_BASE_URL_ANALYSIS", "http://b.local/v1")
-    env.setenv("LLM_API_KEY_ANALYSIS", "a-key")
-    env.setenv("LLM_MODEL_ANALYSIS", "m-an")
+def test_agent_url_and_key_override_global(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_BASE_URL_ANALYSIS", "http://b.local/v1")
+    llm_env.setenv("LLM_API_KEY_ANALYSIS", "a-key")
+    llm_env.setenv("LLM_MODEL_ANALYSIS", "m-an")
     client, recorder = _client(_answer())
     client.chat("analysis", _ONE)
     (request,) = recorder.requests
@@ -230,22 +232,22 @@ def test_qa_004_agent_url_and_key_override_global(env: pytest.MonkeyPatch) -> No
     assert request.headers["authorization"] == "Bearer a-key"
 
 
-def test_qa_003_global_model_fallback(env: pytest.MonkeyPatch) -> None:
-    env.setenv("LLM_MODEL", "global-m")
+def test_global_model_is_fallback(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_MODEL", "global-m")
     client, recorder = _client(_answer())
     client.chat("analysis", _ONE)
     assert json.loads(recorder.requests[0].content)["model"] == "global-m"
 
 
 @pytest.mark.parametrize("alias", ["bureaucracy", "processor"])
-def test_qa_009_old_alias_rejected(env: pytest.MonkeyPatch, alias: str) -> None:
+def test_old_agent_alias_is_rejected(llm_env: pytest.MonkeyPatch, alias: str) -> None:
     client, recorder = _client(_answer())
     with pytest.raises(LLMConfigError, match=alias):
         client.chat(alias, _ONE)
     assert recorder.requests == []
 
 
-def test_qa_010_no_model_sends_no_request(env: pytest.MonkeyPatch) -> None:
+def test_no_model_sends_no_request(llm_env: pytest.MonkeyPatch) -> None:
     client, recorder = _client(_answer())
     with pytest.raises(LLMConfigError, match="LLM_MODEL_CHANGE_TRACKER") as info:
         client.chat("change_tracker", _ONE)
@@ -253,12 +255,12 @@ def test_qa_010_no_model_sends_no_request(env: pytest.MonkeyPatch) -> None:
     assert recorder.requests == []
 
 
-def test_qa_013_body_exactly_one_mib_accepted(env: pytest.MonkeyPatch) -> None:
+def test_body_of_exactly_max_size_is_accepted(llm_env: pytest.MonkeyPatch) -> None:
     prefix = '{"choices":[{"message":{"content":"'
     suffix = '"}}]}'
-    pad = 1048576 - len(prefix) - len(suffix)
+    pad = _MAX_RESPONSE_BYTES - len(prefix) - len(suffix)
     body = (prefix + "a" * pad + suffix).encode()
-    assert len(body) == 1048576
+    assert len(body) == _MAX_RESPONSE_BYTES
     client, _ = _client(lambda request: httpx.Response(200, content=body))
     assert client.chat(_AGENT, _ONE) == "a" * pad
 
@@ -273,8 +275,8 @@ def test_qa_013_body_exactly_one_mib_accepted(env: pytest.MonkeyPatch) -> None:
         "file:///etc/x",
     ],
 )
-def test_qa_014_to_017_bad_base_url_sends_nothing(env: pytest.MonkeyPatch, url: str) -> None:
-    env.setenv("LLM_BASE_URL", url)
+def test_bad_base_url_sends_nothing(llm_env: pytest.MonkeyPatch, url: str) -> None:
+    llm_env.setenv("LLM_BASE_URL", url)
     client, recorder = _client(_answer())
     with pytest.raises(LLMConfigError) as info:
         client.chat(_AGENT, _ONE)
@@ -284,15 +286,15 @@ def test_qa_014_to_017_bad_base_url_sends_nothing(env: pytest.MonkeyPatch, url: 
     assert recorder.requests == []
 
 
-def test_qa_018_http_localhost_allowed(env: pytest.MonkeyPatch) -> None:
-    env.setenv("LLM_BASE_URL", "http://localhost:11434/v1")
+def test_http_localhost_is_allowed(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_BASE_URL", "http://localhost:11434/v1")
     client, recorder = _client(_answer("ok"))
     assert client.chat(_AGENT, _ONE) == "ok"
     assert str(recorder.requests[0].url) == "http://localhost:11434/v1/chat/completions"
 
 
 @pytest.mark.parametrize("status", [401, 404, 429, 503])
-def test_qa_031_034_no_retry_on_error_status(env: pytest.MonkeyPatch, status: int) -> None:
+def test_error_status_is_not_retried(llm_env: pytest.MonkeyPatch, status: int) -> None:
     client, recorder = _client(lambda request: httpx.Response(status, text="x"))
     with pytest.raises(LLMError) as info:
         client.chat(_AGENT, _ONE)
@@ -300,16 +302,16 @@ def test_qa_031_034_no_retry_on_error_status(env: pytest.MonkeyPatch, status: in
     assert len(recorder.requests) == 1
 
 
-def test_qa_036_proxy_env_ignored(env: pytest.MonkeyPatch) -> None:
-    env.setenv("HTTP_PROXY", "http://proxy.local:3128")
-    env.setenv("http_proxy", "http://proxy.local:3128")
+def test_proxy_env_is_ignored(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("HTTP_PROXY", "http://proxy.local:3128")
+    llm_env.setenv("http_proxy", "http://proxy.local:3128")
     client, recorder = _client(_answer())
     client.chat(_AGENT, _ONE)
     assert recorder.requests[0].url.host == "llm.test"
 
 
-def test_qa_037_no_logging_of_key_or_content(
-    env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+def test_key_and_content_are_not_logged(
+    llm_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level("DEBUG")
     client, _ = _client(_answer())
@@ -321,15 +323,15 @@ def test_qa_037_no_logging_of_key_or_content(
         assert secret not in caplog.text
 
 
-def test_qa_038_repeated_calls(env: pytest.MonkeyPatch) -> None:
+def test_repeated_calls_get_separate_answers(llm_env: pytest.MonkeyPatch) -> None:
     answers = iter(["A", "B"])
     client, recorder = _client(lambda request: _answer(next(answers))(request))
     assert [client.chat(_AGENT, _ONE), client.chat(_AGENT, _ONE)] == ["A", "B"]
     assert len(recorder.requests) == 2
 
 
-def test_qa_039_messages_unchanged_non_ascii(env: pytest.MonkeyPatch) -> None:
-    env.setenv("LLM_MODEL_LEGAL_RESEARCH", "m3")
+def test_non_ascii_messages_sent_unchanged(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_MODEL_LEGAL_RESEARCH", "m3")
     messages = [
         {"role": "system", "content": "Jesteś asystentem"},
         {"role": "user", "content": "Ile kosztuje wiza?"},
@@ -339,11 +341,11 @@ def test_qa_039_messages_unchanged_non_ascii(env: pytest.MonkeyPatch) -> None:
     assert json.loads(recorder.requests[0].content)["messages"] == messages
 
 
-def test_qa_041_every_agent_works(env: pytest.MonkeyPatch) -> None:
+def test_every_agent_uses_its_own_model(llm_env: pytest.MonkeyPatch) -> None:
     from core.llm.config import LLM_AGENTS
 
     for agent in LLM_AGENTS:
-        env.setenv(f"LLM_MODEL_{agent.upper()}", f"m-{agent}")
+        llm_env.setenv(f"LLM_MODEL_{agent.upper()}", f"m-{agent}")
     client, recorder = _client(_answer())
     for agent in LLM_AGENTS:
         client.chat(agent, _ONE)
@@ -351,7 +353,7 @@ def test_qa_041_every_agent_works(env: pytest.MonkeyPatch) -> None:
     assert models == [f"m-{agent}" for agent in LLM_AGENTS]
 
 
-def test_qa_046_no_thread_left_after_100_calls(env: pytest.MonkeyPatch) -> None:
+def test_no_thread_left_after_100_calls(llm_env: pytest.MonkeyPatch) -> None:
     import threading
 
     before = threading.active_count()
@@ -360,3 +362,22 @@ def test_qa_046_no_thread_left_after_100_calls(env: pytest.MonkeyPatch) -> None:
         client.chat(_AGENT, _ONE)
     assert len(recorder.requests) == 100
     assert threading.active_count() <= before
+
+
+def test_asks_for_uncompressed_body(llm_env: pytest.MonkeyPatch) -> None:
+    client, recorder = _client(_answer())
+    client.chat(_AGENT, _ONE)
+    assert recorder.requests[0].headers["accept-encoding"] == "identity"
+
+
+def test_invalid_url_is_wrapped(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_BASE_URL", "http://llm.test/v1\x01")
+    client, recorder = _client(_answer())
+    with pytest.raises(LLMError) as info:
+        client.chat(_AGENT, _ONE)
+    assert type(info.value) is LLMError
+    assert str(info.value) == "LLM request failed: InvalidURL"
+    assert info.value.__cause__ is None
+    assert info.value.__context__ is None
+    _assert_clean(info.value)
+    assert recorder.requests == []

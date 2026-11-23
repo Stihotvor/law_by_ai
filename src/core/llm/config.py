@@ -1,7 +1,6 @@
 """Resolve one frozen LLM config per agent from Settings."""
 
-import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
 from config.settings import Settings
@@ -22,10 +21,10 @@ LLM_AGENTS: tuple[str, ...] = (
 class AgentLLMConfig:
     """LLM endpoint settings for one agent."""
 
-    base_url: str
+    base_url: str = field(repr=False)
     model: str
     timeout: float
-    api_key: str
+    api_key: str = field(repr=False)
 
 
 def resolve(settings: Settings, agent_name: str) -> AgentLLMConfig:
@@ -34,46 +33,39 @@ def resolve(settings: Settings, agent_name: str) -> AgentLLMConfig:
         raise LLMConfigError(f"unknown LLM agent {agent_name!r}")
     model = settings.llm_setting("model", agent_name)
     if not model:
-        var = f"LLM_MODEL_{agent_name.upper()}"
-        raise LLMConfigError(f"no LLM model for agent {agent_name!r}: set {var} or LLM_MODEL")
+        var = settings.llm_var_name("model", agent_name)
+        fallback = settings.llm_var_name("model", None)
+        raise LLMConfigError(f"no LLM model for agent {agent_name!r}: set {var} or {fallback}")
     base_url = settings.llm_setting("base_url", agent_name)
     _check_base_url(base_url, agent_name)
     return AgentLLMConfig(
         base_url=base_url,
         model=model,
-        timeout=_timeout(settings, agent_name),
+        timeout=settings.llm_agent_timeout(agent_name),
         api_key=settings.llm_setting("api_key", agent_name),
     )
 
 
-def _timeout(settings: Settings, agent_name: str) -> float:
-    """Per-agent timeout, else the validated global ``llm_timeout``."""
-    fallback = settings.llm_timeout
-    raw = settings.llm_setting("timeout", agent_name).strip()
-    if not raw:
-        return fallback
-    var = f"LLM_TIMEOUT_{agent_name.upper()}"
-    try:
-        value = float(raw)
-    except ValueError:
-        raise ValueError(f"{var} must be a number, got {raw!r}") from None
-    if not (value > 0 and math.isfinite(value)):
-        raise ValueError(f"{var} must be positive and finite, got {raw!r}")
-    return value
-
-
 def _check_base_url(base_url: str, agent_name: str) -> None:
-    """Reject an empty URL, credentials, query, fragment or a non-http(s) scheme.
+    """Reject a bad base URL; the message names the agent but never the URL.
 
-    The message names the agent but never the URL, which may hold secrets.
+    The URL may hold secrets, so it is not echoed.
     """
-    parts = urlsplit(base_url)
-    bad = (
-        not parts.netloc
-        or parts.scheme not in ("http", "https")
-        or "@" in parts.netloc
-        or parts.query
-        or parts.fragment
-    )
-    if bad:
+    if not _is_valid_base_url(base_url):
         raise LLMConfigError(f"invalid or missing LLM base URL for agent {agent_name!r}")
+
+
+def _is_valid_base_url(base_url: str) -> bool:
+    """Require http(s), a hostname, a valid port, no credentials, query or fragment."""
+    try:
+        parts = urlsplit(base_url)
+        _ = parts.port
+    except ValueError:
+        return False
+    return (
+        bool(parts.hostname)
+        and parts.scheme in ("http", "https")
+        and "@" not in parts.netloc
+        and not parts.query
+        and not parts.fragment
+    )

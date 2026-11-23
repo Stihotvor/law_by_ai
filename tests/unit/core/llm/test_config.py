@@ -9,7 +9,7 @@ from core.llm.config import LLM_AGENTS, AgentLLMConfig, resolve
 from core.llm.errors import LLMConfigError
 from core.llm.ports import ChatModel
 
-_FIELDS = ("BASE_URL", "MODEL", "TIMEOUT", "API_KEY")
+_AGENT = "bureaucracy_assistant"
 
 
 @pytest.fixture
@@ -22,9 +22,9 @@ def env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     return monkeypatch
 
 
-def _set_agent(env: pytest.MonkeyPatch, **values: str) -> None:
+def _set_agent(env: pytest.MonkeyPatch, agent: str, **values: str) -> None:
     for field, value in values.items():
-        env.setenv(f"LLM_{field.upper()}_BUREAUCRACY_ASSISTANT", value)
+        env.setenv(f"LLM_{field.upper()}_{agent.upper()}", value)
 
 
 def test_llm_agents_match_settings() -> None:
@@ -36,8 +36,8 @@ def test_llm_agents_match_settings() -> None:
 
 def test_per_agent_value_wins(env: pytest.MonkeyPatch) -> None:
     env.setenv("LLM_BASE_URL", "http://g:2/v1")
-    _set_agent(env, base_url="http://a:1/v1", model="m-a", timeout="5", api_key="k-a")
-    config = resolve(Settings(), "bureaucracy_assistant")
+    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a", timeout="5", api_key="k-a")
+    config = resolve(Settings(), _AGENT)
     assert config == AgentLLMConfig(
         base_url="http://a:1/v1", model="m-a", timeout=5.0, api_key="k-a"
     )
@@ -68,15 +68,15 @@ def test_no_model(env: pytest.MonkeyPatch) -> None:
 
 
 def test_bad_per_agent_timeout(env: pytest.MonkeyPatch) -> None:
-    _set_agent(env, base_url="http://a:1/v1", model="m-a", timeout="0")
+    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a", timeout="0")
     with pytest.raises(ValueError, match="LLM_TIMEOUT_BUREAUCRACY_ASSISTANT"):
-        resolve(Settings(), "bureaucracy_assistant")
+        resolve(Settings(), _AGENT)
 
 
 def test_empty_base_url(env: pytest.MonkeyPatch) -> None:
-    _set_agent(env, model="m-a")
-    with pytest.raises(LLMConfigError, match="bureaucracy_assistant"):
-        resolve(Settings(), "bureaucracy_assistant")
+    _set_agent(env, _AGENT, model="m-a")
+    with pytest.raises(LLMConfigError, match=_AGENT):
+        resolve(Settings(), _AGENT)
 
 
 @pytest.mark.parametrize(
@@ -86,13 +86,17 @@ def test_empty_base_url(env: pytest.MonkeyPatch) -> None:
         "http://host/v1?x=1",
         "http://host/v1#frag",
         "ftp://host/v1",
+        "http://:80/v1",
+        "http://host:99999/v1",
+        "http://host:port/v1",
+        "http://[::1/v1",
     ],
 )
 def test_bad_base_url(env: pytest.MonkeyPatch, url: str) -> None:
-    _set_agent(env, base_url=url, model="m-a")
+    _set_agent(env, _AGENT, base_url=url, model="m-a")
     with pytest.raises(LLMConfigError) as info:
-        resolve(Settings(), "bureaucracy_assistant")
-    assert "bureaucracy_assistant" in str(info.value)
+        resolve(Settings(), _AGENT)
+    assert _AGENT in str(info.value)
     assert url not in str(info.value)
 
 
@@ -107,11 +111,40 @@ def test_fake_satisfies_port() -> None:
 
 
 def test_default_timeout_when_unset(env: pytest.MonkeyPatch) -> None:
-    _set_agent(env, base_url="http://a:1/v1", model="m-a")
-    assert resolve(Settings(), "bureaucracy_assistant").timeout == 60.0
+    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a")
+    assert resolve(Settings(), _AGENT).timeout == 60.0
 
 
 def test_non_numeric_per_agent_timeout(env: pytest.MonkeyPatch) -> None:
-    _set_agent(env, base_url="http://a:1/v1", model="m-a", timeout="soon")
+    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a", timeout="soon")
     with pytest.raises(ValueError, match="LLM_TIMEOUT_BUREAUCRACY_ASSISTANT"):
-        resolve(Settings(), "bureaucracy_assistant")
+        resolve(Settings(), _AGENT)
+
+
+def test_repr_hides_key_and_url(env: pytest.MonkeyPatch) -> None:
+    _set_agent(env, _AGENT, base_url="http://secret-host:1/v1", model="m-a", api_key="k-secret")
+    text = repr(resolve(Settings(), _AGENT))
+    assert "k-secret" not in text
+    assert "secret-host" not in text
+    assert "m-a" in text
+
+
+def test_timeout_error_does_not_echo_value(env: pytest.MonkeyPatch) -> None:
+    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a", timeout="soon-xyz")
+    with pytest.raises(ValueError, match="LLM_TIMEOUT_BUREAUCRACY_ASSISTANT") as info:
+        resolve(Settings(), _AGENT)
+    assert "soon-xyz" not in str(info.value)
+
+
+def test_bad_global_timeout_does_not_break_valid_agent_timeout(env: pytest.MonkeyPatch) -> None:
+    env.setenv("LLM_TIMEOUT", "abc")
+    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a", timeout="5")
+    assert resolve(Settings(), _AGENT).timeout == 5.0
+
+
+def test_bad_global_timeout_used_when_agent_timeout_empty(env: pytest.MonkeyPatch) -> None:
+    env.setenv("LLM_TIMEOUT", "abc")
+    _set_agent(env, _AGENT, base_url="http://a:1/v1", model="m-a", timeout="")
+    with pytest.raises(ValueError, match="LLM_TIMEOUT") as info:
+        resolve(Settings(), _AGENT)
+    assert "LLM_TIMEOUT_" not in str(info.value)

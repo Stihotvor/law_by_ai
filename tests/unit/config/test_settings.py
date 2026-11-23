@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from config.settings import ROOT_DIR, Settings, get_settings, load_env
+from config.settings import ROOT_DIR, Settings, get_settings, load_env, positive_float
 
 # Environment variables the settings module may read.
 _ENV_KEYS = (
@@ -544,7 +544,7 @@ def test_llm_model_property_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
     assert Settings().llm_model_bureaucracy_assistant == "m1"
 
 
-def test_qa_042_llm_model_global_and_agent_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_llm_model_global_and_agent_properties_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
     _isolate_env(monkeypatch)
     monkeypatch.setenv("LLM_MODEL", "g")
     monkeypatch.setenv("LLM_MODEL_ANALYSIS", "x1")
@@ -555,11 +555,83 @@ def test_qa_042_llm_model_global_and_agent_unchanged(monkeypatch: pytest.MonkeyP
     assert settings.llm_model == "g"
 
 
-def test_qa_045_settings_raises_only_value_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_bad_llm_timeout_raises_plain_value_error(monkeypatch: pytest.MonkeyPatch) -> None:
     _isolate_env(monkeypatch)
     monkeypatch.setenv(_LLM_TIMEOUT, "abc")
 
-    with pytest.raises(ValueError, match="LLM_TIMEOUT") as info:
+    with pytest.raises(ValueError, match=_LLM_TIMEOUT) as info:
         _ = Settings().llm_timeout
 
     assert type(info.value) is ValueError
+
+
+def test_llm_timeout_error_does_not_echo_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_LLM_TIMEOUT, "-7.5")
+
+    with pytest.raises(ValueError, match=_LLM_TIMEOUT) as info:
+        _ = Settings().llm_timeout
+
+    assert "-7.5" not in str(info.value)
+
+
+@pytest.mark.parametrize(
+    ("field", "agent", "expected"),
+    [
+        ("timeout", None, "LLM_TIMEOUT"),
+        ("base_url", "analysis", "LLM_BASE_URL_ANALYSIS"),
+        ("MODEL", "Legal_Research", "LLM_MODEL_LEGAL_RESEARCH"),
+    ],
+)
+def test_llm_var_name(field: str, agent: str | None, expected: str) -> None:
+    assert Settings.llm_var_name(field, agent) == expected
+
+
+def test_positive_float_empty_gives_default() -> None:
+    assert positive_float("X_VAR", "", 3.5) == 3.5
+
+
+def test_positive_float_strips_whitespace() -> None:
+    assert positive_float("X_VAR", " 2.5 ", 3.5) == 2.5
+
+
+@pytest.mark.parametrize("raw", ["abc", " ", "0", "-1", "nan", "inf", "-inf"])
+def test_positive_float_rejects_bad_value(raw: str) -> None:
+    with pytest.raises(ValueError, match="X_VAR") as info:
+        positive_float("X_VAR", raw, 3.5)
+
+    assert type(info.value) is ValueError
+    assert info.value.__cause__ is None
+
+
+def test_positive_float_message_hides_value() -> None:
+    with pytest.raises(ValueError, match="X_VAR") as info:
+        positive_float("X_VAR", "secret-ish", 3.5)
+
+    assert "secret-ish" not in str(info.value)
+
+
+def test_llm_agent_timeout_prefers_agent_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_LLM_TIMEOUT, "abc")
+    monkeypatch.setenv(f"{_LLM_TIMEOUT}_ANALYSIS", " 5 ")
+
+    assert Settings().llm_agent_timeout("analysis") == 5.0
+
+
+def test_llm_agent_timeout_falls_back_to_global(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(_LLM_TIMEOUT, "7")
+    monkeypatch.setenv(f"{_LLM_TIMEOUT}_ANALYSIS", "")
+
+    assert Settings().llm_agent_timeout("analysis") == 7.0
+
+
+def test_llm_agent_timeout_rejects_bad_agent_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    _isolate_env(monkeypatch)
+    monkeypatch.setenv(f"{_LLM_TIMEOUT}_ANALYSIS", "soon-xyz")
+
+    with pytest.raises(ValueError, match=f"{_LLM_TIMEOUT}_ANALYSIS") as info:
+        Settings().llm_agent_timeout("analysis")
+
+    assert "soon-xyz" not in str(info.value)

@@ -14,7 +14,11 @@ from config.settings import Settings
 from core.llm.config import resolve
 from core.llm.errors import LLMError, LLMTimeoutError
 
+__all__ = ["LLMClient"]
+
 _MAX_RESPONSE_BYTES = 1024 * 1024
+# httpx applies its timeout per phase (connect, write, pool, each read).
+_HTTPX_PHASES = 4
 _now = time.monotonic
 
 
@@ -45,6 +49,10 @@ def _check_status(response: httpx.Response) -> None:
         raise LLMError(f"LLM HTTP {status}", status_code=status)
 
 
+def _shape_error() -> LLMError:
+    return LLMError("unexpected LLM response shape", status_code=200)
+
+
 def _loads(raw: bytes) -> object:
     try:
         return json.loads(raw)
@@ -52,20 +60,23 @@ def _loads(raw: bytes) -> object:
         return None
 
 
-def _item(value: object, key: str) -> object:
-    return cast("dict[str, object]", value).get(key) if isinstance(value, dict) else None
-
-
-def _first(value: object) -> object:
-    items = cast("list[object]", value) if isinstance(value, list) else []
-    return items[0] if items else None
-
-
-def _content(raw: bytes) -> str:
-    message = _item(_first(_item(_loads(raw), "choices")), "message")
-    content = _item(message, "content")
+def _parse_content(raw: bytes) -> str:
+    """Return ``choices[0].message.content`` or raise ``LLMError`` on any other shape."""
+    data = _loads(raw)
+    if not isinstance(data, dict):
+        raise _shape_error()
+    choices = cast("dict[str, object]", data).get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise _shape_error()
+    first = cast("list[object]", choices)[0]
+    if not isinstance(first, dict):
+        raise _shape_error()
+    message = cast("dict[str, object]", first).get("message")
+    if not isinstance(message, dict):
+        raise _shape_error()
+    content = cast("dict[str, object]", message).get("content")
     if not isinstance(content, str):
-        raise LLMError("unexpected LLM response shape", status_code=200)
+        raise _shape_error()
     return content
 
 
@@ -81,7 +92,9 @@ class LLMClient:
         if not messages:
             raise ValueError("messages must not be empty")
         config = resolve(self._settings, agent_name)
-        headers = {"Authorization": f"Bearer {config.api_key}"} if config.api_key else {}
+        headers = {"Accept-Encoding": "identity"}
+        if config.api_key:
+            headers["Authorization"] = f"Bearer {config.api_key}"
         url = f"{config.base_url.rstrip('/')}/chat/completions"
         body = {"model": config.model, "messages": messages}
         failure: LLMError | None = None
@@ -90,19 +103,19 @@ class LLMClient:
             raw = self._post(url, body, headers, config.timeout)
         except httpx.TimeoutException:
             failure = LLMTimeoutError("LLM request timed out")
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, httpx.InvalidURL) as exc:
             failure = LLMError(f"LLM request failed: {type(exc).__name__}")
         if failure is not None:
             raise failure
-        return _content(raw)
+        return _parse_content(raw)
 
     def _post(self, url: str, body: object, headers: dict[str, str], timeout: float) -> bytes:
-        # httpx fixes the read timeout once per body, so each phase gets a quarter:
-        # the last read started before the deadline ends by 1.25 x timeout.
+        # httpx fixes the read timeout once per body, so each phase gets a share:
+        # the last read started before the deadline ends by (1 + 1/phases) x timeout.
         deadline = _now() + timeout
         with (
             httpx.Client(
-                timeout=httpx.Timeout(timeout / 4),
+                timeout=httpx.Timeout(timeout / _HTTPX_PHASES),
                 follow_redirects=False,
                 trust_env=False,
                 transport=self._transport,

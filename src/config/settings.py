@@ -183,21 +183,21 @@ def _float_in_range(name: str, default: float, low: float, high: float) -> float
     return value
 
 
-def _positive_or_default(name: str, default: float) -> float:
-    """Read env ``name`` as a positive, finite float or raise ``ValueError``.
+def positive_float(name: str, raw: str, default: float) -> float:
+    """Parse ``raw`` (the value of env ``name``) as a positive, finite float.
 
-    An unset or empty value gives ``default``. Surrounding whitespace is
-    stripped; ``nan``, ``inf``, zero and negative values are rejected.
+    An empty ``raw`` gives ``default``. Surrounding whitespace is stripped;
+    a non-number, ``nan``, ``inf``, zero or a negative value raises
+    ``ValueError``. The message names ``name`` but not the raw value.
     """
-    raw = os.getenv(name, "")
     if raw == "":
         return default
     try:
         value = float(raw.strip())
     except ValueError:
-        raise ValueError(f"{name} must be a number, got {raw!r}") from None
+        raise ValueError(f"{name} must be a number") from None
     if not 0 < value < float("inf"):
-        raise ValueError(f"{name} must be positive and finite, got {raw!r}")
+        raise ValueError(f"{name} must be positive and finite")
     return value
 
 
@@ -437,18 +437,38 @@ class Settings:
         """Model for the BureaucracyAssistant agent (falls back to ``LLM_MODEL``)."""
         return os.getenv("LLM_MODEL_BUREAUCRACY_ASSISTANT", self.llm_model)
 
+    @staticmethod
+    def llm_var_name(field: str, agent: str | None) -> str:
+        """Return ``LLM_<FIELD>_<AGENT>``, or ``LLM_<FIELD>`` when ``agent`` is ``None``."""
+        name = f"LLM_{field.upper()}"
+        return f"{name}_{agent.upper()}" if agent is not None else name
+
     def llm_setting(self, field: str, agent: str) -> str:
         """Return ``LLM_<FIELD>_<AGENT>``, else ``LLM_<FIELD>``, else ``""``.
 
         ``field`` and ``agent`` are upper-cased. An empty value counts as unset.
         """
-        key = f"LLM_{field.upper()}"
-        return os.getenv(f"{key}_{agent.upper()}") or os.getenv(key) or ""
+        per_agent = os.getenv(self.llm_var_name(field, agent))
+        return per_agent or os.getenv(self.llm_var_name(field, None)) or ""
+
+    def llm_agent_timeout(self, agent: str) -> float:
+        """Seconds per LLM request for ``agent``: ``LLM_TIMEOUT_<AGENT>``, else ``llm_timeout``.
+
+        The global value is read only when the per-agent value is empty, so a
+        bad global value does not break a valid per-agent value.
+        """
+        name = self.llm_var_name("timeout", agent)
+        raw = os.getenv(name, "")
+        if raw == "":
+            return self.llm_timeout
+        # raw is not empty here, so the default is never used.
+        return positive_float(name, raw, default=0.0)
 
     @property
     def llm_timeout(self) -> float:
         """Seconds per LLM request (``LLM_TIMEOUT``, positive, default 60)."""
-        return _positive_or_default("LLM_TIMEOUT", 60.0)
+        name = self.llm_var_name("timeout", None)
+        return positive_float(name, os.getenv(name, ""), 60.0)
 
     @property
     def embedding_base_url(self) -> str:
