@@ -185,6 +185,47 @@ def test_check_constraints_reject_bad_rows(
     assert _constraint(info.value) == constraint
 
 
+def test_qa_049_051_more_check_constraints(owner_url: str, procedure: Seeded) -> None:
+    """QA-049 negative position, QA-051 schema_version 0."""
+    with pytest.raises(DBAPIError) as info:
+        _run(owner_url, INSERT_STEP, pid=procedure.id, **{**STEP_OK, "position": -1})
+    assert _sqlstate(info.value) == CHECK_VIOLATION
+    version_zero = INSERT_PROCEDURE.replace(", 1, :revision", ", 0, :revision")
+    with pytest.raises(DBAPIError) as info:
+        _run(owner_url, version_zero, slug=_slug(), title="T", revision=1)
+    assert _sqlstate(info.value) == CHECK_VIOLATION
+
+
+def test_qa_050_duplicate_step_position_and_key(owner_url: str, procedure: Seeded) -> None:
+    unique_violation = "23505"
+    _run(owner_url, INSERT_STEP, pid=procedure.id, **STEP_OK)
+    with pytest.raises(DBAPIError) as info:
+        _run(owner_url, INSERT_STEP, pid=procedure.id, **{**STEP_OK, "key": "other-key"})
+    assert _sqlstate(info.value) == unique_violation
+    with pytest.raises(DBAPIError) as info:
+        _run(owner_url, INSERT_STEP, pid=procedure.id, **{**STEP_OK, "position": 1})
+    assert _sqlstate(info.value) == unique_violation
+
+
+def test_qa_045_duplicate_revision_number(owner_url: str, with_revision: Seeded) -> None:
+    with pytest.raises(DBAPIError) as info:
+        _insert_revision(owner_url, with_revision.id)
+    assert _sqlstate(info.value) == "23505"
+
+
+def test_qa_042_deleting_a_procedure_cascades_steps(owner_url: str, procedure: Seeded) -> None:
+    for position in range(3):
+        _run(
+            owner_url,
+            INSERT_STEP,
+            pid=procedure.id,
+            **{**STEP_OK, "position": position, "key": f"step-{position}"},
+        )
+    _run(owner_url, "DELETE FROM procedure WHERE id = :pid", pid=procedure.id)
+    count = "SELECT count(*) FROM procedure_step WHERE procedure_id = :pid"
+    assert _scalar(owner_url, count, pid=procedure.id) == 0
+
+
 # --- app role cannot change history ----------------------------------------------
 
 

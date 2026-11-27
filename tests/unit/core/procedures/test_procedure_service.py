@@ -144,6 +144,21 @@ def test_unknown_or_malformed_slug_returns_none() -> None:
     assert repo.get_calls == ["nope"]
 
 
+def test_qa_032_non_admin_with_invalid_yaml_gets_the_refusal_first() -> None:
+    repo = FakeRepository()
+    user = RequestPrincipal(email="u@x.org", role=USER)
+    with principal_context(user), pytest.raises(PrincipalRequiredError):
+        _service(repo).import_procedure(_yaml(url='""'))
+    assert repo.saved == []
+
+
+@pytest.mark.parametrize("slug", ["", "a" * 10000, "pesel-", "PESEL; DROP TABLE procedure"])
+def test_qa_061_062_063_malformed_slugs_return_none(slug: str) -> None:
+    repo = FakeRepository()
+    assert _service(repo).get_procedure(slug) is None
+    assert repo.saved == []
+
+
 def test_known_slug_returns_procedure() -> None:
     repo = FakeRepository()
     service = _service(repo)

@@ -145,6 +145,24 @@ def test_duplicate_slug_stops_before_any_write(tmp_path: Path) -> None:
     assert repo.saved == []
 
 
+def test_qa_014_unknown_key_in_seed_file_names_the_file(tmp_path: Path) -> None:
+    (tmp_path / "extra.yaml").write_text(_yaml("extra") + "priority: 1\n", encoding="utf-8")
+    repo = FakeRepository()
+    module = _load()
+    with pytest.raises(module.SeedError) as info:
+        module.seed(tmp_path, _service(repo))
+    assert "extra.yaml" in str(info.value)
+    assert repo.saved == []
+
+
+def test_qa_013_malformed_seed_file_names_the_file(tmp_path: Path) -> None:
+    (tmp_path / "broken.yaml").write_text("slug: [unclosed", encoding="utf-8")
+    module = _load()
+    with pytest.raises(module.SeedError) as info:
+        module.seed(tmp_path, _service(FakeRepository()))
+    assert "broken.yaml" in str(info.value)
+
+
 def test_empty_directory_is_an_error(tmp_path: Path) -> None:
     module = _load()
     with pytest.raises(module.SeedError):

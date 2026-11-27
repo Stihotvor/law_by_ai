@@ -283,6 +283,47 @@ def test_concurrent_saves_get_consecutive_revisions(
     assert _snapshot(current) == rows[-1][2]
 
 
+def test_qa_057_concurrent_identical_content(
+    repo: PostgresProcedureRepository, slugs: Slugs, owner_url: str
+) -> None:
+    slug = slugs.new()
+    outcomes = _save_together(repo, [_procedure(slug), _procedure(slug)])
+    results = [o for o in outcomes if isinstance(o, ImportResult)]
+    assert len(results) == 2
+    assert sorted(r.changed for r in results) == [False, True]
+    assert len(_run(owner_url, REVISIONS_SQL, slug=slug)) == 1
+
+
+def test_qa_029_changed_date_adds_a_revision(
+    repo: PostgresProcedureRepository, slugs: Slugs
+) -> None:
+    slug = slugs.new()
+    first = _procedure(slug)
+    step = first.steps[0].model_copy(update={"last_checked": date(2026, 11, 2)})
+    second = first.model_copy(update={"steps": (step,)})
+    repo.save(first, ACTOR)
+    assert repo.save(second, ACTOR) == ImportResult(slug=slug, revision=2, changed=True)
+
+
+def test_qa_066_read_after_engine_disposed(
+    repo: PostgresProcedureRepository, app_engine: Engine, slugs: Slugs
+) -> None:
+    procedure = _procedure(slugs.new(), texts=("One.", "Two."))
+    repo.save(procedure, ACTOR)
+    found = repo.get(procedure.slug)
+    app_engine.dispose()
+    assert found is not None
+    assert [s.text for s in found.steps] == ["One.", "Two."]
+
+
+def test_qa_085_unknown_slug_is_fast(repo: PostgresProcedureRepository, app_engine: Engine) -> None:
+    with app_engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    start = time.perf_counter()
+    assert repo.get(_new_slug()) is None
+    assert time.perf_counter() - start < READ_BOUND_SECONDS
+
+
 # --- not found and empty -----------------------------------------------------------
 
 

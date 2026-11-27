@@ -7,6 +7,7 @@ that the owner migrated to head. Skipped if PostgreSQL is unreachable.
 from __future__ import annotations
 
 import importlib.util
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
@@ -79,6 +80,21 @@ def test_seed_twice(migrated_db: ScratchDb, capsys: pytest.CaptureFixture[str]) 
     assert second_out == [f"{slug} revision=1 changed=False" for slug in SLUGS]
     assert _rows(migrated_db.app_url, REVISIONS_SQL) == first
     assert _rows(migrated_db.app_url, PROCEDURES_SQL) == [(slug, 1) for slug in SLUGS]
+
+
+def test_qa_079_seed_edit_adds_a_revision(migrated_db: ScratchDb, tmp_path: Path) -> None:
+    module = _load()
+    assert module.main([str(DATA_DIR)]) == 0
+    for path in DATA_DIR.glob("*.yaml"):
+        (tmp_path / path.name).write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    target = tmp_path / "pesel.yaml"
+    original = target.read_text(encoding="utf-8")
+    edited = re.sub(r"last_checked: \S+", "last_checked: 2000-01-01", original, count=1)
+    assert edited != original
+    target.write_text(edited, encoding="utf-8")
+    assert module.main([str(tmp_path)]) == 0
+    expected = [(slug, 2 if slug == "pesel" else 1) for slug in SLUGS]
+    assert _rows(migrated_db.app_url, PROCEDURES_SQL) == expected
 
 
 def test_bad_file_writes_nothing(migrated_db: ScratchDb, tmp_path: Path) -> None:

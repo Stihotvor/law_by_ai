@@ -244,6 +244,51 @@ def test_store_error_is_an_exception() -> None:
     assert not issubclass(ProcedureStoreError, ProcedureValidationError)
 
 
+# QA gap tests
+
+
+def test_qa_018_blank_title_is_rejected() -> None:
+    _raises(_yaml(STEP_A, header=HEADER.replace("title: PESEL number", "title: '  '")))
+
+
+def test_qa_071_missing_schema_version_is_rejected() -> None:
+    _raises(_yaml(STEP_A, header=HEADER.replace("schema_version: 1\n", "")))
+
+
+def test_qa_072_schema_version_99_is_rejected() -> None:
+    _raises(_yaml(STEP_A, header=HEADER.replace("schema_version: 1", "schema_version: 99")))
+
+
+def test_qa_028_key_order_and_comments_do_not_change_content() -> None:
+    plain = parse_procedure_yaml(_yaml(STEP_A), TODAY)
+    reordered = (
+        "# a comment\n"
+        "title: PESEL number\n"
+        "steps:\n"
+        "  # step comment\n"
+        "  - verify_with_office: Ask the office if the form is current.\n"
+        "    last_checked: 2026-11-01\n"
+        "    source_url: https://example.gov.pl/form\n"
+        "    text: Get the form.\n"
+        "    key: get-form\n"
+        "slug: pesel\n"
+        "schema_version: 1\n"
+    )
+    assert parse_procedure_yaml(reordered, TODAY) == plain
+
+
+def test_qa_068_stale_date_is_kept_unchanged() -> None:
+    step = _bad_step(last_checked="2020-01-01")
+    procedure = parse_procedure_yaml(_yaml(step), TODAY)
+    assert procedure.steps[0].last_checked == date(2020, 1, 1)
+
+
+def test_qa_088_two_hundred_steps_parse_in_order() -> None:
+    steps = [_bad_step(key=f"step-{i}") for i in range(200)]
+    procedure = parse_procedure_yaml(_yaml(*steps), TODAY)
+    assert [s.key for s in procedure.steps] == [f"step-{i}" for i in range(200)]
+
+
 # Scenario: schema is pinned
 
 
