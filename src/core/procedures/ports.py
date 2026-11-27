@@ -11,8 +11,9 @@ class ProcedureRepository(Protocol):
     def save(self, procedure: Procedure, actor: str) -> ImportResult:
         """Store *procedure* as a new revision by *actor*, or write nothing if identical.
 
-        Identical means ``procedure.model_dump(mode="json")`` equals the latest
-        revision content; the actor does not count. Then ``changed=False``.
+        Identical means ``procedure.model_dump(mode="json", exclude={"revision"})``
+        equals the latest revision content; the actor does not count. Then
+        ``changed=False``.
         Raises ``ProcedureStoreError`` on a store failure, with the cause chained.
         """
         ...
