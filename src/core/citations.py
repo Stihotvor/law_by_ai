@@ -12,11 +12,15 @@ Scoring rule (deterministic; weights provisional until an evaluation runs):
   + RERANK_WEIGHT * rerank_score``
 
 Decision: every hit is validated first. Hits whose URL is empty, not
-http(s), or holds credentials are dropped. Valid hits are sorted by
-confidence, highest first (ties keep input order). Hits with
+http(s), holds credentials, whitespace, a control character or a backslash,
+or is longer than ``MAX_URL_LENGTH`` (the ``source_url`` column) are dropped.
+Valid hits are sorted by confidence, highest first (ties keep input order). Hits with
 ``confidence >= min_confidence`` form an ``Answer``. If none qualify, the
 result is ``NoReliableAnswer`` with the top 3 valid hits as closest sources.
 Both results carry ``NOT_LEGAL_ADVICE_NOTICE``. No I/O, no environment read.
+
+This layer does not make a URL safe to fetch; the renderer must escape the
+``quote`` and ``law`` fields.
 """
 
 import math
@@ -30,6 +34,9 @@ RETRIEVAL_WEIGHT: float = 0.4
 RERANK_WEIGHT: float = 0.6
 CLOSEST_SOURCES_LIMIT: int = 3
 ALLOWED_SCHEMES: frozenset[str] = frozenset({"http", "https"})
+MAX_URL_LENGTH: int = 1024
+ERROR_REPR_LIMIT: int = 40
+_DEL = "\x7f"
 
 
 @dataclass(frozen=True)
@@ -77,10 +84,11 @@ class NoReliableAnswer:
 
 
 def _check_unit(value: object, field: str) -> float:
+    shown = repr(value)[:ERROR_REPR_LIMIT]
     if isinstance(value, bool) or not isinstance(value, int | float):
-        raise ValueError(f"{field} must be a number in [0, 1], got {value!r}")
+        raise ValueError(f"{field} must be a number in [0, 1], got {shown}")
     if math.isnan(value) or math.isinf(value) or not 0.0 <= value <= 1.0:
-        raise ValueError(f"{field} must be in [0, 1], got {value!r}")
+        raise ValueError(f"{field} must be in [0, 1], got {shown}")
     return float(value)
 
 
@@ -92,7 +100,13 @@ def _confidence(hit: ScoredHit) -> float:
     return RETRIEVAL_WEIGHT * retrieval + RERANK_WEIGHT * rerank
 
 
+def _has_bad_char(url: str) -> bool:
+    return any(ch <= " " or ch == _DEL or ch == "\\" for ch in url)
+
+
 def _valid_url(url: str) -> bool:
+    if len(url) > MAX_URL_LENGTH or _has_bad_char(url):
+        return False
     try:
         parts = urlsplit(url)
         host = parts.hostname

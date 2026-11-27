@@ -1,14 +1,23 @@
-"""Citation scoring and the answer-or-refusal decision (ADR-0008, ADR-0015)."""
+"""Citation scoring and the answer-or-refusal decision (ADR-0008, ADR-0015).
+
+Tests named ``test_qa_NNN_...`` map to the case ids in
+docs/design/citations-confidence/qa/results.md. QA-006 and QA-048 live in
+tests/unit/test_adr_0008_status.py; QA-045 is the lint, type and coverage run.
+"""
 
 import ast
+import dataclasses
 import math
 import sys
 from pathlib import Path
+from types import ModuleType
+from typing import cast
 from urllib.parse import urlsplit
 
 import pytest
 
 import core.citations as citations_module
+import core.notices as notices_module
 from core.citations import (
     RERANK_WEIGHT,
     RETRIEVAL_WEIGHT,
@@ -20,21 +29,47 @@ from core.citations import (
 )
 from core.notices import NOT_LEGAL_ADVICE_NOTICE
 
-FORBIDDEN_MODULES = {"sqlalchemy", "httpx", "requests", "redis", "celery", "openai"}
+U1 = "https://eli.gov.pl/akt/1"
+U2 = "https://eli.gov.pl/akt/2"
+BASE = "https://eli.gov.pl/"
+THRESHOLD = 0.5
+HIGH = 0.9
+LOW = 0.2
+CLOSEST_LIMIT = 3
+MAX_URL_LENGTH = 1024
+ERROR_REPR_LIMIT = 40
+LARGE_HIT_COUNT = 10_000
+REPEAT_CALLS = 100
+FORBIDDEN_MODULES = frozenset(
+    {
+        "sqlalchemy",
+        "httpx",
+        "requests",
+        "redis",
+        "celery",
+        "openai",
+        "psycopg",
+        "urllib3",
+        "aiohttp",
+        "anthropic",
+    }
+)
+BAD_SCORES: list[object] = [True, False, math.nan, math.inf, -math.inf, -0.01, 1.01]
 
 
 def _hit(
-    url: str = "https://zakon.rada.gov.ua/laws/show/1",
+    url: str = U1,
     retrieval: float = 0.8,
     rerank: float | None = None,
-    quote: str = "quote",
+    quote: str = "q",
+    **optional: str,
 ) -> ScoredHit:
-    return ScoredHit(
-        source_url=url,
-        quote=quote,
-        retrieval_score=retrieval,
-        rerank_score=rerank,
-    )
+    return ScoredHit(url, quote, retrieval, rerank, **optional)
+
+
+def _as_score(value: object) -> float:
+    """Pass a non-float through the typed API to test runtime validation."""
+    return cast("float", value)
 
 
 def _answer(result: Answer | NoReliableAnswer) -> Answer:
@@ -47,191 +82,16 @@ def _refusal(result: Answer | NoReliableAnswer) -> NoReliableAnswer:
     return result
 
 
-HIT_SETS: list[list[ScoredHit]] = [
-    [_hit(retrieval=0.9)],
-    [_hit(retrieval=0.6, rerank=0.7), _hit("http://example.org/a", 0.5)],
-    [_hit(retrieval=1.0, rerank=1.0), _hit(retrieval=0.0, rerank=1.0)],
-    [_hit("https://example.org/x?y=1#z", 0.55, 0.9), _hit(retrieval=0.95)],
-    [_hit(retrieval=0.7, rerank=0.0), _hit(retrieval=0.6), _hit("ftp://x.org", 0.9)],
-]
+def _shown(result: Answer | NoReliableAnswer) -> tuple[Citation, ...]:
+    if isinstance(result, Answer):
+        return result.citations
+    return result.closest_sources
 
 
-@pytest.mark.parametrize("hits", HIT_SETS)
-def test_valid_citations_have_url_and_confidence_in_range(
-    hits: list[ScoredHit],
-) -> None:
-    answer = _answer(decide(hits, 0.5))
-    assert answer.citations
-    for citation in answer.citations:
-        parts = urlsplit(citation.source_url)
-        assert parts.scheme in {"http", "https"}
-        assert parts.netloc
-        assert 0.0 <= citation.confidence <= 1.0
-
-
-def test_threshold_boundaries() -> None:
-    assert isinstance(decide([_hit(retrieval=0.5)], 0.5), Answer)
-    assert isinstance(decide([_hit(retrieval=0.49)], 0.5), NoReliableAnswer)
-    assert isinstance(decide([_hit(retrieval=0.4)], 0.3), Answer)
-
-
-def test_setting_changes_outcome() -> None:
-    hits = [_hit(retrieval=0.4)]
-    assert isinstance(decide(hits, 0.3), Answer)
-    assert isinstance(decide(hits, 0.5), NoReliableAnswer)
-
-
-def test_min_confidence_bounds_are_accepted() -> None:
-    assert isinstance(decide([_hit(retrieval=0.0)], 0.0), Answer)
-    assert isinstance(decide([_hit(retrieval=1.0)], 1.0), Answer)
-
-
-@pytest.mark.parametrize(
-    "hits",
-    [
-        [],
-        [_hit(""), _hit("ftp://example.org/a"), _hit("https://u:p@example.org")],
-    ],
-)
-def test_no_citation_gives_empty_closest_sources(hits: list[ScoredHit]) -> None:
-    refusal = _refusal(decide(hits, 0.5))
-    assert refusal.closest_sources == ()
-
-
-@pytest.mark.parametrize("threshold", [0.0, 1.0])
-def test_url_filter_drops_bad_urls(threshold: float) -> None:
-    bad = [
-        _hit("", 1.0, quote="empty"),
-        _hit("ftp://example.org/a", 1.0, quote="ftp"),
-        _hit("mailto:a@example.org", 1.0, quote="mailto"),
-        _hit("https:///no-host", 1.0, quote="nohost"),
-        _hit("https://user:pw@example.org/a", 1.0, quote="creds"),
-        _hit("https://user@example.org/a", 1.0, quote="user"),
-        _hit("https://[broken/a", 1.0, quote="unparsable"),
-    ]
-    good = _hit("https://example.org/ok", 0.9, quote="good")
-    result = decide([*bad, good], threshold)
-    match result:
-        case Answer(citations=found):
-            pass
-        case NoReliableAnswer(closest_sources=found):
-            pass
-    assert [c.quote for c in found] == ["good"]
-
-
-def test_confidence_equals_retrieval_without_rerank() -> None:
-    answer = _answer(decide([_hit(retrieval=0.73)], 0.0))
-    assert answer.citations[0].confidence == 0.73
-
-
-def test_confidence_blends_both_scores() -> None:
-    answer = _answer(decide([_hit(retrieval=0.5, rerank=0.9)], 0.0))
-    assert answer.citations[0].confidence == pytest.approx(0.4 * 0.5 + 0.6 * 0.9)
-
-
-def test_weights_sum_to_one() -> None:
-    assert RETRIEVAL_WEIGHT == 0.4
-    assert RERANK_WEIGHT == 0.6
-    assert RETRIEVAL_WEIGHT + RERANK_WEIGHT == 1.0
-
-
-def test_citation_keeps_hit_fields() -> None:
-    hit = ScoredHit(
-        source_url="https://example.org/law",
-        quote="text",
-        retrieval_score=0.9,
-        rerank_score=None,
-        law="Civil Code",
-        article="5",
-        paragraph="2",
-        document_id="doc-1",
-    )
-    citation = _answer(decide([hit], 0.5)).citations[0]
-    assert citation == Citation(
-        source_url="https://example.org/law",
-        quote="text",
-        confidence=0.9,
-        law="Civil Code",
-        article="5",
-        paragraph="2",
-        document_id="doc-1",
-    )
-
-
-BAD_SCORES: list[object] = [True, False, math.nan, math.inf, -math.inf, -0.01, 1.01]
-
-
-@pytest.mark.parametrize("value", BAD_SCORES)
-def test_bad_retrieval_score_raises(value: object) -> None:
-    hit = _hit(retrieval=value)  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="retrieval_score"):
-        decide([hit], 0.5)
-
-
-@pytest.mark.parametrize("value", BAD_SCORES)
-def test_bad_rerank_score_raises(value: object) -> None:
-    hit = _hit(rerank=value)  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="rerank_score"):
-        decide([hit], 0.5)
-
-
-@pytest.mark.parametrize("value", BAD_SCORES)
-def test_bad_min_confidence_raises(value: object) -> None:
-    with pytest.raises(ValueError, match="min_confidence"):
-        decide([_hit()], value)  # type: ignore[arg-type]
-
-
-def test_non_number_score_raises() -> None:
-    hit = _hit(retrieval="0.5")  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="retrieval_score"):
-        decide([hit], 0.5)
-
-
-def test_bad_score_on_dropped_hit_still_raises() -> None:
-    hit = _hit("ftp://example.org", retrieval=2.0)
-    with pytest.raises(ValueError, match="retrieval_score"):
-        decide([hit], 0.5)
-
-
-def test_citations_sorted_descending_and_stable() -> None:
-    hits = [
-        _hit(retrieval=0.6, quote="a"),
-        _hit(retrieval=0.9, quote="b"),
-        _hit(retrieval=0.6, quote="c"),
-        _hit(retrieval=0.9, quote="d"),
-        _hit(retrieval=0.2, quote="low"),
-    ]
-    answer = _answer(decide(hits, 0.5))
-    assert [c.quote for c in answer.citations] == ["b", "d", "a", "c"]
-    assert answer.confidence == 0.9
-
-
-def test_closest_sources_at_most_three_sorted() -> None:
-    hits = [
-        _hit(retrieval=0.1, quote="a"),
-        _hit(retrieval=0.3, quote="b"),
-        _hit(retrieval=0.2, quote="c"),
-        _hit(retrieval=0.3, quote="d"),
-        _hit(retrieval=0.25, quote="e"),
-    ]
-    refusal = _refusal(decide(hits, 0.5))
-    assert [c.quote for c in refusal.closest_sources] == ["b", "d", "e"]
-
-
-def test_refusal_has_no_citations_or_confidence() -> None:
-    refusal = _refusal(decide([], 0.5))
-    assert not hasattr(refusal, "citations")
-    assert not hasattr(refusal, "confidence")
-
-
-@pytest.mark.parametrize("hits", [[], [_hit(retrieval=0.1)], [_hit(retrieval=0.9)]])
-def test_notice_is_shared(hits: list[ScoredHit]) -> None:
-    assert decide(hits, 0.5).notice == NOT_LEGAL_ADVICE_NOTICE
-
-
-def _imported_modules(tree: ast.Module) -> set[str]:
+def _imported_modules(module: ModuleType) -> set[str]:
+    path = Path(cast("str", module.__file__))
     names: set[str] = set()
-    for node in ast.walk(tree):
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         if isinstance(node, ast.Import):
             names.update(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
@@ -239,10 +99,350 @@ def _imported_modules(tree: ast.Module) -> set[str]:
     return names
 
 
-def test_module_imports_only_stdlib_and_notices() -> None:
-    source = Path(citations_module.__file__).read_text(encoding="utf-8")
-    imported = _imported_modules(ast.parse(source))
-    assert "core.notices" in imported
+def test_qa_001_valid_citations_give_answer() -> None:
+    answer = _answer(decide([_hit(U1, 0.8), _hit(U2, 0.6)], THRESHOLD))
+    assert [c.confidence for c in answer.citations] == [0.8, 0.6]
+    assert all(c.source_url.startswith("https://") for c in answer.citations)
+    assert answer.confidence == 0.8
+
+
+def test_qa_002_below_threshold_refusal() -> None:
+    refusal = _refusal(decide([_hit(U1, 0.3)], THRESHOLD))
+    assert [c.source_url for c in refusal.closest_sources] == [U1]
+    assert not hasattr(refusal, "confidence")
+
+
+def test_qa_003_no_citation_refusal() -> None:
+    assert _refusal(decide([_hit("", HIGH)], THRESHOLD)).closest_sources == ()
+
+
+def test_qa_004_setting_changes_outcome() -> None:
+    hits = [_hit(U1, 0.4)]
+    assert _answer(decide(hits, 0.3)).confidence == 0.4
+    _refusal(decide(hits, THRESHOLD))
+
+
+def test_qa_005_shared_notice_text() -> None:
+    answer = decide([_hit(retrieval=HIGH)], THRESHOLD)
+    refusal = decide([_hit(retrieval=0.1)], THRESHOLD)
+    assert answer.notice == refusal.notice == NOT_LEGAL_ADVICE_NOTICE
+    assert "not legal advice" in NOT_LEGAL_ADVICE_NOTICE.lower()
+
+
+def test_qa_007_empty_hit_list() -> None:
+    assert _refusal(decide([], THRESHOLD)).closest_sources == ()
+
+
+def test_qa_008_equal_to_threshold() -> None:
+    assert _answer(decide([_hit(retrieval=THRESHOLD)], THRESHOLD)).confidence == THRESHOLD
+
+
+def test_qa_009_just_below_threshold() -> None:
+    _refusal(decide([_hit(retrieval=0.49)], THRESHOLD))
+
+
+def test_qa_010_point4_threshold_point3() -> None:
+    assert _answer(decide([_hit(retrieval=0.4)], 0.3)).confidence == 0.4
+
+
+def test_qa_011_point4_threshold_point5() -> None:
+    _refusal(decide([_hit(retrieval=0.4)], THRESHOLD))
+
+
+def test_qa_012_retrieval_above_one() -> None:
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([_hit(retrieval=1.2)], THRESHOLD)
+
+
+def test_qa_013_negative_retrieval() -> None:
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([_hit(retrieval=-0.1)], THRESHOLD)
+
+
+def test_qa_014_rerank_above_one() -> None:
+    with pytest.raises(ValueError, match="rerank_score"):
+        decide([_hit(retrieval=0.7, rerank=1.5)], THRESHOLD)
+
+
+def test_qa_015_nan_score() -> None:
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([_hit(retrieval=math.nan)], THRESHOLD)
+
+
+def test_qa_016_infinite_score() -> None:
+    with pytest.raises(ValueError, match="rerank_score"):
+        decide([_hit(retrieval=0.7, rerank=math.inf)], THRESHOLD)
+
+
+def test_qa_017_bool_score() -> None:
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([_hit(retrieval=_as_score(True))], THRESHOLD)
+
+
+def test_qa_018_text_score() -> None:
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([_hit(retrieval=_as_score("0.9"))], THRESHOLD)
+
+
+def test_qa_019_threshold_above_one() -> None:
+    with pytest.raises(ValueError, match="min_confidence"):
+        decide([_hit(retrieval=HIGH)], 1.1)
+
+
+def test_qa_020_negative_threshold() -> None:
+    with pytest.raises(ValueError, match="min_confidence"):
+        decide([_hit(retrieval=HIGH)], -0.2)
+
+
+def test_qa_021_threshold_range_limits() -> None:
+    hits = [_hit(retrieval=0.0)]
+    assert _answer(decide(hits, 0.0)).confidence == 0.0
+    _refusal(decide(hits, 1.0))
+    assert _answer(decide([_hit(retrieval=1.0)], 1.0)).confidence == 1.0
+
+
+def test_qa_022_empty_url_dropped() -> None:
+    answer = _answer(decide([_hit("", HIGH), _hit(U2, 0.6)], THRESHOLD))
+    assert [c.source_url for c in answer.citations] == [U2]
+
+
+def test_qa_023_non_http_url_dropped() -> None:
+    urls = ["ftp://files.gov.pl/a", "javascript:alert(1)", "file:///etc/passwd"]
+    hits = [_hit(url, HIGH) for url in urls]
+    assert _refusal(decide(hits, THRESHOLD)).closest_sources == ()
+
+
+def test_qa_024_url_with_credentials_dropped() -> None:
+    refusal = _refusal(decide([_hit("https://admin:secret@eli.gov.pl/akt/1", HIGH)], THRESHOLD))
+    assert "secret" not in repr(refusal)
+
+
+def test_qa_025_plain_http_kept() -> None:
+    url = "http://eli.gov.pl/akt/1"
+    answer = _answer(decide([_hit(url, 0.8)], THRESHOLD))
+    assert [c.source_url for c in answer.citations] == [url]
+
+
+def test_qa_026_no_rerank_uses_retrieval() -> None:
+    assert _answer(decide([_hit(retrieval=0.72)], THRESHOLD)).citations[0].confidence == 0.72
+
+
+def test_qa_027_both_scores_weighted() -> None:
+    citation = _answer(decide([_hit(retrieval=0.5, rerank=HIGH)], THRESHOLD)).citations[0]
+    assert citation.confidence == pytest.approx(RETRIEVAL_WEIGHT * 0.5 + RERANK_WEIGHT * HIGH)
+    assert citation.confidence == pytest.approx(0.74)
+
+
+def test_qa_028_weights_sum_to_one() -> None:
+    assert RETRIEVAL_WEIGHT == 0.4
+    assert RERANK_WEIGHT == 0.6
+    assert RETRIEVAL_WEIGHT + RERANK_WEIGHT == 1.0
+    citation = _answer(decide([_hit(retrieval=1.0, rerank=1.0)], THRESHOLD)).citations[0]
+    assert citation.confidence == 1.0
+
+
+def test_qa_029_rerank_lowers_high_retrieval() -> None:
+    refusal = _refusal(decide([_hit(U1, HIGH, 0.1)], THRESHOLD))
+    assert refusal.closest_sources[0].confidence == pytest.approx(0.42)
+    assert refusal.closest_sources[0].source_url == U1
+
+
+def test_qa_030_sorted_by_confidence() -> None:
+    hits = [_hit(BASE + "a", 0.6), _hit(BASE + "b", HIGH), _hit(BASE + "c", 0.7)]
+    answer = _answer(decide(hits, THRESHOLD))
+    assert [c.source_url[-1] for c in answer.citations] == ["b", "c", "a"]
+    assert answer.confidence == HIGH
+
+
+def test_qa_031_tie_keeps_input_order() -> None:
+    hits = [_hit(BASE + x, 0.8) for x in "abc"]
+    answer = _answer(decide(hits, THRESHOLD))
+    assert [c.source_url[-1] for c in answer.citations] == ["a", "b", "c"]
+
+
+def test_qa_032_answer_drops_below_threshold() -> None:
+    answer = _answer(decide([_hit(BASE + "a", HIGH), _hit(BASE + "b", LOW)], THRESHOLD))
+    assert [c.source_url for c in answer.citations] == [BASE + "a"]
+
+
+def test_qa_033_closest_sources_limited_to_three() -> None:
+    scores = [0.1, 0.4, 0.3, 0.2, 0.5]
+    hits = [_hit(f"{BASE}{i}", s) for i, s in enumerate(scores)]
+    refusal = _refusal(decide(hits, HIGH))
+    assert len(refusal.closest_sources) == CLOSEST_LIMIT
+    assert [c.confidence for c in refusal.closest_sources] == [0.5, 0.4, 0.3]
+
+
+def test_qa_034_closest_sources_tie_order() -> None:
+    hits = [_hit(BASE + x, 0.3) for x in "abcd"]
+    refusal = _refusal(decide(hits, HIGH))
+    assert [c.source_url[-1] for c in refusal.closest_sources] == ["a", "b", "c"]
+
+
+def test_qa_035_refusal_has_no_answer_fields() -> None:
+    refusal = _refusal(decide([], THRESHOLD))
+    assert not hasattr(refusal, "citations")
+    assert not hasattr(refusal, "confidence")
+    assert {f.name for f in dataclasses.fields(refusal)} == {"closest_sources", "notice"}
+
+
+def test_qa_036_invalid_hit_after_dropped_hit_checked() -> None:
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([_hit("", 1.7), _hit(BASE + "a", HIGH)], THRESHOLD)
+
+
+def test_qa_037_invalid_hit_last_checked() -> None:
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([_hit(BASE + "a", HIGH), _hit(BASE + "b", math.nan)], THRESHOLD)
+
+
+def test_qa_038_repeated_call_same_result() -> None:
+    hits = [_hit(BASE + "a", 0.6, 0.8), _hit(BASE + "b", 0.7)]
+    first = decide(hits, THRESHOLD)
+    assert all(decide(hits, THRESHOLD) == first for _ in range(REPEAT_CALLS))
+
+
+def test_qa_039_input_list_not_changed() -> None:
+    scores = [0.5, HIGH, 0.7]
+    hits = [_hit(f"{BASE}{s}", s) for s in scores]
+    decide(hits, THRESHOLD)
+    assert [x.retrieval_score for x in hits] == scores
+
+
+def test_qa_040_optional_fields_kept() -> None:
+    fields = {
+        "law": "Kodeks rodzinny i opiekunczy",
+        "article": "135",
+        "paragraph": "1",
+        "document_id": "doc-1",
+    }
+    quote = "Zakres obowiazku alimentacyjnego..."
+    hit = ScoredHit(U1, quote, 0.8, None, **fields)
+    citation = _answer(decide([hit], THRESHOLD)).citations[0]
+    assert citation == Citation(source_url=U1, quote=quote, confidence=0.8, **fields)
+
+
+def test_qa_041_missing_optional_fields() -> None:
+    citation = _answer(decide([_hit(U1, 0.8)], THRESHOLD)).citations[0]
+    assert (citation.law, citation.article, citation.paragraph, citation.document_id) == (
+        None,
+        None,
+        None,
+        None,
+    )
+
+
+def test_qa_042_citation_values_cannot_change() -> None:
+    citation = _answer(decide([_hit(retrieval=0.8)], THRESHOLD)).citations[0]
+    field_name = "confidence"
+    with pytest.raises(dataclasses.FrozenInstanceError, match=field_name):
+        setattr(citation, field_name, 0.99)
+    assert citation.confidence == 0.8
+
+
+@pytest.mark.parametrize("module", [citations_module, notices_module])
+def test_qa_043_no_io_packages_imported(module: ModuleType) -> None:
+    imported = _imported_modules(module)
+    assert not {name.split(".")[0] for name in imported} & FORBIDDEN_MODULES
     for name in imported - {"core.notices"}:
         assert name.split(".")[0] in sys.stdlib_module_names, name
-    assert not {n.split(".")[0] for n in imported} & FORBIDDEN_MODULES
+
+
+def test_qa_044_threshold_not_read_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ("MIN_CONFIDENCE", "LBA_MIN_CONFIDENCE", "CITATION_MIN_CONFIDENCE"):
+        monkeypatch.setenv(name, "0.1")
+    _refusal(decide([_hit(retrieval=0.3)], THRESHOLD))
+
+
+def test_qa_046_large_hit_list() -> None:
+    hits = [_hit(f"{BASE}{i}", i / LARGE_HIT_COUNT) for i in range(LARGE_HIT_COUNT)]
+    answer = _answer(decide(hits, THRESHOLD))
+    confidences = [c.confidence for c in answer.citations]
+    assert len(confidences) == LARGE_HIT_COUNT // 2
+    assert confidences == sorted(confidences, reverse=True)
+
+
+HIT_SETS: list[list[ScoredHit]] = [
+    [_hit(U1, HIGH), _hit(U2, 0.95)],
+    [_hit(U1, 0.1), _hit(U2, LOW)],
+    [_hit("", HIGH), _hit("ftp://x/a", HIGH), _hit("https://u:p@x.org/a", HIGH), _hit(U1, 0.8)],
+    [_hit(U1, 0.5, HIGH), _hit(U2, HIGH, 0.1)],
+    [_hit("https://example.org/x?y=1#z", 0.55, HIGH), _hit(retrieval=0.95)],
+]
+
+
+@pytest.mark.parametrize("hits", HIT_SETS)
+def test_qa_047_hit_sets_pass_validity(hits: list[ScoredHit]) -> None:
+    for citation in _shown(decide(hits, THRESHOLD)):
+        parts = urlsplit(citation.source_url)
+        assert parts.scheme in {"http", "https"}
+        assert parts.hostname
+        assert 0.0 <= citation.confidence <= 1.0
+
+
+def test_qa_049_notice_on_refusal_with_source() -> None:
+    refusal = _refusal(decide([_hit(U1, LOW)], THRESHOLD))
+    assert refusal.notice == NOT_LEGAL_ADVICE_NOTICE
+    assert refusal.closest_sources[0].source_url == U1
+    assert not hasattr(refusal, "confidence")
+
+
+BAD_URLS: list[str] = [
+    "mailto:a@example.org",
+    "https:///no-host",
+    "https://user@example.org/a",
+    "https://[broken/a",
+    "https://example.org/a b",
+    "https://example.org/a\tb",
+    "https://example.org/a\nb",
+    "https://example.org/a\x00b",
+    "https://example.org/a\x1fb",
+    "https://example.org/a\x7fb",
+    "https://example.org\\evil.org/a",
+    "https://example.org/a\\b",
+    " https://example.org/a",
+    BASE + "a" * (MAX_URL_LENGTH - len(BASE) + 1),
+]
+
+
+@pytest.mark.parametrize("url", BAD_URLS)
+@pytest.mark.parametrize("threshold", [0.0, 1.0])
+def test_url_filter_drops_bad_urls(url: str, threshold: float) -> None:
+    result = decide([_hit(url, 1.0, quote="bad"), _hit(BASE + "ok", HIGH, quote="good")], threshold)
+    assert [c.quote for c in _shown(result)] == ["good"]
+
+
+def test_url_at_length_limit_kept() -> None:
+    url = BASE + "a" * (MAX_URL_LENGTH - len(BASE))
+    assert len(url) == MAX_URL_LENGTH
+    answer = _answer(decide([_hit(url, HIGH)], THRESHOLD))
+    assert [c.source_url for c in answer.citations] == [url]
+
+
+@pytest.mark.parametrize("value", BAD_SCORES)
+def test_bad_retrieval_score_raises(value: object) -> None:
+    hit = _hit(retrieval=_as_score(value))
+    with pytest.raises(ValueError, match="retrieval_score"):
+        decide([hit], THRESHOLD)
+
+
+@pytest.mark.parametrize("value", BAD_SCORES)
+def test_bad_rerank_score_raises(value: object) -> None:
+    hit = _hit(rerank=_as_score(value))
+    with pytest.raises(ValueError, match="rerank_score"):
+        decide([hit], THRESHOLD)
+
+
+@pytest.mark.parametrize("value", BAD_SCORES)
+def test_bad_min_confidence_raises(value: object) -> None:
+    with pytest.raises(ValueError, match="min_confidence"):
+        decide([_hit()], _as_score(value))
+
+
+def test_error_message_truncates_value_repr() -> None:
+    value = "x" * (ERROR_REPR_LIMIT * 3)
+    with pytest.raises(ValueError, match="retrieval_score") as info:
+        decide([_hit(retrieval=_as_score(value))], THRESHOLD)
+    message = str(info.value)
+    assert message.endswith(repr(value)[:ERROR_REPR_LIMIT])
+    assert "x" * ERROR_REPR_LIMIT not in message
