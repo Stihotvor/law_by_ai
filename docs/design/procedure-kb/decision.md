@@ -33,7 +33,7 @@ In `src/plugins/relational_db/procedures.py`: `PostgresProcedureRepository(engin
 
 Citation rule for the bureaucracy assistant: a curated step has no confidence score. The assistant cites a step by `slug`, `key` and `revision`, with its `source_url` and `last_checked`. It is not a retrieved chunk.
 
-Identical content: compare `procedure.model_dump(mode="json")` with the `content` of the latest revision (jsonb equality). The actor does not count. If equal, write nothing and return `changed=False`. The first import is revision 1.
+Identical content: compare `procedure.model_dump(mode="json", exclude={"revision"})` with the `content` of the latest revision (jsonb equality). The actor does not count. If equal, write nothing and return `changed=False`. The first import is revision 1.
 
 Seed actor: the seed runs inside `principal_context(RequestPrincipal(email="system:seed", role=ADMIN))`.
 
@@ -42,7 +42,7 @@ One Alembic migration after head `c4a91e7f2b58`. Every column is NOT NULL. The m
 - `procedure`: `id` BIGINT GENERATED ALWAYS AS IDENTITY, `slug` unique, `title`, `schema_version`, `revision`, `updated_at` timestamptz default now(). CHECKs: `slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'`, `btrim(title) <> ''`, `revision >= 1`, `schema_version >= 1`.
 - `procedure_step`: PK `(procedure_id, position)`. `procedure_id` FK ON DELETE CASCADE, `key`, `text`, `source_url`, `last_checked` DATE, `verify_with_office`. `UNIQUE(procedure_id, key)`. CHECKs: `position >= 0`, `key` kebab-case, non-empty text and verify line, `source_url LIKE 'https://%'`.
 - `procedure_revision`: append-only. `id` identity, `procedure_id` FK ON DELETE RESTRICT (a cascade would bypass the append-only rule), `revision >= 1`, `content` JSONB with CHECK `jsonb_typeof(content) = 'object'`, `actor` (non-empty), `created_at` timestamptz default now(). `UNIQUE(procedure_id, revision)`.
-- `content` is `Procedure.model_dump(mode="json")`. It is the only full history, because steps are replaced.
+- `content` is `Procedure.model_dump(mode="json", exclude={"revision"})`. It is the only full history, because steps are replaced.
 - No `tenant_id` and no RLS (shared reference data).
 - Grants to `lawbyai_app`, explicit, TRUNCATE revoked:
   - `procedure`: SELECT, INSERT, UPDATE. No DELETE, because no import deletes a procedure.

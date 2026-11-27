@@ -12,6 +12,15 @@
     "note": "49 tests 100% cov"
   },
   "T4": {
-    "state": "doing"
+    "state": "done",
+    "note": "30 repo+schema tests pass on PG18 disposable"
+  },
+  "T5": {
+    "state": "done",
+    "note": "13 unit + 2 integration pass; 32 DB tests pass on PG18"
+  },
+  "T6": {
+    "state": "done",
+    "note": "grep counts ok, no issue numbers"
   }
 }
