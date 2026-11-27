@@ -16,10 +16,11 @@ ruff check, ruff format --check, pyright (0 errors), bandit, pytest -m "not inte
 - Timeout bound: each httpx phase gets timeout / 4 (owner decision after G1).
 
 ## Warnings kept
-- medium, perf: a new `httpx.Client` for each call. Kept to match the Mistral adapter and to keep the client stateless. Revisit when an agent makes many calls in a loop.
+- Closed (2026-11-27, owner decision): medium, perf: a new `httpx.Client` for each call. `LLMClient` now makes one client on first use and reuses it. `close()` and the context manager free it, and the next call opens a new one.
 - low, security: `http://` is allowed without a key for any host. A key needs https unless the host is loopback. There is no host allowlist. URLs come only from the environment.
 - low, security: `trust_env=False` ignores custom CA bundles. Add an explicit setting when a private CA is needed.
-- medium, availability (CodeRabbit): a server that sends the response headers one byte at a time, each byte inside the per-phase timeout, is not stopped by the deadline, because httpx yields only after the headers end. The 1.25 x timeout bound holds only for stalls, not for a slow trickle. A hard overall bound needs a thread or async cancel, which the owner did not choose. Endpoints are local and set by the operator.
+- Closed (2026-11-27, owner decision): medium, availability (CodeRabbit): header trickle past the deadline. The real transport now uses an httpcore network backend that clips each connect, TLS handshake, read and write to the time left before the call deadline, so a trickle ends at about 1 x timeout. No thread and no new dependency. A custom `transport` (tests) keeps the old per-phase bound of about 1.25 x timeout. The fix sets the private `HTTPTransport._pool`, because httpx takes no network backend argument: check it on each httpx upgrade.
 - low, structure: the module-level clock `_now` is patched in tests instead of being injected.
 - low, structure: `settings.py` and `test_settings.py` were over 500 lines before this change.
 - QA-046 partial: memory growth is not measured. The thread count is checked.
+- Closed (2026-11-27, docs PR review): a raised error kept the `chat` frame, whose locals held the key, the base URL and the messages. `chat` now drops the traceback of the inner frames and deletes its arguments before the raise. A test walks `tb_frame.f_locals` over the whole traceback.
