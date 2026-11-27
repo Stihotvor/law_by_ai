@@ -54,7 +54,20 @@ FORBIDDEN_MODULES = frozenset(
         "anthropic",
     }
 )
-BAD_SCORES: list[object] = [True, False, math.nan, math.inf, -math.inf, -0.01, 1.01]
+HUGE_INT = 10**400
+BAD_SCORES: list[object] = [
+    True,
+    False,
+    math.nan,
+    math.inf,
+    -math.inf,
+    -0.01,
+    1.01,
+    2,
+    -1,
+    pytest.param(HUGE_INT, id="huge_int"),
+    pytest.param(-HUGE_INT, id="neg_huge_int"),
+]
 
 
 def _hit(
@@ -401,6 +414,14 @@ BAD_URLS: list[str] = [
     "https://example.org\\evil.org/a",
     "https://example.org/a\\b",
     " https://example.org/a",
+    "https://example.org/a\u3000b",
+    "https://example.org/a\u00a0b",
+    "https://example.org/a\u2028b",
+    "https://example.org/a\u2029b",
+    "https://example.org/a\x85b",
+    "https://example.org/a\x9fb",
+    "https://example.org:bad/a",
+    "https://example.org:65536/a",
     BASE + "a" * (MAX_URL_LENGTH - len(BASE) + 1),
 ]
 
@@ -410,6 +431,25 @@ BAD_URLS: list[str] = [
 def test_url_filter_drops_bad_urls(url: str, threshold: float) -> None:
     result = decide([_hit(url, 1.0, quote="bad"), _hit(BASE + "ok", HIGH, quote="good")], threshold)
     assert [c.quote for c in _shown(result)] == ["good"]
+
+
+GOOD_URLS: list[str] = [
+    "https://example.org/zażółć",
+    "https://example.org:8443/a",
+    "https://example.org/a",
+]
+
+
+@pytest.mark.parametrize("url", GOOD_URLS)
+def test_url_filter_keeps_good_urls(url: str) -> None:
+    answer = _answer(decide([_hit(url, HIGH)], THRESHOLD))
+    assert [c.source_url for c in answer.citations] == [url]
+
+
+@pytest.mark.parametrize("value", [0, 1])
+def test_integer_unit_bounds_valid(value: int) -> None:
+    result = decide([_hit(retrieval=value, rerank=value)], value)
+    assert _answer(result).confidence == float(value)
 
 
 def test_url_at_length_limit_kept() -> None:

@@ -2,8 +2,9 @@
 
 Input contract: ``retrieval_score`` and ``rerank_score`` are already in
 [0, 1]. The search adapter normalizes raw scores (cosine, logits). A bool,
-NaN, infinity, non-number or out-of-range value raises ``ValueError`` naming
-the field; nothing is clipped. ``min_confidence`` must be in [0, 1] too.
+NaN, infinity, non-number or out-of-range value (including a huge int)
+raises ``ValueError`` naming the field; nothing is clipped. Integers 0 and 1
+are valid. ``min_confidence`` must be in [0, 1] too.
 
 Scoring rule (deterministic; weights provisional until an evaluation runs):
 
@@ -12,8 +13,10 @@ Scoring rule (deterministic; weights provisional until an evaluation runs):
   + RERANK_WEIGHT * rerank_score``
 
 Decision: every hit is validated first. Hits whose URL is empty, not
-http(s), holds credentials, whitespace, a control character or a backslash,
-or is longer than ``MAX_URL_LENGTH`` (the ``source_url`` column) are dropped.
+http(s), holds credentials, a bad port (not a number or above 65535), any
+Unicode whitespace or control/format character (categories C* and Z*) or a
+backslash, or is longer than ``MAX_URL_LENGTH`` (the ``source_url`` column)
+are dropped. Other non-ASCII text (e.g. Polish letters) is kept.
 Valid hits are sorted by confidence, highest first (ties keep input order). Hits with
 ``confidence >= min_confidence`` form an ``Answer``. If none qualify, the
 result is ``NoReliableAnswer`` with the top 3 valid hits as closest sources.
@@ -23,7 +26,7 @@ This layer does not make a URL safe to fetch; the renderer must escape the
 ``quote`` and ``law`` fields.
 """
 
-import math
+import unicodedata
 from collections.abc import Sequence
 from dataclasses import dataclass
 from urllib.parse import urlsplit
@@ -36,7 +39,6 @@ CLOSEST_SOURCES_LIMIT: int = 3
 ALLOWED_SCHEMES: frozenset[str] = frozenset({"http", "https"})
 MAX_URL_LENGTH: int = 1024
 ERROR_REPR_LIMIT: int = 40
-_DEL = "\x7f"
 
 
 @dataclass(frozen=True)
@@ -87,7 +89,8 @@ def _check_unit(value: object, field: str) -> float:
     shown = repr(value)[:ERROR_REPR_LIMIT]
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise ValueError(f"{field} must be a number in [0, 1], got {shown}")
-    if math.isnan(value) or math.isinf(value) or not 0.0 <= value <= 1.0:
+    # Exact comparison: false for NaN, rejects infinities and huge ints alike.
+    if not 0 <= value <= 1:
         raise ValueError(f"{field} must be in [0, 1], got {shown}")
     return float(value)
 
@@ -101,7 +104,8 @@ def _confidence(hit: ScoredHit) -> float:
 
 
 def _has_bad_char(url: str) -> bool:
-    return any(ch <= " " or ch == _DEL or ch == "\\" for ch in url)
+    # Categories C* (control, format, ...) and Z* (all Unicode whitespace).
+    return any(ch == "\\" or unicodedata.category(ch)[0] in "CZ" for ch in url)
 
 
 def _valid_url(url: str) -> bool:
@@ -110,6 +114,7 @@ def _valid_url(url: str) -> bool:
     try:
         parts = urlsplit(url)
         host = parts.hostname
+        _ = parts.port
     except ValueError:
         return False
     return parts.scheme in ALLOWED_SCHEMES and bool(host) and "@" not in parts.netloc
