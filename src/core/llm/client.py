@@ -182,7 +182,10 @@ class LLMClient:
         self.close()
 
     def close(self) -> None:
-        """Close the pooled connections. The next call opens a new client."""
+        """Close the pooled connections. The next call opens a new client.
+
+        An injected ``transport`` is closed too, so pass one that can be reused.
+        """
         client, self._client = self._client, None
         if client is not None:
             client.close()
@@ -207,6 +210,10 @@ class LLMClient:
             return self._chat(agent_name, messages)
         except Exception as exc:
             failure = exc.with_traceback(None)
+        # An unmapped error may chain to an error whose frames hold the secrets.
+        failure.__cause__ = None
+        failure.__context__ = None
+        failure.__suppress_context__ = True
         del agent_name, messages
         raise failure
 

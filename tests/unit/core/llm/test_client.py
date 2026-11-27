@@ -467,3 +467,18 @@ def test_config_error_traceback_holds_no_secret(llm_env: pytest.MonkeyPatch) -> 
     text = _locals_text(info.value)
     for secret in ("sekret-key", "llm.test", "private-text"):
         assert secret not in text
+
+
+def test_unmapped_error_drops_its_chain(llm_env: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        try:
+            raise OSError("inner sekret-key")
+        except OSError as inner:
+            raise RuntimeError("outer") from inner
+
+    client, _ = _client(handler)
+    with pytest.raises(RuntimeError) as info:
+        client.chat(_AGENT, _ONE)
+    assert info.value.__cause__ is None
+    assert info.value.__context__ is None
+    assert info.value.__suppress_context__
