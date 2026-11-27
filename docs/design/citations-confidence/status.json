@@ -1,0 +1,14 @@
+{
+  "T1": {
+    "state": "done",
+    "note": "verified"
+  },
+  "T3": {
+    "state": "done",
+    "note": "diff verified"
+  },
+  "T2": {
+    "state": "done",
+    "note": "verified: 46 tests, 100% cov, ruff, pyright"
+  }
+}

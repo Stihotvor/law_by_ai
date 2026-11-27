@@ -649,7 +649,7 @@ Records. See the [ADR index](adr/index.md) for full records.
 | [ADR-0005](adr/0005-observability.md) | structlog + OTel → Grafana Alloy → Grafana Cloud | Proposed |
 | [ADR-0006](adr/0006-celery-reliability.md) | Celery retries + in-DB failed-task registry + re-run | Proposed |
 | [ADR-0007](adr/0007-document-diffs.md) | Git-backed document-level diffs | Proposed |
-| [ADR-0008](adr/0008-mvp-scope.md) | Citations, filters, bureaucracy assistant in MVP | Proposed |
+| [ADR-0008](adr/0008-mvp-scope.md) | Citations, filters, bureaucracy assistant in MVP | Accepted |
 | [ADR-0009](adr/0009-model-evals.md) | Embedding/OCR/hybrid-search evaluation for Polish | Proposed |
 | [ADR-0010](adr/0010-health-checks.md) | Container health checks | Proposed |
 | [ADR-0011](adr/0011-sla-budget.md) | Efficiency budget (4–6 GB + SLM) and basic SLAs | Proposed |
