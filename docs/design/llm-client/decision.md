@@ -21,3 +21,8 @@ Path 2, with the review changes (owner choice at G1, 2026-11-23):
 - A typo in a per-agent env name falls back to the global value without a warning. Accepted risk.
 - A new agent needs one name in `LLM_AGENTS` and one `llm_model_*` property.
 - Effort S-M: about 40 lines in Settings, four new small modules and their unit tests.
+
+## Hardening (2026-11-27, owner decision)
+- Hard deadline: a network backend clips every socket operation to the time left. Worst case is about 1 x timeout on the real transport. A per-call `ContextVar` carries the deadline, so pooled connections use the deadline of the current call.
+- Traceback locals: `chat` re-raises with no inner frames and without its arguments, so a logger that prints locals sees no secret.
+- Connection reuse: one lazy `httpx.Client` per `LLMClient`, with `close()` and context-manager support. The timeout is passed per request, because agents have different timeouts.
