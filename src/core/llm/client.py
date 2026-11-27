@@ -23,6 +23,7 @@ _MAX_RESPONSE_BYTES = 1024 * 1024
 # httpx applies its timeout per phase (connect, write, pool, each read).
 _HTTPX_PHASES = 4
 _now = time.monotonic
+_WRITE_SLICE = 4096
 # Deadline of the call in progress in this thread, read by every socket operation.
 _deadline: ContextVar[float | None] = ContextVar("llm_deadline", default=None)
 
@@ -52,7 +53,10 @@ class _DeadlineStream(httpcore.NetworkStream):
         return self._stream.read(max_bytes, _clip(timeout))
 
     def write(self, buffer: bytes, timeout: float | None = None) -> None:
-        self._stream.write(buffer, _clip(timeout))
+        # httpcore reuses one timeout for every partial send, so a peer that reads
+        # slowly could hold a large body past the deadline. Small slices re-clip often.
+        for start in range(0, len(buffer), _WRITE_SLICE):
+            self._stream.write(buffer[start : start + _WRITE_SLICE], _clip(timeout))
 
     def close(self) -> None:
         self._stream.close()
@@ -229,8 +233,8 @@ class LLMClient:
 
     def _post(self, url: str, body: object, headers: dict[str, str], timeout: float) -> bytes:
         # The real transport clips every socket operation to the deadline. A custom
-        # transport has no such hook, so each httpx phase gets a share and the deadline
-        # is also checked between body reads.
+        # transport has no such hook and must enforce its own deadline: the phase share
+        # and the checks between body reads do not stop a header trickle.
         deadline = _now() + timeout
         token = _deadline.set(deadline)
         try:

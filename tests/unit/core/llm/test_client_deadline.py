@@ -164,3 +164,22 @@ def test_tls_handshake_is_clipped_and_stays_wrapped() -> None:
     assert isinstance(wrapped, client_module._DeadlineStream)
     assert inner.tls_timeout is not None
     assert inner.tls_timeout <= 1
+
+
+class _WriteRecorder(httpcore.NetworkStream):
+    def __init__(self) -> None:
+        self.writes: list[tuple[int, float | None]] = []
+
+    def write(self, buffer: bytes, timeout: float | None = None) -> None:
+        self.writes.append((len(buffer), timeout))
+
+
+def test_large_write_is_sliced_and_each_slice_clipped() -> None:
+    inner = _WriteRecorder()
+    token = client_module._deadline.set(time.monotonic() + 1)
+    try:
+        client_module._DeadlineStream(inner).write(b"x" * 10_000, 5.0)
+    finally:
+        client_module._deadline.reset(token)
+    assert [size for size, _ in inner.writes] == [4096, 4096, 1808]
+    assert all(t is not None and t <= 1 for _, t in inner.writes)
