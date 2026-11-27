@@ -1,0 +1,19 @@
+schema_version: 1
+slug: tax-id
+title: "Tax identification number (PESEL or NIP) for a foreign national"
+steps:
+  - key: pesel-or-nip
+    text: "A foreign national in Poland may need a PESEL or a NIP to settle tax matters. If you register your residence in Poland for more than 30 days, you get a PESEL automatically. Otherwise you can apply for one at the municipal office, free of charge. This page is dated 26 January 2021, so check that it is still current."
+    source_url: https://www.gov.pl/web/uw-warminsko-mazurski/jestes-cudzoziemcem-potrzebujesz-pesel-lub-nip-do-zalatwienia-spraw-podatkowych
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: use-form-nip-7
+    text: "If you need a NIP, use the NIP-7 identification form. People who do not run a business, and people with no PESEL, can also file it."
+    source_url: https://www.biznes.gov.pl/pl/portal/ou1460
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: file-nip-7
+    text: "File the NIP-7 at a tax office, by post or electronically. Electronic filing needs a qualified electronic signature. Filing is free, and the office issues the NIP within 3 days."
+    source_url: https://www.biznes.gov.pl/pl/portal/ou1460
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."

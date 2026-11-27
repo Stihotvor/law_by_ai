@@ -1,0 +1,29 @@
+schema_version: 1
+slug: residence-card
+title: "Temporary residence permit and residence card"
+steps:
+  - key: create-mos-account
+    text: "Create an account in the MOS online system and log in with a trusted profile (profil zaufany). A parent or guardian does this for a minor. The old portal closed on 17 April 2026, so an old account does not work."
+    source_url: https://zielonalinia.gov.pl/mos-czyli-elektroniczne-skladanie-niektorych-wnioskow-pobytowych/
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: fill-in-and-attach
+    text: "Fill in the temporary residence permit application online, in Polish. Attach scans, including all passport pages. The limits are 2.5 MB per photo, 10 MB per other file and 50 MB in total."
+    source_url: https://zielonalinia.gov.pl/mos-czyli-elektroniczne-skladanie-niektorych-wnioskow-pobytowych/
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: sign-and-submit
+    text: "Sign the application electronically and submit it in MOS. Submitting in MOS counts as filing. Electronic filing is mandatory since 27 April 2026."
+    source_url: https://zielonalinia.gov.pl/mos-czyli-elektroniczne-skladanie-niektorych-wnioskow-pobytowych/
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: card-is-issued-after-the-permit
+    text: "The first residence card is usually issued automatically by the voivode who granted the permit, so you generally do not file a separate application. The Poznan voivode office lists a fee of 100 PLN. Exceptions apply, for example a permit applied for from abroad, or a lost or damaged card. This comes from one voivode office, so check the office for your place of residence."
+    source_url: https://migrant.poznan.uw.gov.pl/pl/procedury/wydanie-karty-pobytu
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: official-mos-card-page
+    text: "The MOS information site also says a separate application for the card is generally not needed and that the card is issued automatically after the permit."
+    source_url: https://www.mos.cudzoziemcy.gov.pl/kategorie-informacji/dokumenty/dokumenty-op3/karta-pobytu/
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
