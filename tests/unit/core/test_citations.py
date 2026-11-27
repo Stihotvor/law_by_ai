@@ -55,6 +55,8 @@ FORBIDDEN_MODULES = frozenset(
     }
 )
 HUGE_INT = 10**400
+# Beyond Python's int-to-str digit limit (4300): repr() would raise.
+GIANT_INT = 10**5000
 BAD_SCORES: list[object] = [
     True,
     False,
@@ -67,6 +69,8 @@ BAD_SCORES: list[object] = [
     -1,
     pytest.param(HUGE_INT, id="huge_int"),
     pytest.param(-HUGE_INT, id="neg_huge_int"),
+    pytest.param(GIANT_INT, id="giant_int"),
+    pytest.param(-GIANT_INT, id="neg_giant_int"),
 ]
 
 

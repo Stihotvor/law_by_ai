@@ -39,6 +39,8 @@ CLOSEST_SOURCES_LIMIT: int = 3
 ALLOWED_SCHEMES: frozenset[str] = frozenset({"http", "https"})
 MAX_URL_LENGTH: int = 1024
 ERROR_REPR_LIMIT: int = 40
+# Ints wider than this are described, not printed (repr may raise past 4300 digits).
+ERROR_REPR_MAX_BITS: int = 128
 
 
 @dataclass(frozen=True)
@@ -85,8 +87,15 @@ class NoReliableAnswer:
     notice: str
 
 
+def _shown(value: object) -> str:
+    """Short text for an error message; never turns a huge int into digits."""
+    if isinstance(value, int) and value.bit_length() > ERROR_REPR_MAX_BITS:
+        return f"int with {value.bit_length()} bits"
+    return repr(value)[:ERROR_REPR_LIMIT]
+
+
 def _check_unit(value: object, field: str) -> float:
-    shown = repr(value)[:ERROR_REPR_LIMIT]
+    shown = _shown(value)
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise ValueError(f"{field} must be a number in [0, 1], got {shown}")
     # Exact comparison: false for NaN, rejects infinities and huge ints alike.
