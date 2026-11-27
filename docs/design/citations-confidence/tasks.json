@@ -5,7 +5,7 @@
       "title": "src/core/notices.py: NOT_LEGAL_ADVICE_NOTICE constant, with unit test",
       "size": "S",
       "depends_on": [],
-      "done_when": ".venv/bin/pytest tests/unit/core/test_notices.py passes: NOT_LEGAL_ADVICE_NOTICE is a non-empty str and holds 'not legal advice' (case-insensitive); .venv/bin/pytest tests/unit/core/test_notices.py --cov=src/core/notices --cov-fail-under=100 passes",
+      "done_when": ".venv/bin/pytest tests/unit/core/test_notices.py passes: NOT_LEGAL_ADVICE_NOTICE is a non-empty str and holds 'not legal advice' (case-insensitive); .venv/bin/pytest tests/unit/core/test_notices.py --cov=core.notices --cov-fail-under=100 passes",
       "files": [
         "src/core/notices.py",
         "tests/unit/core/test_notices.py"
@@ -19,7 +19,7 @@
       "depends_on": [
         "T1"
       ],
-      "done_when": ".venv/bin/pytest tests/unit/core/test_citations.py --cov=src/core/citations --cov-fail-under=100 passes: (1) hit sets (4 or more) give citations whose source_url is valid http(s) and whose confidence is in [0, 1]; (2) decide gives Answer at confidence 0.5 with min 0.5, NoReliableAnswer at 0.49 with min 0.5, Answer at 0.4 with min 0.3; (3) empty hit list and all-invalid-URL hits give NoReliableAnswer with no sources; empty, non-http(s) and credential-bearing URLs are dropped; (4) no rerank score gives confidence = retrieval score, both scores give 0.4*retrieval + 0.6*rerank, and RETRIEVAL_WEIGHT + RERANK_WEIGHT == 1.0 (weight-sum test); (5) bool, NaN, inf and out-of-range scores and min_confidence outside [0, 1] raise ValueError naming the field; (6) Answer.citations sorted by confidence descending, stable on ties, Answer.confidence is the maximum; closest_sources holds at most 3; Answer and NoReliableAnswer carry NOT_LEGAL_ADVICE_NOTICE; (7) the import test passes: the module imports only stdlib and src.core.notices (no sqlalchemy, httpx, requests, redis, celery, openai); .venv/bin/pyright src/core/citations.py tests/unit/core/test_citations.py reports 0 errors",
+      "done_when": ".venv/bin/pytest tests/unit/core/test_citations.py --cov=core.citations --cov-fail-under=100 passes: (1) hit sets (4 or more) give citations whose source_url is valid http(s) and whose confidence is in [0, 1]; (2) decide gives Answer at confidence 0.5 with min 0.5, NoReliableAnswer at 0.49 with min 0.5, Answer at 0.4 with min 0.3; (3) empty hit list and all-invalid-URL hits give NoReliableAnswer with no sources; empty, non-http(s) and credential-bearing URLs are dropped; (4) no rerank score gives confidence = retrieval score, both scores give 0.4*retrieval + 0.6*rerank, and RETRIEVAL_WEIGHT + RERANK_WEIGHT == 1.0 (weight-sum test); (5) bool, NaN, inf and out-of-range scores and min_confidence outside [0, 1] raise ValueError naming the field; (6) Answer.citations sorted by confidence descending, stable on ties, Answer.confidence is the maximum; closest_sources holds at most 3; Answer and NoReliableAnswer carry NOT_LEGAL_ADVICE_NOTICE; (7) the import test passes: the module imports only stdlib and src.core.notices (no sqlalchemy, httpx, requests, redis, celery, openai); .venv/bin/pyright src/core/citations.py tests/unit/core/test_citations.py reports 0 errors",
       "files": [
         "src/core/citations.py",
         "tests/unit/core/test_citations.py"
