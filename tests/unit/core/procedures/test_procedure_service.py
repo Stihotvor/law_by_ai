@@ -54,7 +54,9 @@ class FakeRepository:
         return self.items.get(slug)
 
     def list(self) -> list[ProcedureSummary]:
-        return [ProcedureSummary(slug=p.slug, title=p.title) for p in self.items.values()]
+        """Sorted by slug, as the port requires."""
+        items = sorted(self.items.values(), key=lambda p: p.slug)
+        return [ProcedureSummary(slug=p.slug, title=p.title) for p in items]
 
 
 def _service(repo: FakeRepository) -> ProcedureService:
@@ -167,6 +169,14 @@ def test_known_slug_returns_procedure() -> None:
     found = service.get_procedure("pesel")
     assert found is not None
     assert found.slug == "pesel"
+
+
+def test_list_returns_the_repository_order() -> None:
+    """The port sorts by slug; the service passes the list through unchanged."""
+    repo = FakeRepository()
+    expected = [ProcedureSummary(slug="b", title="B"), ProcedureSummary(slug="a", title="A")]
+    repo.list = lambda: expected  # type: ignore[method-assign]
+    assert _service(repo).list_procedures() == expected
 
 
 def test_list_is_sorted_by_slug() -> None:

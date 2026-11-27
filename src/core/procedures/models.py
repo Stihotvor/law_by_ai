@@ -1,5 +1,6 @@
 """Frozen procedure models (schema version pinned by a unit test)."""
 
+import re
 from datetime import date
 from typing import Annotated, Literal, cast
 from urllib.parse import urlsplit
@@ -31,8 +32,18 @@ def _check_not_blank(value: str) -> str:
 NonEmptyStr = Annotated[str, AfterValidator(_check_not_blank)]
 
 
+MAX_URL_CHARS = 2048
+
+# Printable ASCII without space and backslash: no whitespace, control or non-ASCII.
+_URL_CHARS = re.compile(r"[\x21-\x5b\x5d-\x7e]+")
+
+
 def _check_source_url(value: str) -> str:
-    """Syntax check only: https, a host, no credentials. No network."""
+    """Syntax check only: length, characters, https, a host, no credentials. No network."""
+    if len(value) > MAX_URL_CHARS:
+        raise PydanticCustomError("url_length", "source_url is too long")
+    if not _URL_CHARS.fullmatch(value):
+        raise PydanticCustomError("url_chars", "source_url holds a forbidden character")
     parts = urlsplit(value)
     if parts.scheme != "https":
         raise PydanticCustomError("url_scheme", "source_url must use https")
@@ -74,6 +85,7 @@ class Procedure(BaseModel):
 
     model_config = _FROZEN
 
+    # Must equal SCHEMA_VERSION (a Literal needs a literal value); a unit test pins both.
     schema_version: Literal[1]
     slug: KebabStr
     title: NonEmptyStr

@@ -1,10 +1,11 @@
-"""PostgreSQL adapter of the ``ProcedureRepository`` port (procedure-kb T4).
+"""PostgreSQL adapter of the ``ProcedureRepository`` port.
 
 A direct integration beside ``PostgreSQLStore`` (ADR-0014), not a method of it:
 procedures are a separate aggregate. Each call opens its own session. Reads
 return frozen pydantic objects, so nothing lazy-loads after the session closes.
 
-``save`` runs in one READ COMMITTED transaction, in this order:
+``save`` runs in one READ COMMITTED transaction with ``lock_timeout`` set to
+``LOCK_TIMEOUT``, in this order:
 
 1. ``INSERT ... ON CONFLICT (slug) DO UPDATE SET slug = EXCLUDED.slug RETURNING
    id, revision``. This locks the row, also for a new slug.
@@ -16,18 +17,21 @@ return frozen pydantic objects, so nothing lazy-loads after the session closes.
    then insert the revision row with the actor.
 
 The repository never deletes a procedure: the revision foreign key is RESTRICT
-and ``lawbyai_app`` has no DELETE on ``procedure``. Database errors map to
+and ``lawbyai_app`` has no DELETE on ``procedure``. Database errors (also a lock
+timeout, SQLSTATE 55P03) and stored rows that fail validation map to
 ``ProcedureStoreError`` with the cause chained and no content in the message.
 """
 
 from __future__ import annotations
 
 import builtins
+import enum
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from typing import Any
 
-from sqlalchemy import Engine, RowMapping, cast, delete, func, insert, select, update
+from pydantic import ValidationError
+from sqlalchemy import Engine, RowMapping, cast, delete, func, insert, select, text, update
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import SQLAlchemyError
@@ -40,20 +44,29 @@ from data.models import ProcedureRevision, ProcedureStep
 __all__ = ["PostgresProcedureRepository"]
 
 ISOLATION = {"isolation_level": "READ COMMITTED"}
+LOCK_TIMEOUT = "5s"
+_SET_LOCK_TIMEOUT = text(f"SET LOCAL lock_timeout = '{LOCK_TIMEOUT}'")
 _STEP_FIELDS = ("key", "text", "source_url", "last_checked", "verify_with_office")
 
 
 @contextmanager
 def _store_errors(operation: str) -> Iterator[None]:
-    """Map database errors to ``ProcedureStoreError``; the message names the operation only."""
+    """Map database and row validation errors to ``ProcedureStoreError``.
+
+    The message names the operation only. A lock timeout (SQLSTATE 55P03) is an
+    ``OperationalError``, so it maps here too.
+    """
     try:
         yield
-    except SQLAlchemyError as exc:
+    except (SQLAlchemyError, ValidationError) as exc:
         raise ProcedureStoreError(f"procedure store failed: {operation}") from exc
 
 
 def _lock_row(session: Session, procedure: Procedure) -> tuple[int, int]:
-    """Step 1: upsert the procedure row by slug and lock it; return ``id`` and ``revision``."""
+    """Step 1: upsert the procedure row by slug and lock it; return ``id`` and ``revision``.
+
+    A new row is inserted at revision 1 already, so the first import keeps 1.
+    """
     stmt = pg_insert(ProcedureRow).values(
         slug=procedure.slug,
         title=procedure.title,
@@ -64,11 +77,19 @@ def _lock_row(session: Session, procedure: Procedure) -> tuple[int, int]:
         index_elements=[ProcedureRow.slug], set_={"slug": stmt.excluded.slug}
     ).returning(ProcedureRow.id, ProcedureRow.revision)
     row = session.execute(stmt).one()
-    return int(row.id), int(row.revision)
+    return row.id, row.revision
 
 
-def _latest_is_equal(session: Session, procedure_id: int, content: dict[str, Any]) -> bool | None:
-    """Step 2: jsonb-compare *content* with the latest revision; ``None`` if there is none."""
+class _Latest(enum.Enum):
+    """How *content* compares with the latest revision row."""
+
+    MISSING = "missing"
+    EQUAL = "equal"
+    DIFFERENT = "different"
+
+
+def _latest_state(session: Session, procedure_id: int, content: dict[str, Any]) -> _Latest:
+    """Step 2: jsonb-compare *content* with the latest revision row, if there is one."""
     same = ProcedureRevision.content == cast(content, JSONB)
     stmt = (
         select(same)
@@ -76,7 +97,10 @@ def _latest_is_equal(session: Session, procedure_id: int, content: dict[str, Any
         .order_by(ProcedureRevision.revision.desc())
         .limit(1)
     )
-    return session.execute(stmt).scalar_one_or_none()
+    same_content = session.execute(stmt).scalar_one_or_none()
+    if same_content is None:
+        return _Latest.MISSING
+    return _Latest.EQUAL if same_content else _Latest.DIFFERENT
 
 
 def _replace_steps(session: Session, procedure_id: int, procedure: Procedure) -> None:
@@ -90,7 +114,11 @@ def _replace_steps(session: Session, procedure_id: int, procedure: Procedure) ->
 
 
 def _bump_revision(session: Session, procedure_id: int, procedure: Procedure, first: bool) -> int:
-    """Step 4a: set title, schema version, ``updated_at`` and the next revision."""
+    """Step 4a: set title, schema version, ``updated_at`` and the next revision.
+
+    On the *first* import the row from step 1 is already at revision 1, so the
+    revision stays 1 instead of being bumped.
+    """
     stmt = (
         update(ProcedureRow)
         .where(ProcedureRow.id == procedure_id)
@@ -109,11 +137,11 @@ def _write(session: Session, procedure: Procedure, actor: str) -> ImportResult:
     """Run the import order; leave the commit or rollback to the caller."""
     content = procedure.model_dump(mode="json", exclude={"revision"})
     procedure_id, current = _lock_row(session, procedure)
-    equal = _latest_is_equal(session, procedure_id, content)
-    if equal:
+    latest = _latest_state(session, procedure_id, content)
+    if latest is _Latest.EQUAL:
         return ImportResult(slug=procedure.slug, revision=current, changed=False)
     _replace_steps(session, procedure_id, procedure)
-    revision = _bump_revision(session, procedure_id, procedure, first=equal is None)
+    revision = _bump_revision(session, procedure_id, procedure, first=latest is _Latest.MISSING)
     session.execute(
         insert(ProcedureRevision).values(
             procedure_id=procedure_id, revision=revision, content=content, actor=actor
@@ -150,6 +178,7 @@ class PostgresProcedureRepository:
         """
         with _store_errors("save"), Session(self._engine) as session:
             session.connection(execution_options=ISOLATION)
+            session.execute(_SET_LOCK_TIMEOUT)
             result = _write(session, procedure, actor)
             if result.changed:
                 session.commit()
@@ -161,6 +190,8 @@ class PostgresProcedureRepository:
         """Return the current procedure with its ``revision``, or ``None`` if not found.
 
         One join statement, so a reader never mixes an old title with new steps.
+        Raises ``ProcedureStoreError`` on a database failure or a stored row that
+        fails validation (cause chained, no content in the message).
         """
         stmt = (
             select(
@@ -176,7 +207,7 @@ class PostgresProcedureRepository:
         )
         with _store_errors("get"), Session(self._engine) as session:
             rows = session.execute(stmt).mappings().all()
-        return _to_procedure(rows) if rows else None
+            return _to_procedure(rows) if rows else None
 
     def list(self) -> builtins.list[ProcedureSummary]:
         """Return a summary of every stored procedure, sorted by slug."""

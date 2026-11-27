@@ -23,5 +23,5 @@ class ProcedureRepository(Protocol):
         ...
 
     def list(self) -> list[ProcedureSummary]:
-        """Return a summary of every stored procedure."""
+        """Return a summary of every stored procedure, sorted by slug."""
         ...

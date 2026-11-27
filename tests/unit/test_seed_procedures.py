@@ -1,4 +1,4 @@
-"""Seed files and the seed logic of scripts/seed_db.py (procedure-kb T5).
+"""Seed files and the seed logic of scripts/seed_db.py.
 
 No network and no database: the service runs on an in-memory repository.
 """
@@ -98,13 +98,13 @@ def test_seed_content_is_complete(name: str) -> None:
 
 def test_seed_imports_every_file_as_system_seed() -> None:
     repo = FakeRepository()
-    results = _load().seed(DATA_DIR, _service(repo))
+    results = _load().seed(DATA_DIR, _service(repo), TODAY)
     assert [r.slug for r in results] == ["pesel", "residence-card", "tax-id"]
     assert {actor for _, actor in repo.saved} == {"system:seed"}
 
 
 def test_seed_restores_the_principal() -> None:
-    _load().seed(DATA_DIR, _service(FakeRepository()))
+    _load().seed(DATA_DIR, _service(FakeRepository()), TODAY)
     with pytest.raises(PrincipalRequiredError):
         _service(FakeRepository()).import_procedure(_yaml("pesel"))
 
@@ -116,7 +116,7 @@ def test_bad_seed_file_writes_nothing(tmp_path: Path) -> None:
     repo = FakeRepository()
     module = _load()
     with pytest.raises(module.SeedError) as info:
-        module.seed(tmp_path, _service(repo))
+        module.seed(tmp_path, _service(repo), TODAY)
     assert "b-bad.yaml" in str(info.value)
     assert "a-good.yaml" not in str(info.value)
     assert repo.saved == []
@@ -127,7 +127,7 @@ def test_every_bad_file_is_named(tmp_path: Path) -> None:
     (tmp_path / "two.yaml").write_text(_yaml("two", url="http://x.pl"), encoding="utf-8")
     module = _load()
     with pytest.raises(module.SeedError) as info:
-        module.seed(tmp_path, _service(FakeRepository()))
+        module.seed(tmp_path, _service(FakeRepository()), TODAY)
     assert "one.yaml" in str(info.value)
     assert "two.yaml" in str(info.value)
 
@@ -139,7 +139,7 @@ def test_duplicate_slug_stops_before_any_write(tmp_path: Path) -> None:
     repo = FakeRepository()
     module = _load()
     with pytest.raises(module.SeedError) as info:
-        module.seed(tmp_path, _service(repo))
+        module.seed(tmp_path, _service(repo), TODAY)
     assert "first.yaml" in str(info.value)
     assert "second.yaml" in str(info.value)
     assert repo.saved == []
@@ -150,7 +150,7 @@ def test_qa_014_unknown_key_in_seed_file_names_the_file(tmp_path: Path) -> None:
     repo = FakeRepository()
     module = _load()
     with pytest.raises(module.SeedError) as info:
-        module.seed(tmp_path, _service(repo))
+        module.seed(tmp_path, _service(repo), TODAY)
     assert "extra.yaml" in str(info.value)
     assert repo.saved == []
 
@@ -159,24 +159,119 @@ def test_qa_013_malformed_seed_file_names_the_file(tmp_path: Path) -> None:
     (tmp_path / "broken.yaml").write_text("slug: [unclosed", encoding="utf-8")
     module = _load()
     with pytest.raises(module.SeedError) as info:
-        module.seed(tmp_path, _service(FakeRepository()))
+        module.seed(tmp_path, _service(FakeRepository()), TODAY)
     assert "broken.yaml" in str(info.value)
 
 
 def test_empty_directory_is_an_error(tmp_path: Path) -> None:
     module = _load()
     with pytest.raises(module.SeedError):
-        module.seed(tmp_path, _service(FakeRepository()))
+        module.seed(tmp_path, _service(FakeRepository()), TODAY)
+
+
+def test_check_uses_the_given_today(tmp_path: Path) -> None:
+    """The check and the import share one ``today``: the check does not read the clock."""
+    (tmp_path / "early.yaml").write_text(_yaml("early"), encoding="utf-8")
+    repo = FakeRepository()
+    module = _load()
+    with pytest.raises(module.SeedError) as info:
+        module.seed(tmp_path, _service(repo), date(2026, 10, 1))
+    assert "early.yaml" in str(info.value)
+    assert repo.saved == []
+
+
+def test_unreadable_file_is_named_in_the_check(tmp_path: Path) -> None:
+    (tmp_path / "folder.yaml").mkdir()
+    (tmp_path / "latin.yaml").write_bytes(b"title: \xff\xfe\n")
+    module = _load()
+    with pytest.raises(module.SeedError) as info:
+        module.seed(tmp_path, _service(FakeRepository()), TODAY)
+    assert "folder.yaml" in str(info.value)
+    assert "latin.yaml" in str(info.value)
+
+
+def _skip_check(module: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(module, "_check", lambda files, today: None)
+
+
+@pytest.mark.parametrize(
+    ("name", "content"),
+    [("folder.yaml", None), ("latin.yaml", b"title: \xff\n"), ("bad.yaml", b"slug: [")],
+    ids=["os-error", "decode-error", "validation-error"],
+)
+def test_import_step_names_the_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str, content: bytes | None
+) -> None:
+    """A file that changes or vanishes after the check stops the seed with its name."""
+    path = tmp_path / name
+    if content is None:
+        path.mkdir()
+    else:
+        path.write_bytes(content)
+    module = _load()
+    _skip_check(module, monkeypatch)
+    with pytest.raises(module.SeedError) as info:
+        module.seed(tmp_path, _service(FakeRepository()), TODAY)
+    assert name in str(info.value)
 
 
 # --- main() -------------------------------------------------------------------------
+
+
+class FakeEngine:
+    def __init__(self) -> None:
+        self.disposed = 0
+
+    def dispose(self) -> None:
+        self.disposed += 1
+
+
+def _patch_main(
+    module: ModuleType, monkeypatch: pytest.MonkeyPatch, repo: FakeRepository
+) -> tuple[FakeEngine, list[date]]:
+    """Replace the engine and the service; record each ``today`` the service is built with."""
+    engine = FakeEngine()
+    days: list[date] = []
+
+    def build_service(built_on: object, today: date) -> ProcedureService:
+        assert built_on is engine
+        days.append(today)
+        return ProcedureService(repo, today=lambda: today)
+
+    monkeypatch.setattr(module, "build_engine", lambda: engine)
+    monkeypatch.setattr(module, "build_service", build_service)
+    return engine, days
+
+
+def test_main_uses_one_today_and_disposes_the_engine(monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load()
+    engine, days = _patch_main(module, monkeypatch, FakeRepository())
+    seen: list[date] = []
+    real_seed = module.seed
+
+    def spy(directory: Path, service: ProcedureService, today: date) -> list[ImportResult]:
+        seen.append(today)
+        return real_seed(directory, service, today)
+
+    monkeypatch.setattr(module, "seed", spy)
+    assert module.main([str(DATA_DIR)]) == 0
+    assert days == seen
+    assert len(days) == 1
+    assert engine.disposed == 1
+
+
+def test_main_disposes_the_engine_on_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    module = _load()
+    engine, _ = _patch_main(module, monkeypatch, FakeRepository())
+    assert module.main([str(tmp_path)]) != 0
+    assert engine.disposed == 1
 
 
 def test_main_prints_one_line_per_file(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     module = _load()
-    monkeypatch.setattr(module, "build_service", lambda: _service(FakeRepository()))
+    _patch_main(module, monkeypatch, FakeRepository())
     assert module.main([str(DATA_DIR)]) == 0
     lines = capsys.readouterr().out.splitlines()
     assert lines == [
@@ -192,7 +287,7 @@ def test_main_exits_non_zero_naming_the_file(
     (tmp_path / "broken.yaml").write_text(_yaml("broken", url=""), encoding="utf-8")
     repo = FakeRepository()
     module = _load()
-    monkeypatch.setattr(module, "build_service", lambda: _service(repo))
+    _patch_main(module, monkeypatch, repo)
     assert module.main([str(tmp_path)]) != 0
     captured = capsys.readouterr()
     assert "broken.yaml" in captured.err

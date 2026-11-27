@@ -47,5 +47,5 @@ class ProcedureService:
         return self._repository.get(slug)
 
     def list_procedures(self) -> list[ProcedureSummary]:
-        """Return all procedure summaries sorted by slug."""
-        return sorted(self._repository.list(), key=lambda summary: summary.slug)
+        """Return all procedure summaries sorted by slug (the repository sorts)."""
+        return self._repository.list()
