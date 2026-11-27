@@ -433,3 +433,52 @@ def test_deeply_nested_json_is_a_malformed_response(llm_env: pytest.MonkeyPatch)
     assert error.__cause__ is None
     assert error.__context__ is None
     _assert_clean(error)
+
+
+def _locals_text(error: BaseException) -> str:
+    texts: list[str] = []
+    tb = error.__traceback__
+    while tb is not None:
+        texts.extend(repr(value) for value in tb.tb_frame.f_locals.values())
+        tb = tb.tb_next
+    return " ".join(texts)
+
+
+@pytest.mark.parametrize(
+    "handler",
+    [lambda request: httpx.Response(500), _read_timeout, _answer(None)],
+    ids=["status", "timeout", "shape"],
+)
+def test_traceback_locals_hold_no_secret(llm_env: pytest.MonkeyPatch, handler: Handler) -> None:
+    client, _ = _client(handler)
+    with pytest.raises(LLMError) as info:
+        client.chat(_AGENT, _ONE)
+    text = _locals_text(info.value)
+    for secret in ("sekret-key", "llm.test", "private-text"):
+        assert secret not in text
+    assert info.value.__cause__ is None
+    assert info.value.__context__ is None
+
+
+def test_config_error_traceback_holds_no_secret(llm_env: pytest.MonkeyPatch) -> None:
+    llm_env.setenv("LLM_BASE_URL", "http://llm.test/v1")
+    with pytest.raises(LLMConfigError) as info:
+        LLMClient(Settings()).chat(_AGENT, _ONE)
+    text = _locals_text(info.value)
+    for secret in ("sekret-key", "llm.test", "private-text"):
+        assert secret not in text
+
+
+def test_unmapped_error_drops_its_chain(llm_env: pytest.MonkeyPatch) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        try:
+            raise OSError("inner sekret-key")
+        except OSError as inner:
+            raise RuntimeError("outer") from inner
+
+    client, _ = _client(handler)
+    with pytest.raises(RuntimeError) as info:
+        client.chat(_AGENT, _ONE)
+    assert info.value.__cause__ is None
+    assert info.value.__context__ is None
+    assert info.value.__suppress_context__
