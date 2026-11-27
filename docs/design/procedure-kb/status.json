@@ -1,0 +1,17 @@
+{
+  "T1": {
+    "state": "done",
+    "note": "35 tests, 100% cov, ruff and pyright clean"
+  },
+  "T3": {
+    "state": "done",
+    "note": "39 migration/schema tests pass on PG18 disposable"
+  },
+  "T2": {
+    "state": "done",
+    "note": "49 tests 100% cov"
+  },
+  "T4": {
+    "state": "doing"
+  }
+}
