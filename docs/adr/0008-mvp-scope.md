@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # ADR-0008: MVP scope
@@ -22,8 +22,13 @@ the MVP scope:
 The following are **MUST be in the MVP**:
 
 - **Citations**: every search/analysis result includes exact law article
-  citations, a confidence score, and a direct source link. Data model gains a
-  `Citation` entity (law, article, paragraph, confidence, source_url).
+  citations, a confidence score, and a direct source link. `Citation` is a
+  value object (law, article, paragraph, quote, confidence, source_url), not a
+  table. Persistence is deferred until answers are stored.
+- **Confidence scoring rule**: a hit with no rerank score gets confidence =
+  retrieval score. A hit with both scores gets confidence =
+  0.4 * retrieval + 0.6 * rerank. The weights 0.4 and 0.6 are provisional
+  until the evaluation runs.
 - **Faceted filters**: search supports filters for document type, dates,
   jurisdiction, court, etc.
 - **Bureaucracy assistant**: a dedicated agent (`BureaucracyAssistantAgent`)
