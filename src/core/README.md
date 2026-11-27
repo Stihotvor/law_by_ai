@@ -9,3 +9,4 @@ project; every other package imports it, never the other way around.
   `PluginManager`, exceptions). PostgreSQL no longer routes through it.
 - `security/` — auth, RBAC, tenant context (ADR-0013, ADR-0003)
 - `observability/` — structlog JSON logging, OTel metrics/traces (ADR-0005)
+- `procedures/` — procedure knowledge base for the bureaucracy assistant: `models`, `errors`, `parse` (YAML to a validated `Procedure`), `ports` (`ProcedureRepository`) and `service` (`ProcedureService`). The SQL adapter is `src/plugins/relational_db/procedures.py`.
