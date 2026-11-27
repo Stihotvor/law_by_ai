@@ -6,8 +6,11 @@ that could hold the request URL, the key or the messages.
 
 import json
 import time
-from typing import cast
+from contextvars import ContextVar
+from types import TracebackType
+from typing import Self, cast
 
+import httpcore
 import httpx
 
 from config.settings import Settings
@@ -20,6 +23,71 @@ _MAX_RESPONSE_BYTES = 1024 * 1024
 # httpx applies its timeout per phase (connect, write, pool, each read).
 _HTTPX_PHASES = 4
 _now = time.monotonic
+# Deadline of the call in progress in this thread, read by every socket operation.
+_deadline: ContextVar[float | None] = ContextVar("llm_deadline", default=None)
+
+
+def _clip(timeout: float | None) -> float | None:
+    """Shrink a socket timeout to the time left before the call deadline."""
+    deadline = _deadline.get()
+    if deadline is None:
+        return timeout
+    left = deadline - _now()
+    if left <= 0:
+        raise httpcore.ReadTimeout("deadline passed")
+    return left if timeout is None else min(timeout, left)
+
+
+class _DeadlineStream(httpcore.NetworkStream):
+    """Socket stream whose reads and writes end at the call deadline.
+
+    httpx applies its timeout to each socket read, so a server that sends the
+    headers one byte at a time is not stopped. Here each read gets only the time left.
+    """
+
+    def __init__(self, stream: httpcore.NetworkStream) -> None:
+        self._stream = stream
+
+    def read(self, max_bytes: int, timeout: float | None = None) -> bytes:
+        return self._stream.read(max_bytes, _clip(timeout))
+
+    def write(self, buffer: bytes, timeout: float | None = None) -> None:
+        self._stream.write(buffer, _clip(timeout))
+
+    def close(self) -> None:
+        self._stream.close()
+
+    def start_tls(
+        self, ssl_context: object, server_hostname: str | None = None, timeout: float | None = None
+    ) -> httpcore.NetworkStream:
+        stream = self._stream.start_tls(ssl_context, server_hostname, _clip(timeout))  # type: ignore[arg-type]
+        return _DeadlineStream(stream)
+
+    def get_extra_info(self, info: str) -> object:
+        return self._stream.get_extra_info(info)
+
+
+class _DeadlineBackend(httpcore.SyncBackend):
+    def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options: object = None,
+    ) -> httpcore.NetworkStream:
+        stream = super().connect_tcp(host, port, _clip(timeout), local_address, socket_options)  # type: ignore[arg-type]
+        return _DeadlineStream(stream)
+
+
+def _deadline_transport() -> httpx.HTTPTransport:
+    transport = httpx.HTTPTransport(trust_env=False)
+    # httpx takes no network backend argument, so the pool is rebuilt with one.
+    transport._pool = httpcore.ConnectionPool(  # pyright: ignore[reportPrivateUsage]
+        ssl_context=httpx.create_ssl_context(trust_env=False),
+        network_backend=_DeadlineBackend(),
+    )
+    return transport
 
 
 def _check_deadline(deadline: float) -> None:
@@ -87,14 +155,58 @@ def _parse_content(raw: bytes) -> str:
 
 
 class LLMClient:
-    """Sends chat requests for one agent to an OpenAI-compatible server."""
+    """Sends chat requests for one agent to an OpenAI-compatible server.
+
+    One ``httpx.Client`` is made on first use and reused, so calls share connections.
+    Call ``close()`` or use the client as a context manager to free it.
+    """
 
     def __init__(self, settings: Settings, *, transport: httpx.BaseTransport | None = None) -> None:
         self._settings = settings
         self._transport = transport
+        self._client: httpx.Client | None = None
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Close the pooled connections. The next call opens a new client."""
+        client, self._client = self._client, None
+        if client is not None:
+            client.close()
+
+    def _http(self) -> httpx.Client:
+        if self._client is None:
+            self._client = httpx.Client(
+                follow_redirects=False,
+                trust_env=False,
+                transport=self._transport or _deadline_transport(),
+            )
+        return self._client
 
     def chat(self, agent_name: str, messages: list[dict[str, str]]) -> str:
-        """Return ``choices[0].message.content`` for ``messages``."""
+        """Return ``choices[0].message.content`` for ``messages``.
+
+        A raised error has no traceback below this frame, and this frame drops its
+        arguments first: a logger that prints frame locals cannot show the key,
+        the base URL or the messages.
+        """
+        try:
+            return self._chat(agent_name, messages)
+        except Exception as exc:
+            failure = exc.with_traceback(None)
+        del agent_name, messages
+        raise failure
+
+    def _chat(self, agent_name: str, messages: list[dict[str, str]]) -> str:
         if not messages:
             raise ValueError("messages must not be empty")
         config = resolve(self._settings, agent_name)
@@ -116,19 +228,21 @@ class LLMClient:
         return _parse_content(raw)
 
     def _post(self, url: str, body: object, headers: dict[str, str], timeout: float) -> bytes:
-        # httpx applies the read timeout to each socket read, not to the whole body,
-        # so each phase gets a share and the deadline is checked between reads:
-        # the last read started before the deadline ends by (1 + 1/phases) x timeout.
+        # The real transport clips every socket operation to the deadline. A custom
+        # transport has no such hook, so each httpx phase gets a share and the deadline
+        # is also checked between body reads.
         deadline = _now() + timeout
-        with (
-            httpx.Client(
+        token = _deadline.set(deadline)
+        try:
+            with self._http().stream(
+                "POST",
+                url,
+                json=body,
+                headers=headers,
                 timeout=httpx.Timeout(timeout / _HTTPX_PHASES),
-                follow_redirects=False,
-                trust_env=False,
-                transport=self._transport,
-            ) as client,
-            client.stream("POST", url, json=body, headers=headers) as response,
-        ):
-            _check_status(response)
-            _check_encoding(response)
-            return _read_capped(response, deadline)
+            ) as response:
+                _check_status(response)
+                _check_encoding(response)
+                return _read_capped(response, deadline)
+        finally:
+            _deadline.reset(token)
