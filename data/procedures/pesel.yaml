@@ -1,0 +1,29 @@
+schema_version: 1
+slug: pesel
+title: "PESEL number for a foreign national"
+steps:
+  - key: choose-your-case
+    text: "Find out if you are a non-EU foreign national or an EU/EFTA citizen (or an eligible family member). The form and the way to file differ. These steps come from the Warsaw city office pages. Other municipalities may differ."
+    source_url: https://warszawa19115.pl/en/-/nadanie-numeru-pesel-na-wniosek-cudzoziemca-ktory-nie-jest-obywatelem-krajow-ue-efta-wielkiej-brytanii-lub-czlonkiem-ich-rodzin
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: fill-in-the-form
+    text: "Non-EU foreign national: download the application form (PDF), fill it in and sign it by hand. State the legal basis that requires you to have a PESEL."
+    source_url: https://warszawa19115.pl/en/-/nadanie-numeru-pesel-na-wniosek-cudzoziemca-ktory-nie-jest-obywatelem-krajow-ue-efta-wielkiej-brytanii-lub-czlonkiem-ich-rodzin
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: file-in-person
+    text: "Non-EU foreign national: since 1 January 2026 you can file the application only in person. In Warsaw, book a visit at a branch of the Biuro Administracji i Spraw Obywatelskich. Bring a passport or other ID and documents that support the data in form items 3 to 5."
+    source_url: https://warszawa19115.pl/en/-/nadanie-numeru-pesel-na-wniosek-cudzoziemca-ktory-nie-jest-obywatelem-krajow-ue-efta-wielkiej-brytanii-lub-czlonkiem-ich-rodzin
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: fix-gaps-in-7-days
+    text: "The application is free. If the office finds gaps, fix them within 7 days. Otherwise the office leaves the application unprocessed, and no appeal is available."
+    source_url: https://warszawa19115.pl/en/-/nadanie-numeru-pesel-na-wniosek-cudzoziemca-ktory-nie-jest-obywatelem-krajow-ue-efta-wielkiej-brytanii-lub-czlonkiem-ich-rodzin
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."
+  - key: eu-efta-citizens
+    text: "EU/EFTA citizens (and eligible family members, and UK citizens who live in the EU since at least 31 December 2020) use the same form. File in person or through a proxy with a power of attorney. The application is free. A power of attorney can cost 17 PLN in stamp duty (some persons are exempt)."
+    source_url: https://warszawa19115.pl/en/-/nadanie-numeru-pesel-na-wniosek-cudzoziemca-ktory-jest-obywatelem-krajow-czlonkowskich-unii-europejskiej-ue-i-efta-oraz-obywatela-wielkiej-brytanii-ktory-mieszka-w-ue-co-najmniej-od-31-grudnia-2020-roku
+    last_checked: 2026-11-27
+    verify_with_office: "Verify with the office before you act."

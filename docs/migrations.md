@@ -45,6 +45,23 @@ Migrations run with the owner connection (`POSTGRES_OWNER_URL`, user
 change the schema. RLS policies for `users`/`tenants` live in the migrations
 (ADR-0003).
 
+## Seed the procedures
+
+Run order: first migrate, then seed. The seed needs the procedure tables at
+head.
+
+```bash
+uv run alembic upgrade head
+uv run python scripts/seed_db.py
+```
+
+The seed reads `data/procedures/*.yaml` and connects as `lawbyai_app`
+(`POSTGRES_URL`). It imports each file as the admin principal `system:seed`.
+It checks all files first. If a file is invalid or two files share a slug, it
+writes nothing, names the file or files and exits with a non-zero code. It
+prints one line per file with the slug, the revision and whether it changed.
+A rerun is safe: identical content writes no new revision.
+
 ## Overlapping upgrade runs
 
 Each online run of `alembic upgrade head` takes a session-level advisory lock
