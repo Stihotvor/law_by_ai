@@ -163,6 +163,7 @@ def _valid_url(url: str) -> bool:
         parts.scheme in ALLOWED_SCHEMES
         and host is not None
         and "@" not in parts.netloc
+        and parts.netloc.isascii()
         and _is_public_host(host)
     )
 

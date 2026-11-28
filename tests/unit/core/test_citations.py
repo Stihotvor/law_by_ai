@@ -452,6 +452,7 @@ BAD_URLS: list[str] = [
     "http://0x7f.0.0.1/a",
     "http://0177.0.0.1/a",
     "http://127.1/a",
+    "https://\u212a.example/a",
     "http://127.0.0.%31/a",
     "http://%6c%6f%63%61%6c%68%6f%73%74/a",
     "http://home.arpa/a",
