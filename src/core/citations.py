@@ -15,17 +15,23 @@ Scoring rule (deterministic; weights provisional until an evaluation runs):
 Decision: every hit is validated first. Hits whose URL is empty, not
 http(s), holds credentials, a bad port (not a number or above 65535), any
 Unicode whitespace or control/format character (categories C* and Z*) or a
-backslash, or is longer than ``MAX_URL_LENGTH`` (the ``source_url`` column)
-are dropped. Other non-ASCII text (e.g. Polish letters) is kept.
+backslash, a host that is internal (loopback, private, link-local, metadata
+or other non-global IP literal, numeric IPv4 forms, ``localhost``, ``.local``,
+``.internal``, a name with no dot, a percent-encoded or non-ASCII host), or
+is longer than ``MAX_URL_LENGTH`` (the ``source_url`` column) are dropped.
+Other non-ASCII text in the path (e.g. Polish letters) is kept.
 Valid hits are sorted by confidence, highest first (ties keep input order). Hits with
 ``confidence >= min_confidence`` form an ``Answer``. If none qualify, the
 result is ``NoReliableAnswer`` with the top 3 valid hits as closest sources.
 Both results carry ``NOT_LEGAL_ADVICE_NOTICE``. No I/O, no environment read.
 
-This layer does not make a URL safe to fetch; the renderer must escape the
+The host check is a string check with no DNS. A public name can still resolve
+to a private address, so a fetcher must check the resolved address. The
+renderer must escape the
 ``quote`` and ``law`` fields.
 """
 
+import ipaddress
 import unicodedata
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -117,6 +123,33 @@ def _has_bad_char(url: str) -> bool:
     return any(ch == "\\" or unicodedata.category(ch)[0] in "CZ" for ch in url)
 
 
+_INTERNAL_NAMESPACES = ("localhost", "local", "internal", "localdomain", "home.arpa")
+
+
+def _is_public_host(host: str) -> bool:
+    """Reject IP literals that are not global and names that mean an internal host.
+
+    Pure string check, no DNS: a public name that resolves to a private address
+    needs a check at fetch time. Numeric forms such as ``2130706433`` or ``0x7f.1``
+    are rejected, because resolvers read them as IPv4 and ``ipaddress`` does not.
+    """
+    host = host.lower().rstrip(".")
+    if "%" in host or not host.isascii():
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        mapped = getattr(ip, "ipv4_mapped", None)
+        return (mapped or ip).is_global
+    last_label = host.rsplit(".", 1)[-1]
+    if last_label.isdigit() or last_label.startswith("0x"):
+        return False
+    in_internal = any(host == ns or host.endswith("." + ns) for ns in _INTERNAL_NAMESPACES)
+    return "." in host and not in_internal
+
+
 def _valid_url(url: str) -> bool:
     if len(url) > MAX_URL_LENGTH or _has_bad_char(url):
         return False
@@ -126,7 +159,13 @@ def _valid_url(url: str) -> bool:
         _ = parts.port
     except ValueError:
         return False
-    return parts.scheme in ALLOWED_SCHEMES and bool(host) and "@" not in parts.netloc
+    return (
+        parts.scheme in ALLOWED_SCHEMES
+        and host is not None
+        and "@" not in parts.netloc
+        and parts.netloc.isascii()
+        and _is_public_host(host)
+    )
 
 
 def _to_citation(hit: ScoredHit, confidence: float) -> Citation:
