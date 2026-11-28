@@ -1,0 +1,2010 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered legal document processing, retrieval, and analysis platform.">
+      
+      
+        <meta name="author" content="Yevhen D.">
+      
+      
+        <link rel="canonical" href="https://stihotvor.github.io/law_by_ai/design/reject-audit-immutable/qa/cases/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>QA cases: reject audit is append-only - Law by AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#qa-cases-reject-audit-is-append-only" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="Law by AI" class="md-header__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Law by AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              QA cases: reject audit is append-only
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../intention/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Intention
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../migrations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../operations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Operations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../adr/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="Law by AI" class="md-nav__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    Law by AI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../intention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../migrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0001-plugin-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 - Plugin Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0002-graph-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 - Graph Database
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0003-multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 - Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0004-auth-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 - Auth & RBAC
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0005-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 - Observability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0006-celery-reliability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 - Celery Reliability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0007-document-diffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 - Document Diffs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0008-mvp-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 - MVP Scope
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0009-model-evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 - Model Evals
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0010-health-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 - Health Checks
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0011-sla-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 - SLA & Budget
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0012-license-contribution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 - License & Contribution Model
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0013-streamlit-authenticator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013 - Streamlit Authenticator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0014-hardcoded-postgresql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014 - Hardcoded PostgreSQL
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0017-object-store-seaweedfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017 - Object Store SeaweedFS
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#qa-001-app-role-cannot-update-an-audit-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-001 App role cannot UPDATE an audit row
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-002-app-role-cannot-delete-an-audit-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-002 App role cannot DELETE an audit row
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-003-app-role-cannot-truncate-the-audit-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-003 App role cannot TRUNCATE the audit table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-004-app-role-can-insert-an-audit-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-004 App role can INSERT an audit row
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-005-app-role-can-select-audit-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-005 App role can SELECT audit rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-006-sequence-grants-stay-after-the-revoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-006 Sequence grants stay after the revoke
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-007-owner-keeps-all-rights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-007 Owner keeps all rights
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-008-schema-guard-table-privileges-on-head" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-008 Schema guard: table privileges on head
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-009-schema-guard-column-level-update-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-009 Schema guard: column-level UPDATE privilege
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-010-schema-guard-public-has-no-rights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-010 Schema guard: PUBLIC has no rights
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-011-existing-audit-rows-survive-the-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-011 Existing audit rows survive the migration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-012-migration-round-trip-as-owner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-012 Migration round trip as owner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-013-downgrade-restores-update-and-delete-but-not-truncate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-013 Downgrade restores UPDATE and DELETE but not TRUNCATE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-014-upgrade-fails-fast-when-the-table-is-locked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-014 Upgrade fails fast when the table is locked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-015-repeated-upgrade-is-safe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-015 Repeated upgrade is safe
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-016-reject-with-no-actor-raises-and-changes-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-016 Reject with no actor raises and changes nothing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-017-reject-with-empty-string-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-017 Reject with empty-string actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-018-reject-with-spaces-only-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-018 Reject with spaces-only actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-019-reject-by-a-non-admin-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-019 Reject by a non-admin role
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-020-audit-actor-equals-the-context-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-020 Audit actor equals the context actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-021-caller-cannot-pass-another-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-021 Caller cannot pass another actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-022-actor-with-surrounding-spaces-is-stored-trimmed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-022 Actor with surrounding spaces is stored trimmed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-023-concurrent-rejects-of-one-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-023 Concurrent rejects of one document
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-024-reject-twice-in-a-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-024 Reject twice in a row
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-025-reject-of-unknown-document" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-025 Reject of unknown document
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-026-reject-is-one-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-026 Reject is one transaction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-027-stale-actor-does-not-leak-to-a-later-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-027 Stale actor does not leak to a later request
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-028-new-thread-does-not-inherit-the-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-028 New thread does not inherit the actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-029-nested-actor-scope-restores-the-previous-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-029 Nested actor scope restores the previous actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-030-login-sets-the-actor-for-the-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-030 Login sets the actor for the request
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-031-sign-out-clears-the-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-031 Sign-out clears the actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-032-logout-button-clears-the-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-032 Logout button clears the actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-033-failed-login-sets-no-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-033 Failed login sets no actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-034-ui-shows-an-error-when-reject-has-no-actor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-034 UI shows an error when reject has no actor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-035-cleanup-fixtures-work-with-the-owner-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-035 Cleanup fixtures work with the owner role
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-036-later-grant-all-migration-is-caught" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-036 Later GRANT ALL migration is caught
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-037-quality-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-037 Quality gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="qa-cases-reject-audit-is-append-only">QA cases: reject audit is append-only<a class="headerlink" href="#qa-cases-reject-audit-is-append-only" title="Permanent link">&para;</a></h1>
+<h3 id="qa-001-app-role-cannot-update-an-audit-row">QA-001 App role cannot UPDATE an audit row<a class="headerlink" href="#qa-001-app-role-cannot-update-an-audit-row" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 3 of 3 denied statements</li>
+<li>Type: security</li>
+<li>Given the head schema, and one row in rejected_document with actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>When the app role lawbyai_app runs UPDATE setting the actor to "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#111;&#116;&#104;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#111;&#116;&#104;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>", in its own transaction</li>
+<li>Then PostgreSQL denies it with SQLSTATE 42501 and the row still shows "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+</ul>
+<h3 id="qa-002-app-role-cannot-delete-an-audit-row">QA-002 App role cannot DELETE an audit row<a class="headerlink" href="#qa-002-app-role-cannot-delete-an-audit-row" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 3 of 3 denied statements</li>
+<li>Type: security</li>
+<li>Given the head schema, and one row in rejected_document</li>
+<li>When the app role lawbyai_app runs DELETE FROM rejected_document, in its own transaction</li>
+<li>Then PostgreSQL denies it with SQLSTATE 42501 and the table still holds 1 row</li>
+</ul>
+<h3 id="qa-003-app-role-cannot-truncate-the-audit-table">QA-003 App role cannot TRUNCATE the audit table<a class="headerlink" href="#qa-003-app-role-cannot-truncate-the-audit-table" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 3 of 3 denied statements</li>
+<li>Type: security</li>
+<li>Given the head schema, and 3 rows in rejected_document</li>
+<li>When the app role lawbyai_app runs TRUNCATE rejected_document, in its own transaction</li>
+<li>Then PostgreSQL denies it with SQLSTATE 42501 and the table still holds 3 rows</li>
+</ul>
+<h3 id="qa-004-app-role-can-insert-an-audit-row">QA-004 App role can INSERT an audit row<a class="headerlink" href="#qa-004-app-role-can-insert-an-audit-row" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 2 of 2 allowed statements</li>
+<li>Type: functional</li>
+<li>Given the head schema and an empty rejected_document</li>
+<li>When the app role lawbyai_app inserts 1 row with actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>Then the INSERT succeeds and the table holds 1 row</li>
+</ul>
+<h3 id="qa-005-app-role-can-select-audit-rows">QA-005 App role can SELECT audit rows<a class="headerlink" href="#qa-005-app-role-can-select-audit-rows" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 2 of 2 allowed statements</li>
+<li>Type: functional</li>
+<li>Given the head schema, and 2 rows in rejected_document</li>
+<li>When the app role lawbyai_app runs SELECT count(*) on rejected_document</li>
+<li>Then the result is 2 and no error occurs</li>
+</ul>
+<h3 id="qa-006-sequence-grants-stay-after-the-revoke">QA-006 Sequence grants stay after the revoke<a class="headerlink" href="#qa-006-sequence-grants-stay-after-the-revoke" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (sequence grants stay)</li>
+<li>Type: edge</li>
+<li>Given the head schema and an empty rejected_document with a generated id column</li>
+<li>When the app role inserts 2 rows one after the other without giving an id</li>
+<li>Then both inserts succeed and the 2 rows get different ids</li>
+</ul>
+<h3 id="qa-007-owner-keeps-all-rights">QA-007 Owner keeps all rights<a class="headerlink" href="#qa-007-owner-keeps-all-rights" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (owner keeps all rights); Business Goals (only owner can fix or purge)</li>
+<li>Type: functional</li>
+<li>Given the head schema, and 2 rows in rejected_document</li>
+<li>When the owner lawbyai_owner runs UPDATE on 1 row, then DELETE on it, then TRUNCATE</li>
+<li>Then each statement succeeds and the table is empty at the end</li>
+</ul>
+<h3 id="qa-008-schema-guard-table-privileges-on-head">QA-008 Schema guard: table privileges on head<a class="headerlink" href="#qa-008-schema-guard-table-privileges-on-head" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (later migration restores grants); Tests schema guard</li>
+<li>Type: security</li>
+<li>Given a database after upgrade to head, not to a fixed revision</li>
+<li>When the test asks if lawbyai_app has UPDATE, DELETE and TRUNCATE privilege on rejected_document</li>
+<li>Then all 3 answers are false</li>
+</ul>
+<h3 id="qa-009-schema-guard-column-level-update-privilege">QA-009 Schema guard: column-level UPDATE privilege<a class="headerlink" href="#qa-009-schema-guard-column-level-update-privilege" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (later migration restores grants); DBA fix F3</li>
+<li>Type: security</li>
+<li>Given a database after upgrade to head, and a column-level UPDATE grant on any column of rejected_document would be possible</li>
+<li>When the test asks if lawbyai_app has UPDATE on any column of rejected_document</li>
+<li>Then the answer is false</li>
+</ul>
+<h3 id="qa-010-schema-guard-public-has-no-rights">QA-010 Schema guard: PUBLIC has no rights<a class="headerlink" href="#qa-010-schema-guard-public-has-no-rights" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (later migration restores grants); Tests schema guard</li>
+<li>Type: security</li>
+<li>Given a database after upgrade to head</li>
+<li>When the test lists the privileges that PUBLIC holds on rejected_document</li>
+<li>Then the list is empty</li>
+</ul>
+<h3 id="qa-011-existing-audit-rows-survive-the-migration">QA-011 Existing audit rows survive the migration<a class="headerlink" href="#qa-011-existing-audit-rows-survive-the-migration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (what must survive: every existing audit row)</li>
+<li>Type: failure</li>
+<li>Given a database at revision b7e2d41c9a30 with 5 rows in rejected_document</li>
+<li>When the owner runs the upgrade to head</li>
+<li>Then the table still holds the same 5 rows with the same values</li>
+</ul>
+<h3 id="qa-012-migration-round-trip-as-owner">QA-012 Migration round trip as owner<a class="headerlink" href="#qa-012-migration-round-trip-as-owner" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric upgrade, downgrade, upgrade with 0 failures; Failure Mode (owner can downgrade)</li>
+<li>Type: functional</li>
+<li>Given a database at head, and the owner connection</li>
+<li>When the owner runs upgrade to head, downgrade by 1 revision, and upgrade to head again</li>
+<li>Then all 3 steps finish with 0 errors and alembic shows exactly 1 head</li>
+</ul>
+<h3 id="qa-013-downgrade-restores-update-and-delete-but-not-truncate">QA-013 Downgrade restores UPDATE and DELETE but not TRUNCATE<a class="headerlink" href="#qa-013-downgrade-restores-update-and-delete-but-not-truncate" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case (migration downgrade); DBA fix F4</li>
+<li>Type: edge</li>
+<li>Given a database at head after the owner ran a downgrade by 1 revision</li>
+<li>When the test asks if lawbyai_app has UPDATE, DELETE and TRUNCATE on rejected_document</li>
+<li>Then UPDATE is true, DELETE is true and TRUNCATE is false</li>
+</ul>
+<h3 id="qa-014-upgrade-fails-fast-when-the-table-is-locked">QA-014 Upgrade fails fast when the table is locked<a class="headerlink" href="#qa-014-upgrade-fails-fast-when-the-table-is-locked" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (migration safety); DBA fix F2 (lock timeout 5 s)</li>
+<li>Type: failure</li>
+<li>Given another session holds an ACCESS EXCLUSIVE lock on rejected_document for 30 s</li>
+<li>When the owner runs the upgrade</li>
+<li>Then the upgrade stops with a lock timeout error after about 5 s and does not wait 30 s</li>
+<li>OPEN: the requirements do not state the lock timeout; it comes from decision.md only</li>
+</ul>
+<h3 id="qa-015-repeated-upgrade-is-safe">QA-015 Repeated upgrade is safe<a class="headerlink" href="#qa-015-repeated-upgrade-is-safe" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (one new revision); negative case, repeated action</li>
+<li>Type: edge</li>
+<li>Given a database already at head</li>
+<li>When the owner runs the upgrade to head a second time</li>
+<li>Then it finishes with 0 errors and the privileges are unchanged (no UPDATE, DELETE, TRUNCATE for lawbyai_app)</li>
+</ul>
+<h3 id="qa-016-reject-with-no-actor-raises-and-changes-nothing">QA-016 Reject with no actor raises and changes nothing<a class="headerlink" href="#qa-016-reject-with-no-actor-raises-and-changes-nothing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case (no actor); Success Metric 1 test: reject() with no actor writes 0 rows</li>
+<li>Type: failure</li>
+<li>Given document "doc-001" in legal_document, an empty rejected_document and no actor set for the request</li>
+<li>When an admin flow rejects "doc-001"</li>
+<li>Then a permission error is raised, "doc-001" is still in legal_document and rejected_document has 0 rows</li>
+</ul>
+<h3 id="qa-017-reject-with-empty-string-actor">QA-017 Reject with empty-string actor<a class="headerlink" href="#qa-017-reject-with-empty-string-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case (empty or blank actor)</li>
+<li>Type: failure</li>
+<li>Given document "doc-002" exists and the actor email is "" with role admin</li>
+<li>When an admin flow rejects "doc-002"</li>
+<li>Then a permission error is raised, "doc-002" stays and rejected_document has 0 rows</li>
+</ul>
+<h3 id="qa-018-reject-with-spaces-only-actor">QA-018 Reject with spaces-only actor<a class="headerlink" href="#qa-018-reject-with-spaces-only-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case (blank actor)</li>
+<li>Type: failure</li>
+<li>Given document "doc-003" exists and the actor email is "   " (3 spaces) with role admin</li>
+<li>When an admin flow rejects "doc-003"</li>
+<li>Then a permission error is raised, "doc-003" stays and rejected_document has 0 rows</li>
+</ul>
+<h3 id="qa-019-reject-by-a-non-admin-role">QA-019 Reject by a non-admin role<a class="headerlink" href="#qa-019-reject-by-a-non-admin-role" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (admin role check); Failure Mode (reject fails, document stays)</li>
+<li>Type: security</li>
+<li>Given document "doc-004" exists and the actor is "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#117;&#115;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#117;&#115;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" with role "user"</li>
+<li>When that actor rejects "doc-004"</li>
+<li>Then a permission error is raised, "doc-004" stays and rejected_document has 0 rows</li>
+</ul>
+<h3 id="qa-020-audit-actor-equals-the-context-actor">QA-020 Audit actor equals the context actor<a class="headerlink" href="#qa-020-audit-actor-equals-the-context-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goals (actor is the authenticated admin); Success Metric actor equals context actor</li>
+<li>Type: functional</li>
+<li>Given document "doc-005" exists and the actor is "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" with role admin</li>
+<li>When that actor rejects "doc-005"</li>
+<li>Then rejected_document has 1 row with actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" and "doc-005" is gone from legal_document</li>
+</ul>
+<h3 id="qa-021-caller-cannot-pass-another-actor">QA-021 Caller cannot pass another actor<a class="headerlink" href="#qa-021-caller-cannot-pass-another-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goals (caller cannot write another email); Technical Constraints (no free admin argument)</li>
+<li>Type: security</li>
+<li>Given document "doc-006" exists and the context actor is "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>When a caller tries to reject "doc-006" and also passes the extra actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#115;&#115;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#98;&#111;&#115;&#115;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>Then the call is refused as a bad call, and no row with "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#115;&#115;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#98;&#111;&#115;&#115;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" exists in rejected_document</li>
+</ul>
+<h3 id="qa-022-actor-with-surrounding-spaces-is-stored-trimmed">QA-022 Actor with surrounding spaces is stored trimmed<a class="headerlink" href="#qa-022-actor-with-surrounding-spaces-is-stored-trimmed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (returns stripped email)</li>
+<li>Type: edge</li>
+<li>Given document "doc-007" exists and the actor email is "  <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>  " with role admin</li>
+<li>When the actor rejects "doc-007"</li>
+<li>Then the audit row has actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+</ul>
+<h3 id="qa-023-concurrent-rejects-of-one-document">QA-023 Concurrent rejects of one document<a class="headerlink" href="#qa-023-concurrent-rejects-of-one-document" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case (two concurrent rejects)</li>
+<li>Type: edge</li>
+<li>Given document "doc-008" exists, and 2 threads each set actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" with role admin</li>
+<li>When both threads reject "doc-008" at the same time</li>
+<li>Then exactly 1 thread succeeds, the other gets a not-found result, and rejected_document has 1 row for "doc-008"</li>
+</ul>
+<h3 id="qa-024-reject-twice-in-a-row">QA-024 Reject twice in a row<a class="headerlink" href="#qa-024-reject-twice-in-a-row" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case (repeated action); negative case</li>
+<li>Type: failure</li>
+<li>Given document "doc-009" was rejected once by "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>When the same admin rejects "doc-009" again</li>
+<li>Then a not-found error is raised and rejected_document still has 1 row for "doc-009"</li>
+</ul>
+<h3 id="qa-025-reject-of-unknown-document">QA-025 Reject of unknown document<a class="headerlink" href="#qa-025-reject-of-unknown-document" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: negative case, missing data</li>
+<li>Type: failure</li>
+<li>Given no document "doc-404" and an admin actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>When the admin rejects "doc-404"</li>
+<li>Then a not-found error is raised and rejected_document has 0 rows</li>
+</ul>
+<h3 id="qa-026-reject-is-one-transaction">QA-026 Reject is one transaction<a class="headerlink" href="#qa-026-reject-is-one-transaction" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (reject transaction must survive)</li>
+<li>Type: failure</li>
+<li>Given document "doc-010" exists, an admin actor, and the audit insert is forced to fail</li>
+<li>When the admin rejects "doc-010"</li>
+<li>Then the error reaches the caller, "doc-010" is still in legal_document and rejected_document has 0 rows</li>
+</ul>
+<h3 id="qa-027-stale-actor-does-not-leak-to-a-later-request">QA-027 Stale actor does not leak to a later request<a class="headerlink" href="#qa-027-stale-actor-does-not-leak-to-a-later-request" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (actor never cleared)</li>
+<li>Type: failure</li>
+<li>Given an admin "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" rejected "doc-011" inside a request scope, and the scope has ended</li>
+<li>When the same thread rejects "doc-012" with no new actor set</li>
+<li>Then a permission error is raised and "doc-012" stays</li>
+</ul>
+<h3 id="qa-028-new-thread-does-not-inherit-the-actor">QA-028 New thread does not inherit the actor<a class="headerlink" href="#qa-028-new-thread-does-not-inherit-the-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (stale actor); Consequences (non-UI callers have no actor)</li>
+<li>Type: edge</li>
+<li>Given the main thread has actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" with role admin, and document "doc-013" exists</li>
+<li>When a new background thread started without setting an actor rejects "doc-013"</li>
+<li>Then a permission error is raised in that thread and "doc-013" stays</li>
+</ul>
+<h3 id="qa-029-nested-actor-scope-restores-the-previous-actor">QA-029 Nested actor scope restores the previous actor<a class="headerlink" href="#qa-029-nested-actor-scope-restores-the-previous-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (stale actor; context restore on exit)</li>
+<li>Type: edge</li>
+<li>Given actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" (admin) is set, then an inner scope sets "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#98;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" (admin)</li>
+<li>When the inner scope ends and the caller rejects "doc-014"</li>
+<li>Then the audit row has actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+</ul>
+<h3 id="qa-030-login-sets-the-actor-for-the-request">QA-030 Login sets the actor for the request<a class="headerlink" href="#qa-030-login-sets-the-actor-for-the-request" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (actor from the authenticated session); Tests Auth</li>
+<li>Type: functional</li>
+<li>Given user "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" with role admin logged in through the app</li>
+<li>When a page run passes the authentication check</li>
+<li>Then the request actor is "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" with role "admin"</li>
+</ul>
+<h3 id="qa-031-sign-out-clears-the-actor">QA-031 Sign-out clears the actor<a class="headerlink" href="#qa-031-sign-out-clears-the-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (stale actor); Tests Auth</li>
+<li>Type: security</li>
+<li>Given user "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" is logged in and the request actor is set</li>
+<li>When the user signs out</li>
+<li>Then the request actor is empty and a reject in that thread raises a permission error</li>
+</ul>
+<h3 id="qa-032-logout-button-clears-the-actor">QA-032 Logout button clears the actor<a class="headerlink" href="#qa-032-logout-button-clears-the-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (stale actor); Tests Auth</li>
+<li>Type: security</li>
+<li>Given user "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" is logged in and the request actor is set</li>
+<li>When the user presses the logout button</li>
+<li>Then the request actor is empty</li>
+</ul>
+<h3 id="qa-033-failed-login-sets-no-actor">QA-033 Failed login sets no actor<a class="headerlink" href="#qa-033-failed-login-sets-no-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (actor from authenticated session); negative case</li>
+<li>Type: security</li>
+<li>Given a visitor with a wrong password for "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>When the page run checks authentication</li>
+<li>Then no actor is set and a reject in that run raises a permission error</li>
+</ul>
+<h3 id="qa-034-ui-shows-an-error-when-reject-has-no-actor">QA-034 UI shows an error when reject has no actor<a class="headerlink" href="#qa-034-ui-shows-an-error-when-reject-has-no-actor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (UI shows an error, document stays)</li>
+<li>Type: failure</li>
+<li>Given a page run with no actor and document "doc-015" in the store</li>
+<li>When the page triggers a reject of "doc-015"</li>
+<li>Then the UI shows an error message and "doc-015" stays in the store</li>
+<li>OPEN: decision.md says the reject UI page and its error display are out of scope, so this case cannot run until that follow-up exists</li>
+</ul>
+<h3 id="qa-035-cleanup-fixtures-work-with-the-owner-role">QA-035 Cleanup fixtures work with the owner role<a class="headerlink" href="#qa-035-cleanup-fixtures-work-with-the-owner-role" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Tests DBA fix F1; Success Metric Docker suite 0 failures</li>
+<li>Type: functional</li>
+<li>Given the head schema, and the fetch rejection, worker pool and fetch task integration suites</li>
+<li>When the Docker suite runs these 3 suites plus the reject suite</li>
+<li>Then all of them pass with 0 failures and each cleanup leaves rejected_document empty</li>
+</ul>
+<h3 id="qa-036-later-grant-all-migration-is-caught">QA-036 Later GRANT ALL migration is caught<a class="headerlink" href="#qa-036-later-grant-all-migration-is-caught" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (GRANT ALL ON ALL TABLES restores UPDATE and DELETE)</li>
+<li>Type: security</li>
+<li>Given a test copy of the head schema where a new migration ran GRANT ALL ON ALL TABLES to lawbyai_app</li>
+<li>When the schema guard test runs</li>
+<li>Then the guard test fails because UPDATE and DELETE on rejected_document are true</li>
+</ul>
+<h3 id="qa-037-quality-gate">QA-037 Quality gate<a class="headerlink" href="#qa-037-quality-gate" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric quality gate</li>
+<li>Type: performance</li>
+<li>Given the finished change</li>
+<li>When ruff check, ruff format --check, pyright, the non-integration pytest run and the Docker suite run, then diff-cover runs</li>
+<li>Then all pass with 0 failures and diff-cover reports 90% or more on changed lines</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 &ndash;2026 Yevhen D.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>

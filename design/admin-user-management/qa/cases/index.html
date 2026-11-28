@@ -1,0 +1,2277 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered legal document processing, retrieval, and analysis platform.">
+      
+      
+        <meta name="author" content="Yevhen D.">
+      
+      
+        <link rel="canonical" href="https://stihotvor.github.io/law_by_ai/design/admin-user-management/qa/cases/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>QA cases: admin-user-management - Law by AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#qa-cases-admin-user-management" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="Law by AI" class="md-header__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Law by AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              QA cases: admin-user-management
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../intention/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Intention
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../migrations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../operations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Operations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../adr/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="Law by AI" class="md-nav__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    Law by AI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../intention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../migrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0001-plugin-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 - Plugin Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0002-graph-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 - Graph Database
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0003-multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 - Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0004-auth-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 - Auth & RBAC
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0005-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 - Observability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0006-celery-reliability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 - Celery Reliability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0007-document-diffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 - Document Diffs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0008-mvp-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 - MVP Scope
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0009-model-evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 - Model Evals
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0010-health-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 - Health Checks
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0011-sla-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 - SLA & Budget
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0012-license-contribution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 - License & Contribution Model
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0013-streamlit-authenticator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013 - Streamlit Authenticator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0014-hardcoded-postgresql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014 - Hardcoded PostgreSQL
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0017-object-store-seaweedfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017 - Object Store SeaweedFS
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#qa-001-admin-creates-a-user-who-then-logs-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-001 Admin creates a user who then logs in
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-002-admin-deactivates-a-user-who-then-cannot-log-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-002 Admin deactivates a user who then cannot log in
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-003-old-cookie-of-a-deactivated-user-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-003 Old cookie of a deactivated user fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-004-new-user-joins-the-admins-tenant-not-a-form-tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-004 New user joins the admin's tenant, not a form tenant
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-005-list-shows-own-tenant-users-only-ordered-by-email" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-005 List shows own tenant users only, ordered by email
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-006-list-never-shows-hash-or-session-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-006 List never shows hash or session version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-007-duplicate-email-in-own-tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-007 Duplicate email in own tenant
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-008-duplicate-email-in-another-tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-008 Duplicate email in another tenant
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-009-duplicate-email-differs-only-by-case-and-spaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-009 Duplicate email differs only by case and spaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-010-email-is-trimmed-and-lowercased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-010 Email is trimmed and lowercased
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-011-blank-email-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-011 Blank email refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-012-malformed-email-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-012 Malformed email refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-013-email-length-limit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-013 Email length limit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-014-name-length-limit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-014 Name length limit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-015-password-shorter-than-12-characters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-015 Password shorter than 12 characters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-016-password-of-exactly-12-characters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-016 Password of exactly 12 characters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-017-password-of-72-bytes-and-73-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-017 Password of 72 bytes and 73 bytes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-018-multibyte-password-over-72-bytes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-018 Multibyte password over 72 bytes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-019-role-outside-the-valid-set-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-019 Role outside the valid set refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-020-admin-creates-an-admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-020 Admin creates an admin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-021-deactivate-is-idempotent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-021 Deactivate is idempotent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-022-deactivate-an-id-from-another-tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-022 Deactivate an id from another tenant
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-023-deactivate-an-unknown-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-023 Deactivate an unknown id
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-024-self-deactivation-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-024 Self-deactivation refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-025-last-active-admin-cannot-be-deactivated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-025 Last active admin cannot be deactivated
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-026-deactivating-one-of-two-admins-succeeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-026 Deactivating one of two admins succeeds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-027-self-check-comes-before-last-admin-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-027 Self check comes before last-admin check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-028-concurrent-deactivation-of-the-last-two-admins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-028 Concurrent deactivation of the last two admins
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-029-role-user-opens-the-page-url-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-029 Role user opens the page URL directly
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-030-role-user-calls-create-at-service-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-030 Role user calls create at service level
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-031-role-user-calls-deactivate-at-service-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-031 Role user calls deactivate at service level
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-032-demoted-or-deactivated-admin-loses-the-page" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-032 Demoted or deactivated admin loses the page
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-033-admin-principal-not-found-in-tenant-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-033 Admin principal not found in tenant refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-034-admin-of-tenant-b-cannot-act-on-tenant-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-034 Admin of tenant B cannot act on tenant A
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-035-no-tenant-set-at-service-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-035 No tenant set at service level
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-036-leak-test-with-no-tenant-at-store-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-036 Leak test with no tenant at store level
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-037-leak-test-with-tenant-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-037 Leak test with tenant set
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-038-db-error-on-create-is-generic-and-the-outcome-may-be-unknown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-038 DB error on create is generic and the outcome may be unknown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-039-db-error-on-deactivate-is-generic-and-the-outcome-may-be-unknown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-039 DB error on deactivate is generic and the outcome may be unknown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-040-non-duplicate-integrity-error-is-not-shown-as-duplicate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-040 Non-duplicate integrity error is not shown as duplicate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-041-logs-hold-no-password-or-hash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-041 Logs hold no password or hash
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-042-audit-event-on-create-and-deactivate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-042 Audit event on create and deactivate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-043-audit-event-on-idempotent-deactivate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-043 Audit event on idempotent deactivate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-044-login-lookup-down-keeps-login-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-044 Login lookup down keeps login behaviour
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-045-invalid-input-shows-no-stack-trace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-045 Invalid input shows no stack trace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-046-page-action-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-046 Page action time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-047-repeated-create-submit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-047 Repeated create submit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-048-privilege-escalation-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-048 Privilege escalation refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-049-port-and-store-stay-in-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-049 Port and store stay in step
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-050-coverage-and-mutation-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-050 Coverage and mutation gates
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-051-seed-script-still-creates-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-051 Seed script still creates users
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="qa-cases-admin-user-management">QA cases: admin-user-management<a class="headerlink" href="#qa-cases-admin-user-management" title="Permanent link">&para;</a></h1>
+<p>Tenant A has admins <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> and <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#50;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#50;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a>, and user <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a>. Tenant B has admin <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> and user <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a>.</p>
+<h3 id="qa-001-admin-creates-a-user-who-then-logs-in">QA-001 Admin creates a user who then logs in<a class="headerlink" href="#qa-001-admin-creates-a-user-who-then-logs-in" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goals test, T6</li>
+<li>Type: functional</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> is logged in to tenant A</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#99;&#97;&#114;&#111;&#108;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#99;&#97;&#114;&#111;&#108;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a>, role user, name "Carol Nowak", password "correct-horse-12"</li>
+<li>Then <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#99;&#97;&#114;&#111;&#108;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#99;&#97;&#114;&#111;&#108;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> logs in with that password and lands in tenant A</li>
+</ul>
+<h3 id="qa-002-admin-deactivates-a-user-who-then-cannot-log-in">QA-002 Admin deactivates a user who then cannot log in<a class="headerlink" href="#qa-002-admin-deactivates-a-user-who-then-cannot-log-in" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goals test, T3, T6</li>
+<li>Type: functional</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> is active and can log in</li>
+<li>When admin1 deactivates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>Then a new login by <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> with the correct password is refused</li>
+</ul>
+<h3 id="qa-003-old-cookie-of-a-deactivated-user-fails">QA-003 Old cookie of a deactivated user fails<a class="headerlink" href="#qa-003-old-cookie-of-a-deactivated-user-fails" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 1, T3</li>
+<li>Type: security</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> holds a valid session cookie</li>
+<li>When admin1 deactivates bob and bob sends the old cookie on the next request</li>
+<li>Then the request is refused because the session version differs from the stored one</li>
+</ul>
+<h3 id="qa-004-new-user-joins-the-admins-tenant-not-a-form-tenant">QA-004 New user joins the admin's tenant, not a form tenant<a class="headerlink" href="#qa-004-new-user-joins-the-admins-tenant-not-a-form-tenant" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goals (tenant from context), T4</li>
+<li>Type: security</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> is logged in to tenant A and the form has no tenant field</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#97;&#118;&#101;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#100;&#97;&#118;&#101;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>Then the user list of tenant A shows <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#100;&#97;&#118;&#101;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#100;&#97;&#118;&#101;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> and the list of tenant B does not</li>
+</ul>
+<h3 id="qa-005-list-shows-own-tenant-users-only-ordered-by-email">QA-005 List shows own tenant users only, ordered by email<a class="headerlink" href="#qa-005-list-shows-own-tenant-users-only-ordered-by-email" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 2, T2</li>
+<li>Type: functional</li>
+<li>Given tenant A has admin1, admin2, bob and tenant B has <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> and <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>When admin1 opens the users page</li>
+<li>Then the page shows <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#49;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a>, <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#50;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#50;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a>, <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> in that order and 0 tenant B rows</li>
+</ul>
+<h3 id="qa-006-list-never-shows-hash-or-session-version">QA-006 List never shows hash or session version<a class="headerlink" href="#qa-006-list-never-shows-hash-or-session-version" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode (never show password), T2</li>
+<li>Type: security</li>
+<li>Given tenant A has 3 users</li>
+<li>When admin1 views the list</li>
+<li>Then no row shows a password, a hash or a session version</li>
+</ul>
+<h3 id="qa-007-duplicate-email-in-own-tenant">QA-007 Duplicate email in own tenant<a class="headerlink" href="#qa-007-duplicate-email-in-own-tenant" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 1, T2, T7</li>
+<li>Type: edge</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> exists in tenant A</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> with password "correct-horse-12"</li>
+<li>Then the page shows "Cannot create this user." and the list still holds one <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+</ul>
+<h3 id="qa-008-duplicate-email-in-another-tenant">QA-008 Duplicate email in another tenant<a class="headerlink" href="#qa-008-duplicate-email-in-another-tenant" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 1, T2, T7</li>
+<li>Type: edge</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> exists in tenant B</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>Then the page shows exactly "Cannot create this user." and the text is identical to the own tenant duplicate</li>
+</ul>
+<h3 id="qa-009-duplicate-email-differs-only-by-case-and-spaces">QA-009 Duplicate email differs only by case and spaces<a class="headerlink" href="#qa-009-duplicate-email-differs-only-by-case-and-spaces" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 2, T4</li>
+<li>Type: edge</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> exists</li>
+<li>When admin1 submits "  <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#66;&#79;&#66;&#64;&#65;&#46;&#69;&#120;&#97;&#109;&#112;&#108;&#101;">&#66;&#79;&#66;&#64;&#65;&#46;&#69;&#120;&#97;&#109;&#112;&#108;&#101;</a> " as the email</li>
+<li>Then the page shows "Cannot create this user." and no second row exists</li>
+</ul>
+<h3 id="qa-010-email-is-trimmed-and-lowercased">QA-010 Email is trimmed and lowercased<a class="headerlink" href="#qa-010-email-is-trimmed-and-lowercased" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 2, T4</li>
+<li>Type: functional</li>
+<li>Given no user <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#102;&#114;&#97;&#110;&#107;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#102;&#114;&#97;&#110;&#107;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> exists</li>
+<li>When admin1 creates a user with email "  <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#70;&#114;&#97;&#110;&#107;&#64;&#65;&#46;&#69;&#120;&#97;&#109;&#112;&#108;&#101;">&#70;&#114;&#97;&#110;&#107;&#64;&#65;&#46;&#69;&#120;&#97;&#109;&#112;&#108;&#101;</a> "</li>
+<li>Then the list shows <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#102;&#114;&#97;&#110;&#107;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#102;&#114;&#97;&#110;&#107;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+</ul>
+<h3 id="qa-011-blank-email-refused">QA-011 Blank email refused<a class="headerlink" href="#qa-011-blank-email-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 2, T4</li>
+<li>Type: failure</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 submits an email of 3 spaces</li>
+<li>Then the page shows a clear input error and no user is created</li>
+</ul>
+<h3 id="qa-012-malformed-email-refused">QA-012 Malformed email refused<a class="headerlink" href="#qa-012-malformed-email-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 2, T4</li>
+<li>Type: failure</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 submits "no-at-sign.example" and then "a@<a class="magiclink magiclink-github magiclink-mention" href="https://github.com/b" title="GitHub User: b">@b</a>.example"</li>
+<li>Then both attempts show an input error and create 0 users</li>
+</ul>
+<h3 id="qa-013-email-length-limit">QA-013 Email length limit<a class="headerlink" href="#qa-013-email-length-limit" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (email max 256), T4</li>
+<li>Type: edge</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 submits an email of 257 characters, then one of exactly 256 characters</li>
+<li>Then the 257 character email is refused and the 256 character email is created</li>
+</ul>
+<h3 id="qa-014-name-length-limit">QA-014 Name length limit<a class="headerlink" href="#qa-014-name-length-limit" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (name max 256), T4</li>
+<li>Type: edge</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 submits a name of 257 characters, then one of 256 characters</li>
+<li>Then the 257 character name is refused and the 256 character name is created</li>
+</ul>
+<h3 id="qa-015-password-shorter-than-12-characters">QA-015 Password shorter than 12 characters<a class="headerlink" href="#qa-015-password-shorter-than-12-characters" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (password), T4</li>
+<li>Type: failure</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 creates a user with password "short-pw-11" (11 characters)</li>
+<li>Then the page shows an input error and no user is created</li>
+</ul>
+<h3 id="qa-016-password-of-exactly-12-characters">QA-016 Password of exactly 12 characters<a class="headerlink" href="#qa-016-password-of-exactly-12-characters" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (password), T4</li>
+<li>Type: edge</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#103;&#114;&#97;&#99;&#101;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#103;&#114;&#97;&#99;&#101;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> with password "abcdefghijkl"</li>
+<li>Then the user is created and logs in with that password</li>
+</ul>
+<h3 id="qa-017-password-of-72-bytes-and-73-bytes">QA-017 Password of 72 bytes and 73 bytes<a class="headerlink" href="#qa-017-password-of-72-bytes-and-73-bytes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (72 UTF-8 bytes), T4</li>
+<li>Type: edge</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 submits a 72 byte ASCII password, then a 73 byte ASCII password</li>
+<li>Then the 72 byte password is accepted and the 73 byte password is refused</li>
+</ul>
+<h3 id="qa-018-multibyte-password-over-72-bytes">QA-018 Multibyte password over 72 bytes<a class="headerlink" href="#qa-018-multibyte-password-over-72-bytes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (UTF-8 bytes), T4</li>
+<li>Type: edge</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 submits a password of 37 characters "ł" (74 bytes)</li>
+<li>Then the password is refused although it has fewer than 72 characters</li>
+</ul>
+<h3 id="qa-019-role-outside-the-valid-set-refused">QA-019 Role outside the valid set refused<a class="headerlink" href="#qa-019-role-outside-the-valid-set-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 3, T4</li>
+<li>Type: failure</li>
+<li>Given admin1 is logged in</li>
+<li>When a create call arrives with role "superadmin"</li>
+<li>Then it is refused and no user is created</li>
+</ul>
+<h3 id="qa-020-admin-creates-an-admin">QA-020 Admin creates an admin<a class="headerlink" href="#qa-020-admin-creates-an-admin" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (both roles), T4</li>
+<li>Type: functional</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#104;&#101;&#110;&#114;&#121;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#104;&#101;&#110;&#114;&#121;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> with role admin</li>
+<li>Then henry logs in and sees the users page</li>
+</ul>
+<h3 id="qa-021-deactivate-is-idempotent">QA-021 Deactivate is idempotent<a class="headerlink" href="#qa-021-deactivate-is-idempotent" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 4, T3</li>
+<li>Type: edge</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> is inactive and has session version 5</li>
+<li>When admin1 deactivates bob again</li>
+<li>Then no error shows and bob's session version stays 5</li>
+</ul>
+<h3 id="qa-022-deactivate-an-id-from-another-tenant">QA-022 Deactivate an id from another tenant<a class="headerlink" href="#qa-022-deactivate-an-id-from-another-tenant" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 5, T3</li>
+<li>Type: security</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#101;&#118;&#101;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> has a known id in tenant B</li>
+<li>When admin1 deactivates that id</li>
+<li>Then the result equals the result for a missing row and eve stays active</li>
+</ul>
+<h3 id="qa-023-deactivate-an-unknown-id">QA-023 Deactivate an unknown id<a class="headerlink" href="#qa-023-deactivate-an-unknown-id" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 5, T3</li>
+<li>Type: failure</li>
+<li>Given no user has id 00000000-0000-4000-8000-000000000000</li>
+<li>When admin1 deactivates that id</li>
+<li>Then the page shows a not found message and no row changes</li>
+</ul>
+<h3 id="qa-024-self-deactivation-refused">QA-024 Self-deactivation refused<a class="headerlink" href="#qa-024-self-deactivation-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (self), T3</li>
+<li>Type: failure</li>
+<li>Given admin1 and admin2 are active admins</li>
+<li>When admin1 deactivates admin1</li>
+<li>Then the call is refused and admin1 stays active</li>
+</ul>
+<h3 id="qa-025-last-active-admin-cannot-be-deactivated">QA-025 Last active admin cannot be deactivated<a class="headerlink" href="#qa-025-last-active-admin-cannot-be-deactivated" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (last admin), T3</li>
+<li>Type: failure</li>
+<li>Given tenant A has exactly 2 active admins, admin1 and admin2, in two separate DB sessions</li>
+<li>When admin1 deactivates admin2 and admin2 deactivates admin1 at the same time</li>
+<li>Then exactly one call succeeds, the other raises LastAdminError, and exactly 1 admin stays active</li>
+<li>Note: a single admin that deactivates itself gets SelfDeactivationError, because self is checked first. LastAdminError is reachable by the race above, or by a store-level call whose actor id is not an admin of the tenant.</li>
+</ul>
+<h3 id="qa-026-deactivating-one-of-two-admins-succeeds">QA-026 Deactivating one of two admins succeeds<a class="headerlink" href="#qa-026-deactivating-one-of-two-admins-succeeds" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (last admin), T3</li>
+<li>Type: functional</li>
+<li>Given tenant A has exactly 2 active admins, admin1 and admin2</li>
+<li>When admin1 deactivates admin2</li>
+<li>Then admin2 is inactive and admin1 remains the single active admin</li>
+</ul>
+<h3 id="qa-027-self-check-comes-before-last-admin-check">QA-027 Self check comes before last-admin check<a class="headerlink" href="#qa-027-self-check-comes-before-last-admin-check" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (self before last admin), T3</li>
+<li>Type: edge</li>
+<li>Given admin1 is the only active admin of tenant A</li>
+<li>When admin1 deactivates admin1</li>
+<li>Then the refusal is the self-deactivation error, not the last admin error</li>
+</ul>
+<h3 id="qa-028-concurrent-deactivation-of-the-last-two-admins">QA-028 Concurrent deactivation of the last two admins<a class="headerlink" href="#qa-028-concurrent-deactivation-of-the-last-two-admins" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 6, T3</li>
+<li>Type: edge</li>
+<li>Given tenant A has exactly 2 active admins, admin1 and admin2, in two sessions</li>
+<li>When admin1 deactivates admin2 and admin2 deactivates admin1 at the same time</li>
+<li>Then exactly 1 admin stays active and no deadlock error reaches the admin</li>
+</ul>
+<h3 id="qa-029-role-user-opens-the-page-url-directly">QA-029 Role user opens the page URL directly<a class="headerlink" href="#qa-029-role-user-opens-the-page-url-directly" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 7, T7</li>
+<li>Type: security</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> (role user) is logged in</li>
+<li>When bob opens the users page URL</li>
+<li>Then the page shows "Admin role required." and loads 0 user rows</li>
+</ul>
+<h3 id="qa-030-role-user-calls-create-at-service-level">QA-030 Role user calls create at service level<a class="headerlink" href="#qa-030-role-user-calls-create-at-service-level" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 3, T4, T6</li>
+<li>Type: security</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> (role user) is the current principal in tenant A</li>
+<li>When bob calls create for <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#122;&#101;&#100;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#122;&#101;&#100;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>Then the call is refused and 0 users are created</li>
+</ul>
+<h3 id="qa-031-role-user-calls-deactivate-at-service-level">QA-031 Role user calls deactivate at service level<a class="headerlink" href="#qa-031-role-user-calls-deactivate-at-service-level" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 3, T4, T6</li>
+<li>Type: security</li>
+<li>Given bob is the current principal and admin2 is active</li>
+<li>When bob calls deactivate for admin2</li>
+<li>Then the call is refused and admin2 stays active</li>
+</ul>
+<h3 id="qa-032-demoted-or-deactivated-admin-loses-the-page">QA-032 Demoted or deactivated admin loses the page<a class="headerlink" href="#qa-032-demoted-or-deactivated-admin-loses-the-page" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 8, T7</li>
+<li>Type: security</li>
+<li>Given admin2 is logged in and admin1 then deactivates admin2</li>
+<li>When admin2 sends the next request to the users page</li>
+<li>Then admin2 gets no page and no data</li>
+</ul>
+<h3 id="qa-033-admin-principal-not-found-in-tenant-refused">QA-033 Admin principal not found in tenant refused<a class="headerlink" href="#qa-033-admin-principal-not-found-in-tenant-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (actor row check), T4</li>
+<li>Type: security</li>
+<li>Given a principal with admin role and email <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#103;&#104;&#111;&#115;&#116;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#103;&#104;&#111;&#115;&#116;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> that has no row in tenant A</li>
+<li>When it calls create</li>
+<li>Then the call is refused and 0 users are created</li>
+</ul>
+<h3 id="qa-034-admin-of-tenant-b-cannot-act-on-tenant-a">QA-034 Admin of tenant B cannot act on tenant A<a class="headerlink" href="#qa-034-admin-of-tenant-b-cannot-act-on-tenant-a" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 2, T2, T3</li>
+<li>Type: security</li>
+<li>Given <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> is logged in to tenant B</li>
+<li>When <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#97;&#100;&#109;&#105;&#110;&#64;&#98;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> deactivates the id of <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#98;&#111;&#98;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>Then the result is not found and bob stays active</li>
+</ul>
+<h3 id="qa-035-no-tenant-set-at-service-level">QA-035 No tenant set at service level<a class="headerlink" href="#qa-035-no-tenant-set-at-service-level" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (empty tenant), T4</li>
+<li>Type: security</li>
+<li>Given an admin principal with no tenant set</li>
+<li>When it calls create, list and deactivate</li>
+<li>Then each call is refused and no SQL changes any row</li>
+</ul>
+<h3 id="qa-036-leak-test-with-no-tenant-at-store-level">QA-036 Leak test with no tenant at store level<a class="headerlink" href="#qa-036-leak-test-with-no-tenant-at-store-level" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 2, T2, T3</li>
+<li>Type: security</li>
+<li>Given tenants A and B hold 5 users in total and no tenant is set</li>
+<li>When list, insert and deactivate run at store level</li>
+<li>Then list returns 0 rows, insert raises an error and deactivate changes 0 rows</li>
+</ul>
+<h3 id="qa-037-leak-test-with-tenant-set">QA-037 Leak test with tenant set<a class="headerlink" href="#qa-037-leak-test-with-tenant-set" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 2, T2</li>
+<li>Type: security</li>
+<li>Given tenant A is set and tenant B holds 2 users</li>
+<li>When list runs and insert runs</li>
+<li>Then 0 tenant B rows are read and the new row has tenant A</li>
+</ul>
+<h3 id="qa-038-db-error-on-create-is-generic-and-the-outcome-may-be-unknown">QA-038 DB error on create is generic and the outcome may be unknown<a class="headerlink" href="#qa-038-db-error-on-create-is-generic-and-the-outcome-may-be-unknown" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 1, T7</li>
+<li>Type: failure</li>
+<li>Given the database raises a connection error during create</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#105;&#118;&#97;&#110;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#105;&#118;&#97;&#110;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>Then the page shows a generic error without a stack trace. When the rollback is confirmed, ivan does not exist</li>
+<li>And the message says the action may have succeeded and tells the admin to check the user list. If the commit happened (the connection failed after the commit), a retry gives the duplicate message, not a second user. If the rollback happened, a retry creates ivan</li>
+</ul>
+<h3 id="qa-039-db-error-on-deactivate-is-generic-and-the-outcome-may-be-unknown">QA-039 DB error on deactivate is generic and the outcome may be unknown<a class="headerlink" href="#qa-039-db-error-on-deactivate-is-generic-and-the-outcome-may-be-unknown" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 1, T3</li>
+<li>Type: failure</li>
+<li>Given the database fails during deactivation of bob</li>
+<li>When admin1 deactivates bob</li>
+<li>Then the page shows a generic error, says the action may have succeeded and tells the admin to check the user list. When the rollback is confirmed, bob stays active. If the commit happened, a retry is an idempotent no-op. If the rollback happened, a retry deactivates bob</li>
+</ul>
+<h3 id="qa-040-non-duplicate-integrity-error-is-not-shown-as-duplicate">QA-040 Non-duplicate integrity error is not shown as duplicate<a class="headerlink" href="#qa-040-non-duplicate-integrity-error-is-not-shown-as-duplicate" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 1, T2</li>
+<li>Type: failure</li>
+<li>Given a database constraint other than the unique email fails on create</li>
+<li>When admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#106;&#117;&#100;&#121;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#106;&#117;&#100;&#121;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a></li>
+<li>Then the page shows the generic error, not "Cannot create this user."</li>
+</ul>
+<h3 id="qa-041-logs-hold-no-password-or-hash">QA-041 Logs hold no password or hash<a class="headerlink" href="#qa-041-logs-hold-no-password-or-hash" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 2, T4</li>
+<li>Type: security</li>
+<li>Given logs are captured and admin1 creates <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#107;&#105;&#109;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#107;&#105;&#109;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> with password "Sup3r-secret-pw!"</li>
+<li>When create succeeds and then fails on a duplicate</li>
+<li>Then the captured logs hold neither "Sup3r-secret-pw!" nor any bcrypt hash starting with "$2"</li>
+</ul>
+<h3 id="qa-042-audit-event-on-create-and-deactivate">QA-042 Audit event on create and deactivate<a class="headerlink" href="#qa-042-audit-event-on-create-and-deactivate" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 3, T4</li>
+<li>Type: functional</li>
+<li>Given logs are captured</li>
+<li>When admin1 deactivates bob</li>
+<li>Then one audit event holds admin1's id, bob's id, action deactivate and a changed flag of true</li>
+</ul>
+<h3 id="qa-043-audit-event-on-idempotent-deactivate">QA-043 Audit event on idempotent deactivate<a class="headerlink" href="#qa-043-audit-event-on-idempotent-deactivate" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 3, T4</li>
+<li>Type: edge</li>
+<li>Given bob is already inactive and logs are captured</li>
+<li>When admin1 deactivates bob</li>
+<li>Then the audit event shows a changed flag of false</li>
+</ul>
+<h3 id="qa-044-login-lookup-down-keeps-login-behaviour">QA-044 Login lookup down keeps login behaviour<a class="headerlink" href="#qa-044-login-lookup-down-keeps-login-behaviour" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 4</li>
+<li>Type: failure</li>
+<li>Given the redis or login lookup is down</li>
+<li>When any user logs in</li>
+<li>Then the login behaviour equals the behaviour before this change</li>
+</ul>
+<h3 id="qa-045-invalid-input-shows-no-stack-trace">QA-045 Invalid input shows no stack trace<a class="headerlink" href="#qa-045-invalid-input-shows-no-stack-trace" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode 5, T7</li>
+<li>Type: failure</li>
+<li>Given admin1 is logged in</li>
+<li>When admin1 submits every invalid input from QA-011 to QA-019</li>
+<li>Then each time the page shows a fixed message and no stack trace</li>
+</ul>
+<h3 id="qa-046-page-action-time">QA-046 Page action time<a class="headerlink" href="#qa-046-page-action-time" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 6, T6</li>
+<li>Type: performance</li>
+<li>Given local Postgres holds tenant A with 100 users</li>
+<li>When admin1 creates a user, lists users and deactivates a user</li>
+<li>Then each action returns in under 1 second</li>
+</ul>
+<h3 id="qa-047-repeated-create-submit">QA-047 Repeated create submit<a class="headerlink" href="#qa-047-repeated-create-submit" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 1, T7</li>
+<li>Type: edge</li>
+<li>Given admin1 submits the form for <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#108;&#101;&#110;&#97;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;">&#108;&#101;&#110;&#97;&#64;&#97;&#46;&#101;&#120;&#97;&#109;&#112;&#108;&#101;</a> and the first call succeeded</li>
+<li>When admin1 submits the same form again</li>
+<li>Then the page shows "Cannot create this user." and one lena exists</li>
+</ul>
+<h3 id="qa-048-privilege-escalation-refused">QA-048 Privilege escalation refused<a class="headerlink" href="#qa-048-privilege-escalation-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 4, T6</li>
+<li>Type: security</li>
+<li>Given bob (role user) tries to create an admin account for himself</li>
+<li>When the call runs at service level</li>
+<li>Then it is refused and bob stays role user</li>
+</ul>
+<h3 id="qa-049-port-and-store-stay-in-step">QA-049 Port and store stay in step<a class="headerlink" href="#qa-049-port-and-store-stay-in-step" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 4, T5</li>
+<li>Type: functional</li>
+<li>Given the user repository contract has 4 methods</li>
+<li>When the conformance test compares the real store with the contract</li>
+<li>Then the 4 method names and parameters match</li>
+</ul>
+<h3 id="qa-050-coverage-and-mutation-gates">QA-050 Coverage and mutation gates<a class="headerlink" href="#qa-050-coverage-and-mutation-gates" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric 5, T8</li>
+<li>Type: functional</li>
+<li>Given all new code is in place</li>
+<li>When the repo coverage and mutation gates run on the user service code</li>
+<li>Then both gates pass at the thresholds in CONTRIBUTING.md</li>
+</ul>
+<h3 id="qa-051-seed-script-still-creates-users">QA-051 Seed script still creates users<a class="headerlink" href="#qa-051-seed-script-still-creates-users" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (create_user signature kept)</li>
+<li>Type: functional</li>
+<li>Given an empty database</li>
+<li>When the seed script runs</li>
+<li>Then it creates its users with the same fields as before</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 &ndash;2026 Yevhen D.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,115 @@
+{
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Add RequestPrincipal module and exports",
+      "size": "S",
+      "depends_on": [],
+      "done_when": ".venv/bin/pytest tests/unit/core/security/test_principal.py passes (set/get/reset, principal_context restore, require_admin_principal raises PrincipalRequiredError for None, non-admin, blank email, returns stripped email)",
+      "files": [
+        "src/core/security/principal.py",
+        "src/core/security/__init__.py",
+        "tests/unit/core/security/test_principal.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T2",
+      "title": "Alembic revision: revoke UPDATE, DELETE, TRUNCATE on rejected_document from lawbyai_app",
+      "size": "S",
+      "depends_on": [],
+      "done_when": "New revision has down_revision b7e2d41c9a30, lock_timeout 5s and retention docstring; .venv/bin/alembic heads shows one head",
+      "files": [
+        "migrations/versions/"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T3",
+      "title": "PostgreSQLStore.reject(document_id) uses require_admin_principal",
+      "size": "S",
+      "depends_on": [
+        "T1"
+      ],
+      "done_when": "pyright is clean and reject has no admin parameter; .venv/bin/pytest -m 'not integration' -k reject passes",
+      "files": [
+        "src/plugins/relational_db/postgres.py",
+        "tests/unit/plugins/test_postgres_reject.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T4",
+      "title": "Auth layer sets and resets principal, with tests",
+      "size": "S",
+      "depends_on": [
+        "T1"
+      ],
+      "done_when": ".venv/bin/pytest tests/unit/ui/test_auth_principal.py passes: require_auth sets principal, sign-out and logout_button clear it",
+      "files": [
+        "src/ui/components/auth.py",
+        "tests/unit/ui/test_auth_principal.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T5",
+      "title": "Owner-engine cleanup fixtures in 3 fetch integration tests (F1)",
+      "size": "S",
+      "depends_on": [
+        "T1",
+        "T3",
+        "T2"
+      ],
+      "done_when": "Docker suite: test_fetch_rejection.py, test_fetch_worker_pool.py and test_fetch_task_integration.py pass on the head schema; cleanup uses postgres_owner_url",
+      "files": [
+        "tests/integration/test_fetch_rejection.py",
+        "tests/integration/test_fetch_worker_pool.py",
+        "tests/integration/test_fetch_task_integration.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T6",
+      "title": "Update test_reject_document.py: owner cleanup, principal_context in 12 calls and threads, no-actor/blank/non-admin cases, actor equals principal email",
+      "size": "M",
+      "depends_on": [
+        "T3",
+        "T2"
+      ],
+      "done_when": "Docker suite: tests/integration/test_reject_document.py passes, incl. no-principal, blank email, spaces and non-admin each raising with 0 audit rows, and the actor-equals-principal test",
+      "files": [
+        "tests/integration/test_reject_document.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T7",
+      "title": "Privilege, schema-guard and migration round-trip integration tests",
+      "size": "M",
+      "depends_on": [
+        "T2"
+      ],
+      "done_when": "Docker suite: tests/integration/test_rejected_document_privileges.py passes: app role gets 42501 for UPDATE/DELETE/TRUNCATE, INSERT/SELECT work, has_table_privilege and has_any_column_privilege false, PUBLIC none, owner upgrade-downgrade-upgrade ok, after downgrade UPDATE/DELETE true and TRUNCATE false",
+      "files": [
+        "tests/integration/test_rejected_document_privileges.py"
+      ],
+      "agent": "python-lead"
+    },
+    {
+      "id": "T8",
+      "title": "Quality gate",
+      "size": "S",
+      "depends_on": [
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7"
+      ],
+      "done_when": "ruff check, ruff format --check, pyright, pytest -m 'not integration' and the Docker test suite pass; diff-cover >= 90% on changed lines",
+      "files": [],
+      "agent": "python-lead"
+    }
+  ]
+}

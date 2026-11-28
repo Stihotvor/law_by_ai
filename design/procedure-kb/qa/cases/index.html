@@ -1,0 +1,3002 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered legal document processing, retrieval, and analysis platform.">
+      
+      
+        <meta name="author" content="Yevhen D.">
+      
+      
+        <link rel="canonical" href="https://stihotvor.github.io/law_by_ai/design/procedure-kb/qa/cases/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>QA cases: procedure-kb - Law by AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#qa-cases-procedure-kb" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="Law by AI" class="md-header__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Law by AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              QA cases: procedure-kb
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../intention/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Intention
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../migrations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../operations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Operations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../adr/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="Law by AI" class="md-nav__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    Law by AI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../intention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../migrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0001-plugin-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 - Plugin Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0002-graph-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 - Graph Database
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0003-multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 - Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0004-auth-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 - Auth & RBAC
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0005-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 - Observability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0006-celery-reliability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 - Celery Reliability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0007-document-diffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 - Document Diffs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0008-mvp-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 - MVP Scope
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0009-model-evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 - Model Evals
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0010-health-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 - Health Checks
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0011-sla-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 - SLA & Budget
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0012-license-contribution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 - License & Contribution Model
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0013-streamlit-authenticator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013 - Streamlit Authenticator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0014-hardcoded-postgresql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014 - Hardcoded PostgreSQL
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0017-object-store-seaweedfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017 - Object Store SeaweedFS
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#qa-001-empty-source_url-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-001 Empty source_url is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-002-missing-last_checked-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-002 Missing last_checked is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-003-invalid-date-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-003 Invalid date is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-004-future-date-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-004 Future date is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-005-todays-date-is-accepted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-005 Today's date is accepted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-006-missing-verify-line-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-006 Missing verify line is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-007-blank-verify-line-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-007 Blank verify line is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-008-empty-step-text-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-008 Empty step text is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-009-zero-steps-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-009 Zero steps is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-010-http-source_url-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-010 http source_url is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-011-ftp-source_url-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-011 ftp source_url is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-012-url-with-credentials-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-012 URL with credentials is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-013-malformed-yaml-names-the-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-013 Malformed YAML names the file
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-014-unknown-key-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-014 Unknown key is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-015-unknown-key-inside-a-step-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-015 Unknown key inside a step is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-016-bad-slug-in-yaml-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-016 Bad slug in YAML is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-017-duplicate-step-key-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-017 Duplicate step key is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-018-blank-title-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-018 Blank title is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-019-step-key-not-kebab-case-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-019 Step key not kebab-case is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-020-empty-yaml-text-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-020 Empty YAML text is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-021-failed-import-keeps-old-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-021 Failed import keeps old data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-022-database-failure-mid-import-rolls-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-022 Database failure mid-import rolls back
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-023-first-import-is-revision-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-023 First import is revision 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-024-changed-content-adds-revision-2-and-replaces-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-024 Changed content adds revision 2 and replaces steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-025-identical-content-adds-no-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-025 Identical content adds no revision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-026-identical-content-by-another-admin-adds-no-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-026 Identical content by another admin adds no revision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-027-identical-content-keeps-updated_at" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-027 Identical content keeps updated_at
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-028-whitespace-only-yaml-change-does-not-add-a-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-028 Whitespace-only YAML change does not add a revision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-029-change-of-one-date-adds-a-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-029 Change of one date adds a revision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-030-non-admin-import-is-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-030 Non-admin import is refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-031-caller-with-no-principal-is-refused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-031 Caller with no principal is refused
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-032-non-admin-with-invalid-yaml-gets-the-refusal-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-032 Non-admin with invalid YAML gets the refusal first
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-033-non-admin-cannot-add-a-revision-to-an-existing-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-033 Non-admin cannot add a revision to an existing procedure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-034-actor-comes-from-the-principal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-034 Actor comes from the principal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-035-app-role-cannot-update-a-revision-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-035 App role cannot UPDATE a revision row
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-036-app-role-cannot-delete-a-revision-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-036 App role cannot DELETE a revision row
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-037-app-role-cannot-truncate-the-revision-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-037 App role cannot TRUNCATE the revision table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-038-app-role-cannot-delete-a-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-038 App role cannot DELETE a procedure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-039-app-role-can-insert-and-select-revisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-039 App role can INSERT and SELECT revisions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-040-app-role-can-replace-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-040 App role can replace steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-041-deleting-a-procedure-with-revisions-is-restricted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-041 Deleting a procedure with revisions is restricted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-042-deleting-a-procedure-without-revisions-cascades-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-042 Deleting a procedure without revisions cascades steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-043-revision-row-with-empty-actor-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-043 Revision row with empty actor is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-044-revision-content-must-be-an-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-044 Revision content must be an object
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-045-duplicate-revision-number-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-045 Duplicate revision number is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-046-database-rejects-bad-slug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-046 Database rejects bad slug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-047-database-rejects-revision-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-047 Database rejects revision 0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-048-database-rejects-http-step-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-048 Database rejects http step URL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-049-database-rejects-negative-position-and-empty-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-049 Database rejects negative position and empty text
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-050-database-rejects-duplicate-step-key-and-position" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-050 Database rejects duplicate step key and position
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-051-database-rejects-blank-title-and-schema_version-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-051 Database rejects blank title and schema_version 0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-052-migration-upgrade-and-downgrade-on-empty-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-052 Migration upgrade and downgrade on empty history
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-053-downgrade-stops-when-history-exists" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-053 Downgrade stops when history exists
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-054-upgrade-is-not-blocked-forever-by-a-lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-054 Upgrade is not blocked forever by a lock
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-055-concurrent-imports-of-one-new-slug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-055 Concurrent imports of one new slug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-056-concurrent-imports-of-one-existing-slug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-056 Concurrent imports of one existing slug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-057-concurrent-imports-of-identical-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-057 Concurrent imports of identical content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-058-reader-sees-no-mixed-state-during-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-058 Reader sees no mixed state during import
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-059-find-existing-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-059 Find existing procedure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-060-unknown-slug-returns-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-060 Unknown slug returns not found
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-061-malformed-slug-returns-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-061 Malformed slug returns not found
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-062-empty-and-oversized-slug-return-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-062 Empty and oversized slug return not found
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-063-slug-with-trailing-hyphen-returns-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-063 Slug with trailing hyphen returns not found
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-064-list-is-sorted-by-slug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-064 List is sorted by slug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-065-list-on-empty-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-065 List on empty table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-066-read-after-caller-session-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-066 Read after caller session closed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-067-returned-procedure-cannot-be-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-067 Returned procedure cannot be changed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-068-stale-date-is-shown-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-068 Stale date is shown unchanged
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-069-store-error-has-no-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-069 Store error has no content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-070-step-schema-is-pinned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-070 Step schema is pinned
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-071-yaml-without-schema_version-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-071 YAML without schema_version is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-072-unsupported-schema_version-is-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-072 Unsupported schema_version is rejected
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-073-seed-loads-exactly-3-procedures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-073 Seed loads exactly 3 procedures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-074-seed-procedures-have-at-least-3-steps-with-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-074 Seed procedures have at least 3 steps with sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-075-seed-run-twice-adds-no-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-075 Seed run twice adds no revision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-076-seed-actor-is-systemseed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-076 Seed actor is system:seed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-077-seed-with-duplicate-slug-stops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-077 Seed with duplicate slug stops
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-078-seed-with-one-bad-file-writes-nothing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-078 Seed with one bad file writes nothing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-079-seed-edit-adds-a-revision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-079 Seed edit adds a revision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-080-seed-without-a-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-080 Seed without a database
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-081-seed-runs-as-the-app-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-081 Seed runs as the app role
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-082-seed-content-has-no-advice-wording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-082 Seed content has no advice wording
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-083-get_procedure-read-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-083 get_procedure read time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-084-list_procedures-read-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-084 list_procedures read time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-085-unknown-slug-read-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-085 Unknown slug read time
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-086-docs-state-run-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-086 Docs state run order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-087-owner-gate-in-pr-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-087 Owner gate in PR text
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-088-import-of-large-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-088 Import of large content
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-089-import-of-oversized-upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-089 Import of oversized upload
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="qa-cases-procedure-kb">QA cases: procedure-kb<a class="headerlink" href="#qa-cases-procedure-kb" title="Permanent link">&para;</a></h1>
+<p>Specs under <code>specs/</code> could not be listed (tool limits). Cases come from requirements, decision and tasks.</p>
+<h3 id="qa-001-empty-source_url-is-rejected">QA-001 Empty source_url is rejected<a class="headerlink" href="#qa-001-empty-source_url-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (empty source_url)</li>
+<li>Type: failure</li>
+<li>Given an admin and YAML "pesel-test" with step "register-at-office" whose source_url is ""</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names the upload and step "register-at-office", and the procedures table still has 0 rows</li>
+</ul>
+<h3 id="qa-002-missing-last_checked-is-rejected">QA-002 Missing last_checked is rejected<a class="headerlink" href="#qa-002-missing-last_checked-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (missing last_checked)</li>
+<li>Type: failure</li>
+<li>Given an admin and YAML "tax-id-test" with step "apply-online" that has no last_checked</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and nothing is stored</li>
+</ul>
+<h3 id="qa-003-invalid-date-is-rejected">QA-003 Invalid date is rejected<a class="headerlink" href="#qa-003-invalid-date-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases, tasks T1 (bad date)</li>
+<li>Type: failure</li>
+<li>Given an admin and YAML where step "apply-online" has last_checked "2026-13-45"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and nothing is stored</li>
+</ul>
+<h3 id="qa-004-future-date-is-rejected">QA-004 Future date is rejected<a class="headerlink" href="#qa-004-future-date-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (date in the future)</li>
+<li>Type: failure</li>
+<li>Given today is 2026-11-27 and YAML where step "apply-online" has last_checked "2026-11-28"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and nothing is stored</li>
+</ul>
+<h3 id="qa-005-todays-date-is-accepted">QA-005 Today's date is accepted<a class="headerlink" href="#qa-005-todays-date-is-accepted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (date boundary)</li>
+<li>Type: edge</li>
+<li>Given today is 2026-11-27 and a YAML step with last_checked "2026-11-27", https source_url, and a verify line</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import succeeds as revision 1</li>
+</ul>
+<h3 id="qa-006-missing-verify-line-is-rejected">QA-006 Missing verify line is rejected<a class="headerlink" href="#qa-006-missing-verify-line-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (no verify line)</li>
+<li>Type: failure</li>
+<li>Given YAML where step "apply-online" has no verify-with-office line</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and nothing is stored</li>
+</ul>
+<h3 id="qa-007-blank-verify-line-is-rejected">QA-007 Blank verify line is rejected<a class="headerlink" href="#qa-007-blank-verify-line-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (no verify line)</li>
+<li>Type: failure</li>
+<li>Given YAML where step "apply-online" has a verify line of "   " (3 spaces)</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and nothing is stored</li>
+</ul>
+<h3 id="qa-008-empty-step-text-is-rejected">QA-008 Empty step text is rejected<a class="headerlink" href="#qa-008-empty-step-text-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (step fields)</li>
+<li>Type: failure</li>
+<li>Given YAML where step "apply-online" has text ""</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and nothing is stored</li>
+</ul>
+<h3 id="qa-009-zero-steps-is-rejected">QA-009 Zero steps is rejected<a class="headerlink" href="#qa-009-zero-steps-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (zero steps)</li>
+<li>Type: failure</li>
+<li>Given YAML for slug "empty-proc" with title "Empty" and "steps: []"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with a validation error and nothing is stored</li>
+</ul>
+<h3 id="qa-010-http-source_url-is-rejected">QA-010 http source_url is rejected<a class="headerlink" href="#qa-010-http-source_url-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (scheme other than https)</li>
+<li>Type: failure</li>
+<li>Given YAML where step "apply-online" has source_url "<a href="http://example.gov.pl/pesel">http://example.gov.pl/pesel</a>"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and nothing is stored</li>
+</ul>
+<h3 id="qa-011-ftp-source_url-is-rejected">QA-011 ftp source_url is rejected<a class="headerlink" href="#qa-011-ftp-source_url-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (scheme other than https)</li>
+<li>Type: failure</li>
+<li>Given YAML where step "apply-online" has source_url "<a href="ftp://example.gov.pl/pesel">ftp://example.gov.pl/pesel</a>"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online"</li>
+</ul>
+<h3 id="qa-012-url-with-credentials-is-rejected">QA-012 URL with credentials is rejected<a class="headerlink" href="#qa-012-url-with-credentials-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (credentials in URL)</li>
+<li>Type: security</li>
+<li>Given YAML where step "apply-online" has source_url "<a href="https://user:secret@example.gov.pl/pesel">https://user:secret@example.gov.pl/pesel</a>"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online", and the error text does not contain "secret"</li>
+</ul>
+<h3 id="qa-013-malformed-yaml-names-the-file">QA-013 Malformed YAML names the file<a class="headerlink" href="#qa-013-malformed-yaml-names-the-file" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (malformed YAML)</li>
+<li>Type: failure</li>
+<li>Given a seed file "broken.yaml" with content "slug: [unclosed"</li>
+<li>When the seed loads the file</li>
+<li>Then loading fails with an error that names "broken.yaml"</li>
+</ul>
+<h3 id="qa-014-unknown-key-is-rejected">QA-014 Unknown key is rejected<a class="headerlink" href="#qa-014-unknown-key-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (unknown key)</li>
+<li>Type: failure</li>
+<li>Given a seed file "extra.yaml" with a valid procedure plus the top-level key "priority: 1"</li>
+<li>When the seed loads the file</li>
+<li>Then loading fails with an error that names "extra.yaml"</li>
+</ul>
+<h3 id="qa-015-unknown-key-inside-a-step-is-rejected">QA-015 Unknown key inside a step is rejected<a class="headerlink" href="#qa-015-unknown-key-inside-a-step-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (unknown key)</li>
+<li>Type: failure</li>
+<li>Given YAML where step "apply-online" has the extra key "cost: 17 PLN"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names step "apply-online"</li>
+</ul>
+<h3 id="qa-016-bad-slug-in-yaml-is-rejected">QA-016 Bad slug in YAML is rejected<a class="headerlink" href="#qa-016-bad-slug-in-yaml-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (slug rule)</li>
+<li>Type: failure</li>
+<li>Given YAML with slug "PESEL_Test" (upper case and underscore)</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with a validation error and nothing is stored</li>
+</ul>
+<h3 id="qa-017-duplicate-step-key-is-rejected">QA-017 Duplicate step key is rejected<a class="headerlink" href="#qa-017-duplicate-step-key-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (unique key)</li>
+<li>Type: failure</li>
+<li>Given YAML with two steps that both have key "apply-online"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with a validation error and nothing is stored</li>
+</ul>
+<h3 id="qa-018-blank-title-is-rejected">QA-018 Blank title is rejected<a class="headerlink" href="#qa-018-blank-title-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (title check)</li>
+<li>Type: failure</li>
+<li>Given YAML with slug "pesel-test" and title "  "</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with a validation error and nothing is stored</li>
+</ul>
+<h3 id="qa-019-step-key-not-kebab-case-is-rejected">QA-019 Step key not kebab-case is rejected<a class="headerlink" href="#qa-019-step-key-not-kebab-case-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (key rule)</li>
+<li>Type: failure</li>
+<li>Given YAML where a step has key "Apply Online"</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with an error that names that step</li>
+</ul>
+<h3 id="qa-020-empty-yaml-text-is-rejected">QA-020 Empty YAML text is rejected<a class="headerlink" href="#qa-020-empty-yaml-text-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (bad input)</li>
+<li>Type: failure</li>
+<li>Given an admin and an empty text ""</li>
+<li>When the admin imports it</li>
+<li>Then the import fails with a validation error and nothing is stored</li>
+</ul>
+<h3 id="qa-021-failed-import-keeps-old-data">QA-021 Failed import keeps old data<a class="headerlink" href="#qa-021-failed-import-keeps-old-data" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (validate before write, one transaction)</li>
+<li>Type: failure</li>
+<li>Given procedure "pesel" stored at revision 2 with 4 steps</li>
+<li>When an admin imports YAML for "pesel" with 3 valid steps and a 4<sup>th</sup> step with an empty source_url</li>
+<li>Then the import fails, "pesel" is still revision 2 with its 4 old steps, and the revision rows for "pesel" number 2</li>
+</ul>
+<h3 id="qa-022-database-failure-mid-import-rolls-back">QA-022 Database failure mid-import rolls back<a class="headerlink" href="#qa-022-database-failure-mid-import-rolls-back" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (one transaction), tasks T4</li>
+<li>Type: failure</li>
+<li>Given procedure "pesel" at revision 1 with 3 steps and a database that fails while the new steps are inserted</li>
+<li>When an admin imports changed content for "pesel"</li>
+<li>Then the caller gets a store error with no content in its message, "pesel" is still revision 1 with 3 old steps, and no revision 2 row exists</li>
+</ul>
+<h3 id="qa-023-first-import-is-revision-1">QA-023 First import is revision 1<a class="headerlink" href="#qa-023-first-import-is-revision-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metrics (one revision row per import)</li>
+<li>Type: functional</li>
+<li>Given an empty database and admin "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>When the admin imports valid YAML for slug "pesel" with 3 steps</li>
+<li>Then the result shows slug "pesel", revision 1, changed true, and one revision row exists with actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#100;&#109;&#105;&#110;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" and a creation time</li>
+</ul>
+<h3 id="qa-024-changed-content-adds-revision-2-and-replaces-steps">QA-024 Changed content adds revision 2 and replaces steps<a class="headerlink" href="#qa-024-changed-content-adds-revision-2-and-replaces-steps" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (existing slug), Success Metrics</li>
+<li>Type: functional</li>
+<li>Given "pesel" at revision 1 with 3 steps</li>
+<li>When an admin imports YAML for "pesel" with 4 steps and a new title "PESEL number"</li>
+<li>Then the result is revision 2 with changed true, get returns title "PESEL number" with exactly 4 steps, and 2 revision rows exist</li>
+</ul>
+<h3 id="qa-025-identical-content-adds-no-revision">QA-025 Identical content adds no revision<a class="headerlink" href="#qa-025-identical-content-adds-no-revision" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (identical content)</li>
+<li>Type: functional</li>
+<li>Given "pesel" at revision 1</li>
+<li>When an admin imports the exact same YAML again</li>
+<li>Then the result is revision 1 with changed false and only 1 revision row exists</li>
+</ul>
+<h3 id="qa-026-identical-content-by-another-admin-adds-no-revision">QA-026 Identical content by another admin adds no revision<a class="headerlink" href="#qa-026-identical-content-by-another-admin-adds-no-revision" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (actor does not count)</li>
+<li>Type: edge</li>
+<li>Given "pesel" at revision 1 imported by "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#97;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+<li>When admin "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#98;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" imports the same content</li>
+<li>Then the result is changed false and no revision row for "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#98;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#98;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" exists</li>
+</ul>
+<h3 id="qa-027-identical-content-keeps-updated_at">QA-027 Identical content keeps updated_at<a class="headerlink" href="#qa-027-identical-content-keeps-updated_at" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (import order step 2)</li>
+<li>Type: edge</li>
+<li>Given "pesel" at revision 1 with a known update time</li>
+<li>When an admin imports the same content</li>
+<li>Then the update time of "pesel" is unchanged</li>
+</ul>
+<h3 id="qa-028-whitespace-only-yaml-change-does-not-add-a-revision">QA-028 Whitespace-only YAML change does not add a revision<a class="headerlink" href="#qa-028-whitespace-only-yaml-change-does-not-add-a-revision" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (identical content)</li>
+<li>Type: edge</li>
+<li>Given "pesel" at revision 1</li>
+<li>When an admin imports the same data with different key order and added comments</li>
+<li>Then the result is changed false</li>
+</ul>
+<h3 id="qa-029-change-of-one-date-adds-a-revision">QA-029 Change of one date adds a revision<a class="headerlink" href="#qa-029-change-of-one-date-adds-a-revision" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (identical content)</li>
+<li>Type: edge</li>
+<li>Given "pesel" at revision 1 with step "apply-online" last_checked 2026-10-01</li>
+<li>When an admin imports the same content with last_checked 2026-11-01 for that step</li>
+<li>Then the result is revision 2 with changed true</li>
+</ul>
+<h3 id="qa-030-non-admin-import-is-refused">QA-030 Non-admin import is refused<a class="headerlink" href="#qa-030-non-admin-import-is-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (non-admin)</li>
+<li>Type: security</li>
+<li>Given a caller with role user, email "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#117;&#115;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#117;&#115;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>", and valid YAML for "pesel"</li>
+<li>When the caller imports the YAML</li>
+<li>Then a principal-required error is raised and the procedures table has 0 rows</li>
+</ul>
+<h3 id="qa-031-caller-with-no-principal-is-refused">QA-031 Caller with no principal is refused<a class="headerlink" href="#qa-031-caller-with-no-principal-is-refused" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (non-admin)</li>
+<li>Type: security</li>
+<li>Given no signed-in principal and valid YAML</li>
+<li>When the caller imports the YAML</li>
+<li>Then a principal-required error is raised and no database session is opened</li>
+</ul>
+<h3 id="qa-032-non-admin-with-invalid-yaml-gets-the-refusal-first">QA-032 Non-admin with invalid YAML gets the refusal first<a class="headerlink" href="#qa-032-non-admin-with-invalid-yaml-gets-the-refusal-first" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (non-admin), Decision (admin check first)</li>
+<li>Type: security</li>
+<li>Given a user-role caller and YAML with an empty source_url</li>
+<li>When the caller imports the YAML</li>
+<li>Then a principal-required error is raised, not a validation error</li>
+</ul>
+<h3 id="qa-033-non-admin-cannot-add-a-revision-to-an-existing-procedure">QA-033 Non-admin cannot add a revision to an existing procedure<a class="headerlink" href="#qa-033-non-admin-cannot-add-a-revision-to-an-existing-procedure" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (non-admin)</li>
+<li>Type: security</li>
+<li>Given "pesel" at revision 1 and a user-role caller with changed YAML</li>
+<li>When the caller imports it</li>
+<li>Then a principal-required error is raised and "pesel" is still revision 1</li>
+</ul>
+<h3 id="qa-034-actor-comes-from-the-principal">QA-034 Actor comes from the principal<a class="headerlink" href="#qa-034-actor-comes-from-the-principal" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (actor from principal)</li>
+<li>Type: functional</li>
+<li>Given admin "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#111;&#119;&#110;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#111;&#119;&#110;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>" signed in</li>
+<li>When the admin imports valid YAML</li>
+<li>Then the revision row has actor "<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#111;&#119;&#110;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;">&#111;&#119;&#110;&#101;&#114;&#64;&#101;&#120;&#97;&#109;&#112;&#108;&#101;&#46;&#99;&#111;&#109;</a>"</li>
+</ul>
+<h3 id="qa-035-app-role-cannot-update-a-revision-row">QA-035 App role cannot UPDATE a revision row<a class="headerlink" href="#qa-035-app-role-cannot-update-a-revision-row" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (history survives), Success Metrics (privilege test)</li>
+<li>Type: security</li>
+<li>Given the migrated database, one revision row for "pesel", and a connection as lawbyai_app</li>
+<li>When the connection runs UPDATE on the actor of that revision row</li>
+<li>Then the database returns permission denied and the row is unchanged</li>
+</ul>
+<h3 id="qa-036-app-role-cannot-delete-a-revision-row">QA-036 App role cannot DELETE a revision row<a class="headerlink" href="#qa-036-app-role-cannot-delete-a-revision-row" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (history survives)</li>
+<li>Type: security</li>
+<li>Given the same database and connection as lawbyai_app</li>
+<li>When the connection runs DELETE on that revision row</li>
+<li>Then the database returns permission denied and the row still exists</li>
+</ul>
+<h3 id="qa-037-app-role-cannot-truncate-the-revision-table">QA-037 App role cannot TRUNCATE the revision table<a class="headerlink" href="#qa-037-app-role-cannot-truncate-the-revision-table" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (TRUNCATE revoked)</li>
+<li>Type: security</li>
+<li>Given a connection as lawbyai_app</li>
+<li>When the connection runs TRUNCATE on the revision table</li>
+<li>Then the database returns permission denied</li>
+</ul>
+<h3 id="qa-038-app-role-cannot-delete-a-procedure">QA-038 App role cannot DELETE a procedure<a class="headerlink" href="#qa-038-app-role-cannot-delete-a-procedure" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (grants), tasks T3</li>
+<li>Type: security</li>
+<li>Given a connection as lawbyai_app and procedure "pesel"</li>
+<li>When the connection runs DELETE on "pesel"</li>
+<li>Then the database returns permission denied and "pesel" still exists</li>
+</ul>
+<h3 id="qa-039-app-role-can-insert-and-select-revisions">QA-039 App role can INSERT and SELECT revisions<a class="headerlink" href="#qa-039-app-role-can-insert-and-select-revisions" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (grants)</li>
+<li>Type: functional</li>
+<li>Given a connection as lawbyai_app</li>
+<li>When the connection inserts a revision row and reads it back</li>
+<li>Then both statements succeed</li>
+</ul>
+<h3 id="qa-040-app-role-can-replace-steps">QA-040 App role can replace steps<a class="headerlink" href="#qa-040-app-role-can-replace-steps" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (grants)</li>
+<li>Type: functional</li>
+<li>Given a connection as lawbyai_app and procedure "pesel" with 3 steps</li>
+<li>When the connection deletes the steps and inserts 4 new steps</li>
+<li>Then both succeed and 4 steps exist</li>
+</ul>
+<h3 id="qa-041-deleting-a-procedure-with-revisions-is-restricted">QA-041 Deleting a procedure with revisions is restricted<a class="headerlink" href="#qa-041-deleting-a-procedure-with-revisions-is-restricted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (RESTRICT cascade)</li>
+<li>Type: failure</li>
+<li>Given a database owner connection, "pesel" with 1 revision row</li>
+<li>When the owner runs DELETE on "pesel"</li>
+<li>Then the database refuses with a foreign key error and the revision row still exists</li>
+</ul>
+<h3 id="qa-042-deleting-a-procedure-without-revisions-cascades-steps">QA-042 Deleting a procedure without revisions cascades steps<a class="headerlink" href="#qa-042-deleting-a-procedure-without-revisions-cascades-steps" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (step FK cascade)</li>
+<li>Type: edge</li>
+<li>Given a database owner connection and a procedure with 3 steps and no revision row</li>
+<li>When the owner deletes the procedure</li>
+<li>Then the 3 steps are deleted</li>
+</ul>
+<h3 id="qa-043-revision-row-with-empty-actor-is-rejected">QA-043 Revision row with empty actor is rejected<a class="headerlink" href="#qa-043-revision-row-with-empty-actor-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (actor non-empty)</li>
+<li>Type: failure</li>
+<li>Given the migrated database</li>
+<li>When a revision row is inserted with actor ""</li>
+<li>Then the database rejects it with a CHECK error</li>
+</ul>
+<h3 id="qa-044-revision-content-must-be-an-object">QA-044 Revision content must be an object<a class="headerlink" href="#qa-044-revision-content-must-be-an-object" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (jsonb_typeof check)</li>
+<li>Type: failure</li>
+<li>Given the migrated database</li>
+<li>When a revision row is inserted with content <code>[1,2]</code></li>
+<li>Then the database rejects it with a CHECK error</li>
+</ul>
+<h3 id="qa-045-duplicate-revision-number-is-rejected">QA-045 Duplicate revision number is rejected<a class="headerlink" href="#qa-045-duplicate-revision-number-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (UNIQUE procedure_id, revision)</li>
+<li>Type: failure</li>
+<li>Given "pesel" with revision row 1</li>
+<li>When a second row with revision 1 is inserted for "pesel"</li>
+<li>Then the database rejects it with a unique error</li>
+</ul>
+<h3 id="qa-046-database-rejects-bad-slug">QA-046 Database rejects bad slug<a class="headerlink" href="#qa-046-database-rejects-bad-slug" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (slug CHECK)</li>
+<li>Type: failure</li>
+<li>Given the migrated database</li>
+<li>When a procedure with slug "Bad_Slug" is inserted</li>
+<li>Then the database rejects it with a CHECK error</li>
+</ul>
+<h3 id="qa-047-database-rejects-revision-0">QA-047 Database rejects revision 0<a class="headerlink" href="#qa-047-database-rejects-revision-0" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (revision &gt;= 1)</li>
+<li>Type: failure</li>
+<li>Given the migrated database</li>
+<li>When a procedure with revision 0 is inserted</li>
+<li>Then the database rejects it with a CHECK error</li>
+</ul>
+<h3 id="qa-048-database-rejects-http-step-url">QA-048 Database rejects http step URL<a class="headerlink" href="#qa-048-database-rejects-http-step-url" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (source_url LIKE https)</li>
+<li>Type: failure</li>
+<li>Given "pesel" and the migrated database</li>
+<li>When a step with source_url "<a href="http://example.gov.pl">http://example.gov.pl</a>" is inserted</li>
+<li>Then the database rejects it with a CHECK error</li>
+</ul>
+<h3 id="qa-049-database-rejects-negative-position-and-empty-text">QA-049 Database rejects negative position and empty text<a class="headerlink" href="#qa-049-database-rejects-negative-position-and-empty-text" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (step CHECKs)</li>
+<li>Type: failure</li>
+<li>Given "pesel" and the migrated database</li>
+<li>When a step with position -1 is inserted, and then a step with text "" is inserted</li>
+<li>Then the database rejects both with CHECK errors</li>
+</ul>
+<h3 id="qa-050-database-rejects-duplicate-step-key-and-position">QA-050 Database rejects duplicate step key and position<a class="headerlink" href="#qa-050-database-rejects-duplicate-step-key-and-position" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (step unique rules)</li>
+<li>Type: failure</li>
+<li>Given "pesel" with a step at position 0 and key "apply-online"</li>
+<li>When a second step with position 0, and then one with key "apply-online" at position 1, are inserted</li>
+<li>Then the database rejects both with unique errors</li>
+</ul>
+<h3 id="qa-051-database-rejects-blank-title-and-schema_version-0">QA-051 Database rejects blank title and schema_version 0<a class="headerlink" href="#qa-051-database-rejects-blank-title-and-schema_version-0" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (procedure CHECKs)</li>
+<li>Type: failure</li>
+<li>Given the migrated database</li>
+<li>When a procedure with title "  " is inserted, and then one with schema_version 0</li>
+<li>Then the database rejects both with CHECK errors</li>
+</ul>
+<h3 id="qa-052-migration-upgrade-and-downgrade-on-empty-history">QA-052 Migration upgrade and downgrade on empty history<a class="headerlink" href="#qa-052-migration-upgrade-and-downgrade-on-empty-history" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (Data), tasks T3</li>
+<li>Type: functional</li>
+<li>Given a database at head c4a91e7f2b58</li>
+<li>When the migration is upgraded and then downgraded</li>
+<li>Then the 3 tables exist after upgrade and are gone after downgrade</li>
+</ul>
+<h3 id="qa-053-downgrade-stops-when-history-exists">QA-053 Downgrade stops when history exists<a class="headerlink" href="#qa-053-downgrade-stops-when-history-exists" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (downgrade guard)</li>
+<li>Type: failure</li>
+<li>Given the migration applied and 1 revision row</li>
+<li>When the migration is downgraded</li>
+<li>Then the downgrade stops with an error and the revision row still exists</li>
+</ul>
+<h3 id="qa-054-upgrade-is-not-blocked-forever-by-a-lock">QA-054 Upgrade is not blocked forever by a lock<a class="headerlink" href="#qa-054-upgrade-is-not-blocked-forever-by-a-lock" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (lock_timeout 5s)</li>
+<li>Type: failure</li>
+<li>Given another session holds a lock on a table the migration touches for 30 seconds</li>
+<li>When the migration is upgraded</li>
+<li>Then it fails after about 5 seconds with a lock timeout error</li>
+</ul>
+<h3 id="qa-055-concurrent-imports-of-one-new-slug">QA-055 Concurrent imports of one new slug<a class="headerlink" href="#qa-055-concurrent-imports-of-one-new-slug" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (same slug), Failure Modes, tasks T4</li>
+<li>Type: edge</li>
+<li>Given an empty database and two admins who import different content for slug "pesel" at the same moment</li>
+<li>When both imports run</li>
+<li>Then the stored revisions are 1 and 2 with no duplicates, "pesel" is revision 2, and its steps match the content of revision 2</li>
+</ul>
+<h3 id="qa-056-concurrent-imports-of-one-existing-slug">QA-056 Concurrent imports of one existing slug<a class="headerlink" href="#qa-056-concurrent-imports-of-one-existing-slug" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (same slug), tasks T4</li>
+<li>Type: edge</li>
+<li>Given "pesel" at revision 1 and two admins who import two different changes at the same moment</li>
+<li>When both imports run</li>
+<li>Then revisions 2 and 3 exist once each and no import fails</li>
+</ul>
+<h3 id="qa-057-concurrent-imports-of-identical-content">QA-057 Concurrent imports of identical content<a class="headerlink" href="#qa-057-concurrent-imports-of-identical-content" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (same slug, identical content)</li>
+<li>Type: edge</li>
+<li>Given an empty database and two admins who import the same YAML for "pesel" at the same moment</li>
+<li>When both imports run</li>
+<li>Then exactly 1 revision row exists, and one result is changed true and one is changed false</li>
+</ul>
+<h3 id="qa-058-reader-sees-no-mixed-state-during-import">QA-058 Reader sees no mixed state during import<a class="headerlink" href="#qa-058-reader-sees-no-mixed-state-during-import" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (reads in one statement)</li>
+<li>Type: edge</li>
+<li>Given "pesel" at revision 1 with title "PESEL" and 3 steps, and an import that sets title "PESEL number" with 4 steps</li>
+<li>When get_procedure runs repeatedly 100 times while the import runs</li>
+<li>Then each result is either title "PESEL" with 3 steps or title "PESEL number" with 4 steps</li>
+</ul>
+<h3 id="qa-059-find-existing-procedure">QA-059 Find existing procedure<a class="headerlink" href="#qa-059-find-existing-procedure" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goals (find by slug)</li>
+<li>Type: functional</li>
+<li>Given "pesel" stored at revision 1 with 3 steps</li>
+<li>When get_procedure("pesel") is called</li>
+<li>Then it returns slug "pesel", revision 1, and 3 steps in position order, each with source_url, last_checked, and verify line</li>
+</ul>
+<h3 id="qa-060-unknown-slug-returns-not-found">QA-060 Unknown slug returns not found<a class="headerlink" href="#qa-060-unknown-slug-returns-not-found" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (unknown slug)</li>
+<li>Type: failure</li>
+<li>Given 3 stored procedures</li>
+<li>When get_procedure("no-such-procedure") is called</li>
+<li>Then it returns None and raises no KeyError</li>
+</ul>
+<h3 id="qa-061-malformed-slug-returns-not-found">QA-061 Malformed slug returns not found<a class="headerlink" href="#qa-061-malformed-slug-returns-not-found" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (malformed slug)</li>
+<li>Type: failure</li>
+<li>Given 3 stored procedures</li>
+<li>When get_procedure is called with "PESEL; DROP TABLE procedure"</li>
+<li>Then it returns None, and all 3 procedures still exist</li>
+</ul>
+<h3 id="qa-062-empty-and-oversized-slug-return-not-found">QA-062 Empty and oversized slug return not found<a class="headerlink" href="#qa-062-empty-and-oversized-slug-return-not-found" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (malformed slug)</li>
+<li>Type: failure</li>
+<li>Given 3 stored procedures</li>
+<li>When get_procedure is called with "" and then with a slug of 10000 "a" characters</li>
+<li>Then both return None</li>
+</ul>
+<h3 id="qa-063-slug-with-trailing-hyphen-returns-not-found">QA-063 Slug with trailing hyphen returns not found<a class="headerlink" href="#qa-063-slug-with-trailing-hyphen-returns-not-found" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (malformed slug)</li>
+<li>Type: edge</li>
+<li>Given 3 stored procedures</li>
+<li>When get_procedure("pesel-") is called</li>
+<li>Then it returns None</li>
+</ul>
+<h3 id="qa-064-list-is-sorted-by-slug">QA-064 List is sorted by slug<a class="headerlink" href="#qa-064-list-is-sorted-by-slug" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (list sorted)</li>
+<li>Type: functional</li>
+<li>Given procedures imported in the order "tax-id", "pesel", "residence-card"</li>
+<li>When list_procedures is called</li>
+<li>Then it returns slugs in the order "pesel", "residence-card", "tax-id", each with a title</li>
+</ul>
+<h3 id="qa-065-list-on-empty-table">QA-065 List on empty table<a class="headerlink" href="#qa-065-list-on-empty-table" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (empty table)</li>
+<li>Type: edge</li>
+<li>Given an empty procedure table</li>
+<li>When list_procedures is called</li>
+<li>Then it returns an empty list</li>
+</ul>
+<h3 id="qa-066-read-after-caller-session-closed">QA-066 Read after caller session closed<a class="headerlink" href="#qa-066-read-after-caller-session-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (frozen objects)</li>
+<li>Type: edge</li>
+<li>Given "pesel" stored</li>
+<li>When the caller reads steps of the returned procedure after the call ends</li>
+<li>Then the steps are available with no database error</li>
+</ul>
+<h3 id="qa-067-returned-procedure-cannot-be-changed">QA-067 Returned procedure cannot be changed<a class="headerlink" href="#qa-067-returned-procedure-cannot-be-changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (frozen models)</li>
+<li>Type: edge</li>
+<li>Given a procedure returned by get_procedure</li>
+<li>When the caller sets its title to "X"</li>
+<li>Then the assignment is refused</li>
+</ul>
+<h3 id="qa-068-stale-date-is-shown-unchanged">QA-068 Stale date is shown unchanged<a class="headerlink" href="#qa-068-stale-date-is-shown-unchanged" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (stale last_checked)</li>
+<li>Type: functional</li>
+<li>Given "pesel" with step "apply-online" last_checked 2020-01-01</li>
+<li>When get_procedure("pesel") is called in 2026</li>
+<li>Then the step shows last_checked 2020-01-01 with no hiding or change</li>
+</ul>
+<h3 id="qa-069-store-error-has-no-content">QA-069 Store error has no content<a class="headerlink" href="#qa-069-store-error-has-no-content" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (error rules)</li>
+<li>Type: security</li>
+<li>Given a database that is down and YAML with title "Secret title"</li>
+<li>When an admin imports the YAML</li>
+<li>Then a store error is raised whose message does not contain "Secret title" and whose cause is chained</li>
+</ul>
+<h3 id="qa-070-step-schema-is-pinned">QA-070 Step schema is pinned<a class="headerlink" href="#qa-070-step-schema-is-pinned" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (schema change), Success Metrics</li>
+<li>Type: functional</li>
+<li>Given the current step model</li>
+<li>When its field names and the schema_version are listed</li>
+<li>Then they equal key, text, source_url, last_checked, verify_with_office and schema_version 1</li>
+</ul>
+<h3 id="qa-071-yaml-without-schema_version-is-rejected">QA-071 YAML without schema_version is rejected<a class="headerlink" href="#qa-071-yaml-without-schema_version-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (schema version)</li>
+<li>Type: failure</li>
+<li>Given YAML with no schema_version field</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with a validation error</li>
+</ul>
+<h3 id="qa-072-unsupported-schema_version-is-rejected">QA-072 Unsupported schema_version is rejected<a class="headerlink" href="#qa-072-unsupported-schema_version-is-rejected" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (schema version)</li>
+<li>Type: failure</li>
+<li>Given YAML with schema_version 99</li>
+<li>When the admin imports the YAML</li>
+<li>Then the import fails with a validation error and nothing is stored</li>
+<li>OPEN: the supported version set is not stated in the requirements</li>
+</ul>
+<h3 id="qa-073-seed-loads-exactly-3-procedures">QA-073 Seed loads exactly 3 procedures<a class="headerlink" href="#qa-073-seed-loads-exactly-3-procedures" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metrics (3 of 3, 4 scenarios)</li>
+<li>Type: functional</li>
+<li>Given an empty migrated database</li>
+<li>When the seed runs</li>
+<li>Then list_procedures returns exactly 3 slugs for PESEL, residence card, and tax ID, and the seed directory holds exactly 3 files</li>
+</ul>
+<h3 id="qa-074-seed-procedures-have-at-least-3-steps-with-sources">QA-074 Seed procedures have at least 3 steps with sources<a class="headerlink" href="#qa-074-seed-procedures-have-at-least-3-steps-with-sources" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metrics (3 steps, source link)</li>
+<li>Type: functional</li>
+<li>Given the seeded database</li>
+<li>When each of the 3 procedures is read</li>
+<li>Then each has at least 3 steps and every step has an https source_url, a last_checked date, and a verify line</li>
+</ul>
+<h3 id="qa-075-seed-run-twice-adds-no-revision">QA-075 Seed run twice adds no revision<a class="headerlink" href="#qa-075-seed-run-twice-adds-no-revision" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metrics (second run)</li>
+<li>Type: functional</li>
+<li>Given a database seeded once with 3 revision rows</li>
+<li>When the seed runs a second time</li>
+<li>Then it exits with 0 errors and the revision rows still number 3</li>
+</ul>
+<h3 id="qa-076-seed-actor-is-systemseed">QA-076 Seed actor is system:seed<a class="headerlink" href="#qa-076-seed-actor-is-systemseed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (seed actor)</li>
+<li>Type: functional</li>
+<li>Given an empty migrated database</li>
+<li>When the seed runs</li>
+<li>Then each of the 3 revision rows has actor "system:seed"</li>
+</ul>
+<h3 id="qa-077-seed-with-duplicate-slug-stops">QA-077 Seed with duplicate slug stops<a class="headerlink" href="#qa-077-seed-with-duplicate-slug-stops" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (same slug in two files)</li>
+<li>Type: failure</li>
+<li>Given seed files "pesel.yaml" and "pesel-copy.yaml" with slug "pesel"</li>
+<li>When the seed runs</li>
+<li>Then it stops with an error that names both files, and nothing is written</li>
+</ul>
+<h3 id="qa-078-seed-with-one-bad-file-writes-nothing">QA-078 Seed with one bad file writes nothing<a class="headerlink" href="#qa-078-seed-with-one-bad-file-writes-nothing" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases, Failure Modes (bad data)</li>
+<li>Type: failure</li>
+<li>Given 3 seed files where "tax-id.yaml" has an empty source_url</li>
+<li>When the seed runs</li>
+<li>Then it fails with an error that names "tax-id.yaml" and the step, and the user sees that bad data was rejected</li>
+<li>OPEN: it is not stated whether valid files import before the bad file or nothing is imported</li>
+</ul>
+<h3 id="qa-079-seed-edit-adds-a-revision">QA-079 Seed edit adds a revision<a class="headerlink" href="#qa-079-seed-edit-adds-a-revision" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (existing slug)</li>
+<li>Type: functional</li>
+<li>Given a seeded database and "pesel.yaml" with one changed last_checked date</li>
+<li>When the seed runs again</li>
+<li>Then "pesel" is revision 2 and the other 2 procedures stay revision 1</li>
+</ul>
+<h3 id="qa-080-seed-without-a-database">QA-080 Seed without a database<a class="headerlink" href="#qa-080-seed-without-a-database" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (store error)</li>
+<li>Type: failure</li>
+<li>Given POSTGRES_URL points to a stopped server</li>
+<li>When the seed runs</li>
+<li>Then it exits with a non-zero code and an error with no URL password in the text</li>
+</ul>
+<h3 id="qa-081-seed-runs-as-the-app-role">QA-081 Seed runs as the app role<a class="headerlink" href="#qa-081-seed-runs-as-the-app-role" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision (Seed)</li>
+<li>Type: security</li>
+<li>Given the seed started with the lawbyai_app connection</li>
+<li>When the seed runs</li>
+<li>Then it completes with no permission error</li>
+</ul>
+<h3 id="qa-082-seed-content-has-no-advice-wording">QA-082 Seed content has no advice wording<a class="headerlink" href="#qa-082-seed-content-has-no-advice-wording" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (ADR-0015)</li>
+<li>Type: functional</li>
+<li>Given the 3 seed files</li>
+<li>When the owner reads every step text</li>
+<li>Then each step states information with a source, and the verify-with-office line is present on every step</li>
+</ul>
+<h3 id="qa-083-get_procedure-read-time">QA-083 get_procedure read time<a class="headerlink" href="#qa-083-get_procedure-read-time" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metrics (under 100 ms)</li>
+<li>Type: performance</li>
+<li>Given the seeded database with 3 procedures</li>
+<li>When get_procedure("pesel") is called 20 times</li>
+<li>Then each call returns in under 100 ms</li>
+</ul>
+<h3 id="qa-084-list_procedures-read-time">QA-084 list_procedures read time<a class="headerlink" href="#qa-084-list_procedures-read-time" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metrics (under 100 ms)</li>
+<li>Type: performance</li>
+<li>Given the seeded database with 3 procedures</li>
+<li>When list_procedures is called 20 times</li>
+<li>Then each call returns in under 100 ms</li>
+</ul>
+<h3 id="qa-085-unknown-slug-read-time">QA-085 Unknown slug read time<a class="headerlink" href="#qa-085-unknown-slug-read-time" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metrics (under 100 ms)</li>
+<li>Type: performance</li>
+<li>Given the seeded database with 3 procedures</li>
+<li>When get_procedure("no-such-procedure") is called</li>
+<li>Then it returns None in under 100 ms</li>
+</ul>
+<h3 id="qa-086-docs-state-run-order">QA-086 Docs state run order<a class="headerlink" href="#qa-086-docs-state-run-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: tasks T5 (docs)</li>
+<li>Type: functional</li>
+<li>Given the migrations guide</li>
+<li>When a reader looks for the seed step</li>
+<li>Then the guide states to migrate first and then seed</li>
+</ul>
+<h3 id="qa-087-owner-gate-in-pr-text">QA-087 Owner gate in PR text<a class="headerlink" href="#qa-087-owner-gate-in-pr-text" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Modes (owner gate)</li>
+<li>Type: functional</li>
+<li>Given the PR text for this task</li>
+<li>When the reviewer reads it</li>
+<li>Then it states that an approving owner review is required before merge</li>
+<li>OPEN: a test cannot prove the owner gate, so this is a manual check</li>
+</ul>
+<h3 id="qa-088-import-of-large-content">QA-088 Import of large content<a class="headerlink" href="#qa-088-import-of-large-content" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints (budget)</li>
+<li>Type: performance</li>
+<li>Given YAML for "big-proc" with 200 valid steps</li>
+<li>When an admin imports it</li>
+<li>Then the import succeeds as revision 1 and get returns 200 steps in position order</li>
+<li>OPEN: no maximum step count or file size is stated</li>
+</ul>
+<h3 id="qa-089-import-of-oversized-upload">QA-089 Import of oversized upload<a class="headerlink" href="#qa-089-import-of-oversized-upload" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Cases (bad input)</li>
+<li>Type: security</li>
+<li>Given a 50 MB text upload</li>
+<li>When an admin imports it</li>
+<li>Then the import fails with a clear error and does not exhaust memory</li>
+<li>OPEN: no size limit is stated in the requirements</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 &ndash;2026 Yevhen D.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>

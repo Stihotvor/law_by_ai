@@ -1,0 +1,2237 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered legal document processing, retrieval, and analysis platform.">
+      
+      
+        <meta name="author" content="Yevhen D.">
+      
+      
+        <link rel="canonical" href="https://stihotvor.github.io/law_by_ai/design/citations-confidence/qa/cases/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>QA cases: citations-confidence - Law by AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#qa-cases-citations-confidence" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="Law by AI" class="md-header__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Law by AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              QA cases: citations-confidence
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../intention/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Intention
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../migrations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../operations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Operations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../adr/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="Law by AI" class="md-nav__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    Law by AI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../intention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../migrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0001-plugin-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 - Plugin Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0002-graph-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 - Graph Database
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0003-multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 - Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0004-auth-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 - Auth & RBAC
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0005-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 - Observability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0006-celery-reliability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 - Celery Reliability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0007-document-diffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 - Document Diffs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0008-mvp-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 - MVP Scope
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0009-model-evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 - Model Evals
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0010-health-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 - Health Checks
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0011-sla-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 - SLA & Budget
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0012-license-contribution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 - License & Contribution Model
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0013-streamlit-authenticator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013 - Streamlit Authenticator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0014-hardcoded-postgresql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014 - Hardcoded PostgreSQL
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0017-object-store-seaweedfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017 - Object Store SeaweedFS
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#qa-001-valid-citations-give-an-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-001 Valid citations give an answer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-002-below-threshold-gives-refusal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-002 Below threshold gives refusal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-003-no-citation-gives-refusal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-003 No citation gives refusal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-004-setting-changes-outcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-004 Setting changes outcome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-005-shared-notice-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-005 Shared notice text
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-006-adr-0008-accepted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-006 ADR-0008 accepted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-007-empty-hit-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-007 Empty hit list
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-008-confidence-equal-to-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-008 Confidence equal to threshold
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-009-confidence-just-below-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-009 Confidence just below threshold
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-010-confidence-04-with-threshold-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-010 Confidence 0.4 with threshold 0.3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-011-confidence-04-with-threshold-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-011 Confidence 0.4 with threshold 0.5
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-012-retrieval-score-above-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-012 Retrieval score above 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-013-negative-retrieval-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-013 Negative retrieval score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-014-rerank-score-above-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-014 Rerank score above 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-015-nan-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-015 NaN score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-016-infinite-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-016 Infinite score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-017-bool-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-017 Bool score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-018-text-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-018 Text score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-019-threshold-above-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-019 Threshold above 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-020-negative-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-020 Negative threshold
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-021-threshold-at-the-range-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-021 Threshold at the range limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-022-empty-url-dropped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-022 Empty URL dropped
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-023-non-http-url-dropped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-023 Non-http URL dropped
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-024-url-with-credentials-dropped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-024 URL with credentials dropped
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-025-plain-http-url-kept" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-025 Plain http URL kept
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-026-no-rerank-score-uses-retrieval-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-026 No rerank score uses retrieval score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-027-both-scores-are-weighted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-027 Both scores are weighted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-028-weights-sum-to-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-028 Weights sum to one
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-029-rerank-lowers-a-high-retrieval-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-029 Rerank lowers a high retrieval score
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-030-answer-sorted-by-confidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-030 Answer sorted by confidence
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-031-tie-keeps-input-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-031 Tie keeps input order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-032-answer-drops-hits-below-threshold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-032 Answer drops hits below threshold
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-033-closest-sources-limited-to-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-033 Closest sources limited to 3
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-034-closest-sources-tie-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-034 Closest sources tie order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-035-refusal-has-no-answer-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-035 Refusal has no answer fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-036-invalid-hit-after-a-valid-hit-still-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-036 Invalid hit after a valid hit still checked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-037-invalid-hit-placed-last-still-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-037 Invalid hit placed last still checked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-038-repeated-call-gives-same-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-038 Repeated call gives same result
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-039-input-list-not-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-039 Input list not changed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-040-optional-fields-kept" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-040 Optional fields kept
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-041-missing-optional-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-041 Missing optional fields
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-042-citation-values-cannot-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-042 Citation values cannot change
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-043-no-io-packages-imported" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-043 No I/O packages imported
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-044-threshold-not-read-from-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-044 Threshold not read from environment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-045-quality-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-045 Quality gate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-046-large-hit-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-046 Large hit list
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-047-four-or-more-hit-sets-pass-validity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-047 Four or more hit sets pass validity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-048-weights-provisional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-048 Weights provisional
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-049-notice-present-on-both-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-049 Notice present on both results
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="qa-cases-citations-confidence">QA cases: citations-confidence<a class="headerlink" href="#qa-cases-citations-confidence" title="Permanent link">&para;</a></h1>
+<p>Hits below are written as (url, retrieval, rerank). Threshold means min_confidence.</p>
+<h3 id="qa-001-valid-citations-give-an-answer">QA-001 Valid citations give an answer<a class="headerlink" href="#qa-001-valid-citations-give-an-answer" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Scenario 1 (valid citations), Metric 1</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and two hits: (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.8, none) and (<a href="https://eli.gov.pl/akt/2">https://eli.gov.pl/akt/2</a>, 0.6, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is an answer with 2 citations, each with an https source link and confidence 0.8 and 0.6, answer confidence 0.8</li>
+</ul>
+<h3 id="qa-002-below-threshold-gives-refusal">QA-002 Below threshold gives refusal<a class="headerlink" href="#qa-002-below-threshold-gives-refusal" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Scenario 2 (below threshold), Business Goals</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.3, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer" with closest source <a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a> and no confidence value</li>
+</ul>
+<h3 id="qa-003-no-citation-gives-refusal">QA-003 No citation gives refusal<a class="headerlink" href="#qa-003-no-citation-gives-refusal" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Scenario 3 (no citation), Edge Case all hits lack valid citation</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and one hit with an empty source URL and retrieval score 0.9</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer" with 0 closest sources</li>
+</ul>
+<h3 id="qa-004-setting-changes-outcome">QA-004 Setting changes outcome<a class="headerlink" href="#qa-004-setting-changes-outcome" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Scenario 4 (setting changes outcome), Edge Case 0.4 with 0.3</li>
+<li>Type: functional</li>
+<li>Given one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.4, none)</li>
+<li>When the caller decides with threshold 0.3, then again with threshold 0.5</li>
+<li>Then the first result is an answer with confidence 0.4 and the second is "no reliable answer"</li>
+</ul>
+<h3 id="qa-005-shared-notice-text">QA-005 Shared notice text<a class="headerlink" href="#qa-005-shared-notice-text" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Scenario 5 (shared notice), Failure Mode notice never empty</li>
+<li>Type: functional</li>
+<li>Given the shared notice text and one answer result and one refusal result</li>
+<li>When the caller reads the notice of each result</li>
+<li>Then both notices are equal to the shared text, which is not empty and holds "not legal advice" in any letter case</li>
+</ul>
+<h3 id="qa-006-adr-0008-accepted">QA-006 ADR-0008 accepted<a class="headerlink" href="#qa-006-adr-0008-accepted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Scenario 6 (ADR accepted), Technical Constraints ADR change</li>
+<li>Type: functional</li>
+<li>Given the ADR-0008 document and the ADR index</li>
+<li>When a reader looks at the status of ADR-0008</li>
+<li>Then the front matter and the index row both say accepted, and the text says Citation is a value object with persistence deferred and weights 0.4 and 0.6 provisional</li>
+</ul>
+<h3 id="qa-007-empty-hit-list">QA-007 Empty hit list<a class="headerlink" href="#qa-007-empty-hit-list" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case empty hit list</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and an empty hit list</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer" with 0 closest sources</li>
+</ul>
+<h3 id="qa-008-confidence-equal-to-threshold">QA-008 Confidence equal to threshold<a class="headerlink" href="#qa-008-confidence-equal-to-threshold" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case equal to threshold, Metric 3</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.5, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is an answer with confidence 0.5</li>
+</ul>
+<h3 id="qa-009-confidence-just-below-threshold">QA-009 Confidence just below threshold<a class="headerlink" href="#qa-009-confidence-just-below-threshold" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Metric 3</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.49, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer"</li>
+</ul>
+<h3 id="qa-010-confidence-04-with-threshold-03">QA-010 Confidence 0.4 with threshold 0.3<a class="headerlink" href="#qa-010-confidence-04-with-threshold-03" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Metric 3, Edge Case 0.4 with 0.3</li>
+<li>Type: edge</li>
+<li>Given threshold 0.3 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.4, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is an answer with confidence 0.4</li>
+</ul>
+<h3 id="qa-011-confidence-04-with-threshold-05">QA-011 Confidence 0.4 with threshold 0.5<a class="headerlink" href="#qa-011-confidence-04-with-threshold-05" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case 0.4 with 0.5</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.4, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer"</li>
+</ul>
+<h3 id="qa-012-retrieval-score-above-1">QA-012 Retrieval score above 1<a class="headerlink" href="#qa-012-retrieval-score-above-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case score outside [0, 1], Failure Mode ValueError</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and one hit with retrieval score 1.2</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the retrieval score field, and no answer is returned</li>
+</ul>
+<h3 id="qa-013-negative-retrieval-score">QA-013 Negative retrieval score<a class="headerlink" href="#qa-013-negative-retrieval-score" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case score outside [0, 1]</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and one hit with retrieval score -0.1</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the retrieval score field</li>
+</ul>
+<h3 id="qa-014-rerank-score-above-1">QA-014 Rerank score above 1<a class="headerlink" href="#qa-014-rerank-score-above-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case score outside [0, 1]</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and one hit with retrieval 0.7 and rerank score 1.5</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the rerank score field</li>
+</ul>
+<h3 id="qa-015-nan-score">QA-015 NaN score<a class="headerlink" href="#qa-015-nan-score" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case NaN</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and one hit with retrieval score NaN</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the retrieval score field</li>
+</ul>
+<h3 id="qa-016-infinite-score">QA-016 Infinite score<a class="headerlink" href="#qa-016-infinite-score" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case infinity</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and one hit with rerank score +infinity and retrieval 0.7</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the rerank score field</li>
+</ul>
+<h3 id="qa-017-bool-score">QA-017 Bool score<a class="headerlink" href="#qa-017-bool-score" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case bool</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and one hit with retrieval score True</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the retrieval score field, and True is not read as 1.0</li>
+</ul>
+<h3 id="qa-018-text-score">QA-018 Text score<a class="headerlink" href="#qa-018-text-score" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case not a number</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and one hit with retrieval score "0.9" as text</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the retrieval score field</li>
+</ul>
+<h3 id="qa-019-threshold-above-1">QA-019 Threshold above 1<a class="headerlink" href="#qa-019-threshold-above-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case min_confidence outside [0, 1]</li>
+<li>Type: failure</li>
+<li>Given one valid hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.9, none) and threshold 1.1</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the threshold</li>
+</ul>
+<h3 id="qa-020-negative-threshold">QA-020 Negative threshold<a class="headerlink" href="#qa-020-negative-threshold" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case min_confidence outside [0, 1]</li>
+<li>Type: failure</li>
+<li>Given one valid hit and threshold -0.2</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the threshold</li>
+</ul>
+<h3 id="qa-021-threshold-at-the-range-limits">QA-021 Threshold at the range limits<a class="headerlink" href="#qa-021-threshold-at-the-range-limits" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case min_confidence range</li>
+<li>Type: edge</li>
+<li>Given one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.0, none)</li>
+<li>When the caller decides with threshold 0.0, then with threshold 1.0</li>
+<li>Then the first result is an answer with confidence 0.0 and the second is "no reliable answer"</li>
+</ul>
+<h3 id="qa-022-empty-url-dropped">QA-022 Empty URL dropped<a class="headerlink" href="#qa-022-empty-url-dropped" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case empty URL</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and hits (empty URL, 0.9, none) and (<a href="https://eli.gov.pl/akt/2">https://eli.gov.pl/akt/2</a>, 0.6, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the answer holds 1 citation with <a href="https://eli.gov.pl/akt/2">https://eli.gov.pl/akt/2</a></li>
+</ul>
+<h3 id="qa-023-non-http-url-dropped">QA-023 Non-http URL dropped<a class="headerlink" href="#qa-023-non-http-url-dropped" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case URL not http or https</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and hits (<a href="ftp://files.gov.pl/a">ftp://files.gov.pl/a</a>, 0.9, none), (javascript:alert(1), 0.9, none) and (file:///etc/passwd, 0.9, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer" with 0 closest sources</li>
+</ul>
+<h3 id="qa-024-url-with-credentials-dropped">QA-024 URL with credentials dropped<a class="headerlink" href="#qa-024-url-with-credentials-dropped" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case URL holding credentials, Failure Mode</li>
+<li>Type: security</li>
+<li>Given threshold 0.5 and one hit (<a href="https://admin:secret@eli.gov.pl/akt/1">https://admin:secret@eli.gov.pl/akt/1</a>, 0.9, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer" and no result field holds the text "secret"</li>
+</ul>
+<h3 id="qa-025-plain-http-url-kept">QA-025 Plain http URL kept<a class="headerlink" href="#qa-025-plain-http-url-kept" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case URL http or https</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and one hit (<a href="http://eli.gov.pl/akt/1">http://eli.gov.pl/akt/1</a>, 0.8, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the answer holds 1 citation with that http link</li>
+</ul>
+<h3 id="qa-026-no-rerank-score-uses-retrieval-score">QA-026 No rerank score uses retrieval score<a class="headerlink" href="#qa-026-no-rerank-score-uses-retrieval-score" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case hit with no rerank score</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.72, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the citation confidence is 0.72</li>
+</ul>
+<h3 id="qa-027-both-scores-are-weighted">QA-027 Both scores are weighted<a class="headerlink" href="#qa-027-both-scores-are-weighted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints scoring rule, Decision rule</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.5, 0.9)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the citation confidence is 0.74 (0.4 times 0.5 plus 0.6 times 0.9)</li>
+</ul>
+<h3 id="qa-028-weights-sum-to-one">QA-028 Weights sum to one<a class="headerlink" href="#qa-028-weights-sum-to-one" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision rule, Metric 6 (OPEN: weights provisional)</li>
+<li>Type: functional</li>
+<li>Given the retrieval weight 0.4 and the rerank weight 0.6</li>
+<li>When the weights are added</li>
+<li>Then the sum is exactly 1.0 and a hit with both scores at 1.0 has confidence 1.0</li>
+</ul>
+<h3 id="qa-029-rerank-lowers-a-high-retrieval-score">QA-029 Rerank lowers a high retrieval score<a class="headerlink" href="#qa-029-rerank-lowers-a-high-retrieval-score" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision rule, Failure Mode no score above threshold as fact</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and one hit (<a href="https://eli.gov.pl/akt/1">https://eli.gov.pl/akt/1</a>, 0.9, 0.1)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the confidence is 0.42 and the result is "no reliable answer" with that source listed</li>
+</ul>
+<h3 id="qa-030-answer-sorted-by-confidence">QA-030 Answer sorted by confidence<a class="headerlink" href="#qa-030-answer-sorted-by-confidence" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision Answer.citations order, Metric 1</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and hits A (<a href="https://eli.gov.pl/a">https://eli.gov.pl/a</a>, 0.6, none), B (<a href="https://eli.gov.pl/b">https://eli.gov.pl/b</a>, 0.9, none), C (<a href="https://eli.gov.pl/c">https://eli.gov.pl/c</a>, 0.7, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then citations are B, C, A and the answer confidence is 0.9</li>
+</ul>
+<h3 id="qa-031-tie-keeps-input-order">QA-031 Tie keeps input order<a class="headerlink" href="#qa-031-tie-keeps-input-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case tie keeps input order</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and hits A (<a href="https://eli.gov.pl/a">https://eli.gov.pl/a</a>, 0.8, none), B (<a href="https://eli.gov.pl/b">https://eli.gov.pl/b</a>, 0.8, none), C (<a href="https://eli.gov.pl/c">https://eli.gov.pl/c</a>, 0.8, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then citations come in the order A, B, C</li>
+</ul>
+<h3 id="qa-032-answer-drops-hits-below-threshold">QA-032 Answer drops hits below threshold<a class="headerlink" href="#qa-032-answer-drops-hits-below-threshold" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision Answer.citations filter</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and hits (<a href="https://eli.gov.pl/a">https://eli.gov.pl/a</a>, 0.9, none) and (<a href="https://eli.gov.pl/b">https://eli.gov.pl/b</a>, 0.2, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the answer holds only the citation for <a href="https://eli.gov.pl/a">https://eli.gov.pl/a</a></li>
+</ul>
+<h3 id="qa-033-closest-sources-limited-to-3">QA-033 Closest sources limited to 3<a class="headerlink" href="#qa-033-closest-sources-limited-to-3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case closest sources at most 3</li>
+<li>Type: edge</li>
+<li>Given threshold 0.9 and 5 valid hits with scores 0.1, 0.4, 0.3, 0.2, 0.5</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer" with 3 closest sources, scores 0.5, 0.4, 0.3 in that order</li>
+</ul>
+<h3 id="qa-034-closest-sources-tie-order">QA-034 Closest sources tie order<a class="headerlink" href="#qa-034-closest-sources-tie-order" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case closest sources tie</li>
+<li>Type: edge</li>
+<li>Given threshold 0.9 and 4 valid hits A, B, C, D all with retrieval score 0.3</li>
+<li>When the caller asks for a decision</li>
+<li>Then closest sources are A, B, C in input order</li>
+</ul>
+<h3 id="qa-035-refusal-has-no-answer-fields">QA-035 Refusal has no answer fields<a class="headerlink" href="#qa-035-refusal-has-no-answer-fields" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode union, caller cannot read an answer from a refusal</li>
+<li>Type: failure</li>
+<li>Given a "no reliable answer" result</li>
+<li>When a caller reads its citations or its confidence</li>
+<li>Then the read fails because the refusal has no such fields, and only closest sources and the notice are present</li>
+</ul>
+<h3 id="qa-036-invalid-hit-after-a-valid-hit-still-checked">QA-036 Invalid hit after a valid hit still checked<a class="headerlink" href="#qa-036-invalid-hit-after-a-valid-hit-still-checked" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode bad input never silent, Types and order note</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and hits (empty URL, 1.7, none) and (<a href="https://eli.gov.pl/a">https://eli.gov.pl/a</a>, 0.9, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError that names the retrieval score field, and the bad hit is not dropped silently</li>
+</ul>
+<h3 id="qa-037-invalid-hit-placed-last-still-checked">QA-037 Invalid hit placed last still checked<a class="headerlink" href="#qa-037-invalid-hit-placed-last-still-checked" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode bad input never silent</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and hits (<a href="https://eli.gov.pl/a">https://eli.gov.pl/a</a>, 0.9, none) and (<a href="https://eli.gov.pl/b">https://eli.gov.pl/b</a>, NaN, none)</li>
+<li>When the caller asks for a decision</li>
+<li>Then the call fails with a ValueError and no answer is returned</li>
+</ul>
+<h3 id="qa-038-repeated-call-gives-same-result">QA-038 Repeated call gives same result<a class="headerlink" href="#qa-038-repeated-call-gives-same-result" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints deterministic rule</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and hits (<a href="https://eli.gov.pl/a">https://eli.gov.pl/a</a>, 0.6, 0.8) and (<a href="https://eli.gov.pl/b">https://eli.gov.pl/b</a>, 0.7, none)</li>
+<li>When the caller decides 100 times with the same input</li>
+<li>Then all 100 results are equal</li>
+</ul>
+<h3 id="qa-039-input-list-not-changed">QA-039 Input list not changed<a class="headerlink" href="#qa-039-input-list-not-changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints pure module</li>
+<li>Type: edge</li>
+<li>Given a list of 3 hits in the order 0.5, 0.9, 0.7 and threshold 0.5</li>
+<li>When the caller asks for a decision</li>
+<li>Then the input list still has the order 0.5, 0.9, 0.7</li>
+</ul>
+<h3 id="qa-040-optional-fields-kept">QA-040 Optional fields kept<a class="headerlink" href="#qa-040-optional-fields-kept" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision Citation fields</li>
+<li>Type: functional</li>
+<li>Given threshold 0.5 and one hit with law "Kodeks rodzinny i opiekunczy", article "135", paragraph "1", quote "Zakres obowiazku alimentacyjnego...", score 0.8</li>
+<li>When the caller asks for a decision</li>
+<li>Then the citation shows the same law, article, paragraph, quote and link</li>
+</ul>
+<h3 id="qa-041-missing-optional-fields">QA-041 Missing optional fields<a class="headerlink" href="#qa-041-missing-optional-fields" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision Citation optional fields</li>
+<li>Type: edge</li>
+<li>Given threshold 0.5 and one hit with only a link, quote and score 0.8</li>
+<li>When the caller asks for a decision</li>
+<li>Then the answer is returned and the law, article and paragraph are empty</li>
+</ul>
+<h3 id="qa-042-citation-values-cannot-change">QA-042 Citation values cannot change<a class="headerlink" href="#qa-042-citation-values-cannot-change" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints frozen value objects</li>
+<li>Type: failure</li>
+<li>Given an answer with one citation of confidence 0.8</li>
+<li>When a caller sets the confidence to 0.99</li>
+<li>Then the change is refused and the confidence stays 0.8</li>
+</ul>
+<h3 id="qa-043-no-io-packages-imported">QA-043 No I/O packages imported<a class="headerlink" href="#qa-043-no-io-packages-imported" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Metric 4, Technical Constraints no LLM, HTTP or DB</li>
+<li>Type: security</li>
+<li>Given the two new modules</li>
+<li>When the import test lists their imports</li>
+<li>Then none is a database, HTTP, Redis, Celery or LLM package, and only the standard library and the notice module are present</li>
+</ul>
+<h3 id="qa-044-threshold-not-read-from-environment">QA-044 Threshold not read from environment<a class="headerlink" href="#qa-044-threshold-not-read-from-environment" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints module does not read environment</li>
+<li>Type: edge</li>
+<li>Given the setting for minimum confidence is 0.1 in the environment and one hit scored 0.3 with caller threshold 0.5</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result is "no reliable answer" because the passed threshold of 0.5 is used</li>
+</ul>
+<h3 id="qa-045-quality-gate">QA-045 Quality gate<a class="headerlink" href="#qa-045-quality-gate" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Metric 5</li>
+<li>Type: performance</li>
+<li>Given the two new modules and their unit tests</li>
+<li>When the lint, format check, type check and tests run with coverage</li>
+<li>Then all four pass and line coverage of both modules is 100 percent</li>
+</ul>
+<h3 id="qa-046-large-hit-list">QA-046 Large hit list<a class="headerlink" href="#qa-046-large-hit-list" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goals budget 4-6 GB RAM, no model</li>
+<li>Type: performance</li>
+<li>Given threshold 0.5 and 10000 valid hits with distinct links and scores</li>
+<li>When the caller asks for a decision</li>
+<li>Then the result returns in under 1 second with citations sorted by confidence and no model load</li>
+</ul>
+<h3 id="qa-047-four-or-more-hit-sets-pass-validity">QA-047 Four or more hit sets pass validity<a class="headerlink" href="#qa-047-four-or-more-hit-sets-pass-validity" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Metric 1</li>
+<li>Type: functional</li>
+<li>Given 4 hit sets: all high, all low, mixed with invalid links, and mixed with rerank scores, threshold 0.5</li>
+<li>When the caller decides on each set</li>
+<li>Then every citation in every result has a valid http or https link and confidence from 0.0 to 1.0</li>
+</ul>
+<h3 id="qa-048-weights-provisional">QA-048 Weights provisional<a class="headerlink" href="#qa-048-weights-provisional" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Metric 6</li>
+<li>Type: functional</li>
+<li>Given the ADR-0008 text</li>
+<li>When a reader looks for the scoring rule</li>
+<li>Then the rule and weights 0.4 and 0.6 are stated as provisional until an evaluation runs. OPEN: the weight between retrieval and rerank score cannot be tuned before the search service and an evaluation exist</li>
+</ul>
+<h3 id="qa-049-notice-present-on-both-results">QA-049 Notice present on both results<a class="headerlink" href="#qa-049-notice-present-on-both-results" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode user sees refusal and sources</li>
+<li>Type: failure</li>
+<li>Given threshold 0.5 and a hit scored 0.2</li>
+<li>When the caller asks for a decision</li>
+<li>Then the user-visible result holds the notice, the closest source link, and no score shown as an answer</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 &ndash;2026 Yevhen D.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>

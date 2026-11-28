@@ -1,0 +1,2427 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered legal document processing, retrieval, and analysis platform.">
+      
+      
+        <meta name="author" content="Yevhen D.">
+      
+      
+        <link rel="canonical" href="https://stihotvor.github.io/law_by_ai/design/full-settings/qa/cases/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>QA cases: full settings - Law by AI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#qa-cases-full-settings" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="Law by AI" class="md-header__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Law by AI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              QA cases: full settings
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../intention/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Intention
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../migrations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Migrations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../../operations/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Operations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../adr/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="Law by AI" class="md-nav__button md-logo" aria-label="Law by AI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 89 89">
+  <path d="M3.136,17.387l0,42.932l42.932,21.467l-42.932,-64.399Z" />
+  <path d="M21.91,8l42.933,64.398l-18.775,9.388l-42.932,-64.399l18.774,-9.387Z" style="fill-opacity: 0.5" />
+  <path d="M67.535,17.387l-27.262,18.156l21.878,32.818l5.384,2.691l0,-53.665Z" />
+  <path d="M67.535,17.387l0,53.666l18.774,-9.388l0,-53.665l-18.774,9.387Z" style="fill-opacity: 0.25" />
+</svg>
+
+    </a>
+    Law by AI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Stihotvor/law_by_ai" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Stihotvor/law_by_ai
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../intention/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intention
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--completed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--draft" title="Work in progress">
+    </span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../migrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../../adr/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--new" title="Recently added">
+    </span>
+  
+
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0001-plugin-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 - Plugin Architecture
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0002-graph-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 - Graph Database
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0003-multi-tenancy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 - Multi-Tenancy
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0004-auth-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 - Auth & RBAC
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--superseded"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0005-observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 - Observability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0006-celery-reliability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 - Celery Reliability
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0007-document-diffs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 - Document Diffs
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0008-mvp-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 - MVP Scope
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0009-model-evals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 - Model Evals
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0010-health-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 - Health Checks
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0011-sla-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 - SLA & Budget
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0012-license-contribution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 - License & Contribution Model
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0013-streamlit-authenticator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013 - Streamlit Authenticator
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0014-hardcoded-postgresql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014 - Hardcoded PostgreSQL
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adr/0017-object-store-seaweedfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017 - Object Store SeaweedFS
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--proposed"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#qa-001-qdrant_url-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-001 QDRANT_URL default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-002-qdrant_api_key-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-002 QDRANT_API_KEY default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-003-qdrant_collection-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-003 QDRANT_COLLECTION default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-004-otlp-endpoint-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-004 OTLP endpoint default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-005-otel-service-name-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-005 OTel service name default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-006-min_confidence-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-006 MIN_CONFIDENCE default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-007-rerank_model_name-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-007 RERANK_MODEL_NAME default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-008-rerank_model_path-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-008 RERANK_MODEL_PATH default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-009-qdrant_url-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-009 QDRANT_URL override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-010-qdrant_api_key-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-010 QDRANT_API_KEY override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-011-qdrant_collection-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-011 QDRANT_COLLECTION override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-012-otlp-endpoint-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-012 OTLP endpoint override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-013-otel-service-name-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-013 OTel service name override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-014-min_confidence-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-014 MIN_CONFIDENCE override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-015-rerank_model_name-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-015 RERANK_MODEL_NAME override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-016-rerank_model_path-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-016 RERANK_MODEL_PATH override
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-017-empty-string-key-uses-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-017 Empty string key uses default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-018-empty-min_confidence-uses-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-018 Empty MIN_CONFIDENCE uses default
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-019-min_confidence-rejects-abc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-019 MIN_CONFIDENCE rejects abc
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-020-min_confidence-rejects-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-020 MIN_CONFIDENCE rejects -0.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-021-min_confidence-rejects-11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-021 MIN_CONFIDENCE rejects 1.1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-022-min_confidence-rejects-nan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-022 MIN_CONFIDENCE rejects nan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-023-min_confidence-rejects-inf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-023 MIN_CONFIDENCE rejects inf
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-024-min_confidence-rejects-whitespace-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-024 MIN_CONFIDENCE rejects whitespace only
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-025-min_confidence-accepts-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-025 MIN_CONFIDENCE accepts 0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-026-min_confidence-accepts-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-026 MIN_CONFIDENCE accepts 1
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-027-min_confidence-accepts-surrounding-whitespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-027 MIN_CONFIDENCE accepts surrounding whitespace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-028-bad-min_confidence-never-falls-back-silently" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-028 Bad MIN_CONFIDENCE never falls back silently
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-029-value-change-is-read-on-next-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-029 Value change is read on next access
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-030-qdrant_url-without-scheme-accepted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-030 QDRANT_URL without scheme accepted
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-031-empty-rerank-model-values-do-not-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-031 Empty rerank model values do not fail
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-032-empty-otlp-endpoint-with-no-collector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-032 Empty OTLP endpoint with no collector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-033-bad-min_confidence-error-does-not-leak-the-api-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-033 Bad MIN_CONFIDENCE error does not leak the API key
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-034-qdrant_api_key-never-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-034 QDRANT_API_KEY never raises
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-035-removed-rerank-attributes-are-gone" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-035 Removed rerank attributes are gone
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-036-old-cohere-env-keys-do-no-harm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-036 Old Cohere env keys do no harm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-037-config-source-has-no-cohere-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-037 Config source has no Cohere text
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-038-env-example-has-no-cohere-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-038 Env example has no Cohere text
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-039-env-example-lists-the-old-rerank_model-key-no-more" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-039 Env example lists the old RERANK_MODEL key no more
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-040-compose-has-exactly-two-rerank-lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-040 Compose has exactly two RERANK lines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-041-env-example-defaults-match-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-041 Env example defaults match settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-042-env-example-explains-empty-otel-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-042 Env example explains empty OTel endpoint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-043-drift-test-qdrant_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-043 Drift test QDRANT_URL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-044-drift-test-qdrant_api_key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-044 Drift test QDRANT_API_KEY
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-045-drift-test-qdrant_collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-045 Drift test QDRANT_COLLECTION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-046-drift-test-otel_exporter_otlp_endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-046 Drift test OTEL_EXPORTER_OTLP_ENDPOINT
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-047-drift-test-otel_service_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-047 Drift test OTEL_SERVICE_NAME
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-048-drift-test-min_confidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-048 Drift test MIN_CONFIDENCE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-049-drift-test-rerank_model_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-049 Drift test RERANK_MODEL_NAME
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-050-drift-test-rerank_model_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-050 Drift test RERANK_MODEL_PATH
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-051-drift-test-catches-a-missing-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-051 Drift test catches a missing key
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-052-docstring-table-lists-the-migration-lock-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-052 Docstring table lists the migration lock key
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-053-developer-env-cannot-change-default-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-053 Developer .env cannot change default tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-054-existing-llm-and-embedding-keys-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-054 Existing LLM and embedding keys unchanged
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-055-lint-check-passes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-055 Lint check passes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-056-format-check-passes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-056 Format check passes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-057-type-check-passes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-057 Type check passes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-058-fast-tests-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-058 Fast tests pass
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#qa-059-changed-line-coverage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QA-059 Changed-line coverage
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="qa-cases-full-settings">QA cases: full settings<a class="headerlink" href="#qa-cases-full-settings" title="Permanent link">&para;</a></h1>
+<h3 id="qa-001-qdrant_url-default">QA-001 QDRANT_URL default<a class="headerlink" href="#qa-001-qdrant_url-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints QDRANT_URL default; T1 default scenario</li>
+<li>Type: functional</li>
+<li>Given QDRANT_URL is not set</li>
+<li>When the code reads the Qdrant URL on a new Settings</li>
+<li>Then the value is <code>http://localhost:6333</code></li>
+</ul>
+<h3 id="qa-002-qdrant_api_key-default">QA-002 QDRANT_API_KEY default<a class="headerlink" href="#qa-002-qdrant_api_key-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints QDRANT_API_KEY default; T1 default scenario</li>
+<li>Type: functional</li>
+<li>Given QDRANT_API_KEY is not set</li>
+<li>When the code reads the Qdrant API key on a new Settings</li>
+<li>Then the value is an empty string</li>
+</ul>
+<h3 id="qa-003-qdrant_collection-default">QA-003 QDRANT_COLLECTION default<a class="headerlink" href="#qa-003-qdrant_collection-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints QDRANT_COLLECTION default; T1 default scenario</li>
+<li>Type: functional</li>
+<li>Given QDRANT_COLLECTION is not set</li>
+<li>When the code reads the Qdrant collection on a new Settings</li>
+<li>Then the value is <code>legal_documents</code></li>
+</ul>
+<h3 id="qa-004-otlp-endpoint-default">QA-004 OTLP endpoint default<a class="headerlink" href="#qa-004-otlp-endpoint-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints OTEL_EXPORTER_OTLP_ENDPOINT default; Failure Mode empty endpoint means no export</li>
+<li>Type: functional</li>
+<li>Given OTEL_EXPORTER_OTLP_ENDPOINT is not set</li>
+<li>When the code reads the OTLP endpoint on a new Settings</li>
+<li>Then the value is an empty string</li>
+</ul>
+<h3 id="qa-005-otel-service-name-default">QA-005 OTel service name default<a class="headerlink" href="#qa-005-otel-service-name-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints OTEL_SERVICE_NAME default; T1 default scenario</li>
+<li>Type: functional</li>
+<li>Given OTEL_SERVICE_NAME is not set</li>
+<li>When the code reads the OTel service name on a new Settings</li>
+<li>Then the value is <code>law-by-ai</code></li>
+</ul>
+<h3 id="qa-006-min_confidence-default">QA-006 MIN_CONFIDENCE default<a class="headerlink" href="#qa-006-min_confidence-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints MIN_CONFIDENCE default 0.5; T1 default scenario</li>
+<li>Type: functional</li>
+<li>Given MIN_CONFIDENCE is not set</li>
+<li>When the code reads the minimum confidence on a new Settings</li>
+<li>Then the value is 0.5</li>
+</ul>
+<h3 id="qa-007-rerank_model_name-default">QA-007 RERANK_MODEL_NAME default<a class="headerlink" href="#qa-007-rerank_model_name-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints RERANK_MODEL_NAME default; Edge Case empty rerank values</li>
+<li>Type: functional</li>
+<li>Given RERANK_MODEL_NAME is not set</li>
+<li>When the code reads the rerank model name on a new Settings</li>
+<li>Then the value is an empty string and no error is raised</li>
+</ul>
+<h3 id="qa-008-rerank_model_path-default">QA-008 RERANK_MODEL_PATH default<a class="headerlink" href="#qa-008-rerank_model_path-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints RERANK_MODEL_PATH default; Edge Case empty rerank values</li>
+<li>Type: functional</li>
+<li>Given RERANK_MODEL_PATH is not set</li>
+<li>When the code reads the rerank model path on a new Settings</li>
+<li>Then the value is an empty string and no error is raised</li>
+</ul>
+<h3 id="qa-009-qdrant_url-override">QA-009 QDRANT_URL override<a class="headerlink" href="#qa-009-qdrant_url-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (QDRANT_URL)</li>
+<li>Type: functional</li>
+<li>Given QDRANT_URL is set to <code>http://qdrant:6333</code></li>
+<li>When the code reads the Qdrant URL</li>
+<li>Then the value is <code>http://qdrant:6333</code></li>
+</ul>
+<h3 id="qa-010-qdrant_api_key-override">QA-010 QDRANT_API_KEY override<a class="headerlink" href="#qa-010-qdrant_api_key-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (QDRANT_API_KEY)</li>
+<li>Type: functional</li>
+<li>Given QDRANT_API_KEY is set to <code>k1</code></li>
+<li>When the code reads the Qdrant API key</li>
+<li>Then the value is <code>k1</code></li>
+</ul>
+<h3 id="qa-011-qdrant_collection-override">QA-011 QDRANT_COLLECTION override<a class="headerlink" href="#qa-011-qdrant_collection-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (QDRANT_COLLECTION)</li>
+<li>Type: functional</li>
+<li>Given QDRANT_COLLECTION is set to <code>c1</code></li>
+<li>When the code reads the Qdrant collection</li>
+<li>Then the value is <code>c1</code></li>
+</ul>
+<h3 id="qa-012-otlp-endpoint-override">QA-012 OTLP endpoint override<a class="headerlink" href="#qa-012-otlp-endpoint-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (OTEL_EXPORTER_OTLP_ENDPOINT)</li>
+<li>Type: functional</li>
+<li>Given OTEL_EXPORTER_OTLP_ENDPOINT is set to <code>http://alloy:4317</code></li>
+<li>When the code reads the OTLP endpoint</li>
+<li>Then the value is <code>http://alloy:4317</code></li>
+</ul>
+<h3 id="qa-013-otel-service-name-override">QA-013 OTel service name override<a class="headerlink" href="#qa-013-otel-service-name-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (OTEL_SERVICE_NAME)</li>
+<li>Type: functional</li>
+<li>Given OTEL_SERVICE_NAME is set to <code>svc</code></li>
+<li>When the code reads the OTel service name</li>
+<li>Then the value is <code>svc</code></li>
+</ul>
+<h3 id="qa-014-min_confidence-override">QA-014 MIN_CONFIDENCE override<a class="headerlink" href="#qa-014-min_confidence-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (MIN_CONFIDENCE)</li>
+<li>Type: functional</li>
+<li>Given MIN_CONFIDENCE is set to <code>0.8</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then the value is 0.8</li>
+</ul>
+<h3 id="qa-015-rerank_model_name-override">QA-015 RERANK_MODEL_NAME override<a class="headerlink" href="#qa-015-rerank_model_name-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (RERANK_MODEL_NAME)</li>
+<li>Type: functional</li>
+<li>Given RERANK_MODEL_NAME is set to <code>bge-reranker</code></li>
+<li>When the code reads the rerank model name</li>
+<li>Then the value is <code>bge-reranker</code></li>
+</ul>
+<h3 id="qa-016-rerank_model_path-override">QA-016 RERANK_MODEL_PATH override<a class="headerlink" href="#qa-016-rerank_model_path-override" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric override test per key (RERANK_MODEL_PATH)</li>
+<li>Type: functional</li>
+<li>Given RERANK_MODEL_PATH is set to <code>/models/rerank</code></li>
+<li>When the code reads the rerank model path</li>
+<li>Then the value is <code>/models/rerank</code></li>
+</ul>
+<h3 id="qa-017-empty-string-key-uses-default">QA-017 Empty string key uses default<a class="headerlink" href="#qa-017-empty-string-key-uses-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case empty or unset variable uses default</li>
+<li>Type: edge</li>
+<li>Given QDRANT_COLLECTION is set to an empty string</li>
+<li>When the code reads the Qdrant collection</li>
+<li>Then the value is <code>legal_documents</code></li>
+</ul>
+<h3 id="qa-018-empty-min_confidence-uses-default">QA-018 Empty MIN_CONFIDENCE uses default<a class="headerlink" href="#qa-018-empty-min_confidence-uses-default" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case empty or unset variable uses default</li>
+<li>Type: edge</li>
+<li>Given MIN_CONFIDENCE is set to an empty string</li>
+<li>When the code reads the minimum confidence</li>
+<li>Then the value is 0.5</li>
+</ul>
+<h3 id="qa-019-min_confidence-rejects-abc">QA-019 MIN_CONFIDENCE rejects abc<a class="headerlink" href="#qa-019-min_confidence-rejects-abc" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case non-number; Success Metric rejection case <code>abc</code></li>
+<li>Type: failure</li>
+<li>Given MIN_CONFIDENCE is set to <code>abc</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then a ValueError is raised and its message contains <code>MIN_CONFIDENCE</code></li>
+</ul>
+<h3 id="qa-020-min_confidence-rejects-01">QA-020 MIN_CONFIDENCE rejects -0.1<a class="headerlink" href="#qa-020-min_confidence-rejects-01" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case lower than 0; Success Metric rejection case <code>-0.1</code></li>
+<li>Type: failure</li>
+<li>Given MIN_CONFIDENCE is set to <code>-0.1</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then a ValueError is raised and its message contains <code>MIN_CONFIDENCE</code></li>
+</ul>
+<h3 id="qa-021-min_confidence-rejects-11">QA-021 MIN_CONFIDENCE rejects 1.1<a class="headerlink" href="#qa-021-min_confidence-rejects-11" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case higher than 1; Success Metric rejection case <code>1.1</code></li>
+<li>Type: failure</li>
+<li>Given MIN_CONFIDENCE is set to <code>1.1</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then a ValueError is raised and its message contains <code>MIN_CONFIDENCE</code></li>
+</ul>
+<h3 id="qa-022-min_confidence-rejects-nan">QA-022 MIN_CONFIDENCE rejects nan<a class="headerlink" href="#qa-022-min_confidence-rejects-nan" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric rejection case <code>nan</code></li>
+<li>Type: failure</li>
+<li>Given MIN_CONFIDENCE is set to <code>nan</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then a ValueError is raised and its message contains <code>MIN_CONFIDENCE</code></li>
+</ul>
+<h3 id="qa-023-min_confidence-rejects-inf">QA-023 MIN_CONFIDENCE rejects inf<a class="headerlink" href="#qa-023-min_confidence-rejects-inf" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric rejection case <code>inf</code>; decision reviewer change</li>
+<li>Type: failure</li>
+<li>Given MIN_CONFIDENCE is set to <code>inf</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then a ValueError is raised and its message contains <code>MIN_CONFIDENCE</code></li>
+</ul>
+<h3 id="qa-024-min_confidence-rejects-whitespace-only">QA-024 MIN_CONFIDENCE rejects whitespace only<a class="headerlink" href="#qa-024-min_confidence-rejects-whitespace-only" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case whitespace-only MIN_CONFIDENCE</li>
+<li>Type: failure</li>
+<li>Given MIN_CONFIDENCE is set to three spaces</li>
+<li>When the code reads the minimum confidence</li>
+<li>Then a ValueError is raised and its message contains <code>MIN_CONFIDENCE</code></li>
+</ul>
+<h3 id="qa-025-min_confidence-accepts-0">QA-025 MIN_CONFIDENCE accepts 0<a class="headerlink" href="#qa-025-min_confidence-accepts-0" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case values 0 and 1 are valid (lower bound)</li>
+<li>Type: edge</li>
+<li>Given MIN_CONFIDENCE is set to <code>0</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then the value is 0.0</li>
+</ul>
+<h3 id="qa-026-min_confidence-accepts-1">QA-026 MIN_CONFIDENCE accepts 1<a class="headerlink" href="#qa-026-min_confidence-accepts-1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case values 0 and 1 are valid (upper bound)</li>
+<li>Type: edge</li>
+<li>Given MIN_CONFIDENCE is set to <code>1</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then the value is 1.0</li>
+</ul>
+<h3 id="qa-027-min_confidence-accepts-surrounding-whitespace">QA-027 MIN_CONFIDENCE accepts surrounding whitespace<a class="headerlink" href="#qa-027-min_confidence-accepts-surrounding-whitespace" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric surrounding whitespace accepted</li>
+<li>Type: edge</li>
+<li>Given MIN_CONFIDENCE is set to <code>0.5</code> (one space on each side)</li>
+<li>When the code reads the minimum confidence</li>
+<li>Then the value is 0.5</li>
+</ul>
+<h3 id="qa-028-bad-min_confidence-never-falls-back-silently">QA-028 Bad MIN_CONFIDENCE never falls back silently<a class="headerlink" href="#qa-028-bad-min_confidence-never-falls-back-silently" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode bad value fails at first read, no silent default</li>
+<li>Type: failure</li>
+<li>Given MIN_CONFIDENCE is set to <code>2</code></li>
+<li>When the code reads the minimum confidence twice in a row</li>
+<li>Then both reads raise ValueError and neither returns 0.5</li>
+</ul>
+<h3 id="qa-029-value-change-is-read-on-next-access">QA-029 Value change is read on next access<a class="headerlink" href="#qa-029-value-change-is-read-on-next-access" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision lazy-read contract</li>
+<li>Type: functional</li>
+<li>Given a Settings instance read once with MIN_CONFIDENCE <code>0.3</code></li>
+<li>When MIN_CONFIDENCE changes to <code>0.9</code> and the code reads it again</li>
+<li>Then the value is 0.9</li>
+</ul>
+<h3 id="qa-030-qdrant_url-without-scheme-accepted">QA-030 QDRANT_URL without scheme accepted<a class="headerlink" href="#qa-030-qdrant_url-without-scheme-accepted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case QDRANT_URL with no scheme</li>
+<li>Type: edge</li>
+<li>Given QDRANT_URL is set to <code>qdrant:6333</code></li>
+<li>When the code reads the Qdrant URL</li>
+<li>Then the value is <code>qdrant:6333</code> and no error is raised</li>
+</ul>
+<h3 id="qa-031-empty-rerank-model-values-do-not-fail">QA-031 Empty rerank model values do not fail<a class="headerlink" href="#qa-031-empty-rerank-model-values-do-not-fail" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Edge Case empty RERANK_MODEL_NAME and RERANK_MODEL_PATH</li>
+<li>Type: edge</li>
+<li>Given RERANK_MODEL_NAME and RERANK_MODEL_PATH are both set to an empty string</li>
+<li>When the code reads both properties</li>
+<li>Then both values are empty strings and no error is raised</li>
+</ul>
+<h3 id="qa-032-empty-otlp-endpoint-with-no-collector">QA-032 Empty OTLP endpoint with no collector<a class="headerlink" href="#qa-032-empty-otlp-endpoint-with-no-collector" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode empty OTLP endpoint means no export</li>
+<li>Type: failure</li>
+<li>Given OTEL_EXPORTER_OTLP_ENDPOINT is empty and no collector runs</li>
+<li>When the code reads the OTLP endpoint</li>
+<li>Then the value is an empty string, which the observability code reads as export off</li>
+<li>OPEN: the exporter switch lives in the observability issue, so only the empty setting value is observable here</li>
+</ul>
+<h3 id="qa-033-bad-min_confidence-error-does-not-leak-the-api-key">QA-033 Bad MIN_CONFIDENCE error does not leak the API key<a class="headerlink" href="#qa-033-bad-min_confidence-error-does-not-leak-the-api-key" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode no secret value in an error message</li>
+<li>Type: security</li>
+<li>Given QDRANT_API_KEY is set to <code>s3cret-key-123</code> and MIN_CONFIDENCE is set to <code>abc</code></li>
+<li>When the code reads the minimum confidence</li>
+<li>Then the ValueError message does not contain <code>s3cret-key-123</code></li>
+</ul>
+<h3 id="qa-034-qdrant_api_key-never-raises">QA-034 QDRANT_API_KEY never raises<a class="headerlink" href="#qa-034-qdrant_api_key-never-raises" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode no secret value in an error message; T1 no validation of the key</li>
+<li>Type: security</li>
+<li>Given QDRANT_API_KEY is set to <code>odd value</code> (with surrounding spaces)</li>
+<li>When the code reads the Qdrant API key</li>
+<li>Then no error is raised</li>
+</ul>
+<h3 id="qa-035-removed-rerank-attributes-are-gone">QA-035 Removed rerank attributes are gone<a class="headerlink" href="#qa-035-removed-rerank-attributes-are-gone" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric Settings has 0 rerank_enabled, rerank_base_url, rerank_api_key, rerank_model</li>
+<li>Type: functional</li>
+<li>Given a new Settings instance</li>
+<li>When the code checks for the four attributes <code>rerank_enabled</code>, <code>rerank_base_url</code>, <code>rerank_api_key</code>, <code>rerank_model</code></li>
+<li>Then 0 of the four exist</li>
+</ul>
+<h3 id="qa-036-old-cohere-env-keys-do-no-harm">QA-036 Old Cohere env keys do no harm<a class="headerlink" href="#qa-036-old-cohere-env-keys-do-no-harm" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Failure Mode old .env still sets RERANK_BASE_URL</li>
+<li>Type: failure</li>
+<li>Given RERANK_BASE_URL is <code>http://old</code>, RERANK_API_KEY is <code>oldkey</code> and RERANK_MODEL is <code>old-model</code></li>
+<li>When the code reads all 8 new properties</li>
+<li>Then no error is raised and each value is its default</li>
+</ul>
+<h3 id="qa-037-config-source-has-no-cohere-text">QA-037 Config source has no Cohere text<a class="headerlink" href="#qa-037-config-source-has-no-cohere-text" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric grep on src/config returns 0</li>
+<li>Type: functional</li>
+<li>Given the config source folder after the change</li>
+<li>When a case-insensitive search runs for <code>cohere</code>, <code>rerank_base_url</code> and <code>rerank_api_key</code></li>
+<li>Then it returns 0 lines</li>
+</ul>
+<h3 id="qa-038-env-example-has-no-cohere-text">QA-038 Env example has no Cohere text<a class="headerlink" href="#qa-038-env-example-has-no-cohere-text" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Business Goal no Cohere key in docker/.env.example; Success Metric grep returns 0</li>
+<li>Type: functional</li>
+<li>Given the file <code>docker/.env.example</code> after the change</li>
+<li>When a case-insensitive search runs for <code>cohere</code>, <code>rerank_base_url</code> and <code>rerank_api_key</code></li>
+<li>Then it returns 0 lines</li>
+</ul>
+<h3 id="qa-039-env-example-lists-the-old-rerank_model-key-no-more">QA-039 Env example lists the old RERANK_MODEL key no more<a class="headerlink" href="#qa-039-env-example-lists-the-old-rerank_model-key-no-more" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints remove RERANK_MODEL from .env.example</li>
+<li>Type: failure</li>
+<li>Given the file <code>docker/.env.example</code> after the change</li>
+<li>When a search runs for a line that starts with <code>RERANK_MODEL=</code> (exact key, not <code>RERANK_MODEL_NAME=</code>)</li>
+<li>Then it returns 0 lines</li>
+</ul>
+<h3 id="qa-040-compose-has-exactly-two-rerank-lines">QA-040 Compose has exactly two RERANK lines<a class="headerlink" href="#qa-040-compose-has-exactly-two-rerank-lines" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric RERANK_ keys in compose: 2 lines</li>
+<li>Type: functional</li>
+<li>Given the file <code>docker/docker-compose.yml</code> after the change</li>
+<li>When the count of lines containing <code>RERANK_</code> runs</li>
+<li>Then the count is 2 and the lines are <code>RERANK_MODEL_NAME</code> and <code>RERANK_MODEL_PATH</code></li>
+</ul>
+<h3 id="qa-041-env-example-defaults-match-settings">QA-041 Env example defaults match settings<a class="headerlink" href="#qa-041-env-example-defaults-match-settings" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: T2 add 8 keys with defaults to .env.example</li>
+<li>Type: functional</li>
+<li>Given the file <code>docker/.env.example</code> after the change</li>
+<li>When the lines for the 8 keys are read</li>
+<li>Then <code>QDRANT_URL=http://localhost:6333</code>, <code>QDRANT_COLLECTION=legal_documents</code>, <code>OTEL_SERVICE_NAME=law-by-ai</code> and <code>MIN_CONFIDENCE=0.5</code> are present, and the other 4 keys are present with empty values</li>
+</ul>
+<h3 id="qa-042-env-example-explains-empty-otel-endpoint">QA-042 Env example explains empty OTel endpoint<a class="headerlink" href="#qa-042-env-example-explains-empty-otel-endpoint" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: T2 state that empty OTel endpoint means export off</li>
+<li>Type: functional</li>
+<li>Given the file <code>docker/.env.example</code> after the change</li>
+<li>When an operator reads the comment next to <code>OTEL_EXPORTER_OTLP_ENDPOINT</code></li>
+<li>Then the comment says an empty value means export off</li>
+</ul>
+<h3 id="qa-043-drift-test-qdrant_url">QA-043 Drift test QDRANT_URL<a class="headerlink" href="#qa-043-drift-test-qdrant_url" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key QDRANT_URL</li>
+<li>Type: functional</li>
+<li>Given the key <code>QDRANT_URL</code></li>
+<li>When the drift test checks the Settings docstring table, <code>docker/.env.example</code> and the compose <code>x-app-env</code> block</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-044-drift-test-qdrant_api_key">QA-044 Drift test QDRANT_API_KEY<a class="headerlink" href="#qa-044-drift-test-qdrant_api_key" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key QDRANT_API_KEY</li>
+<li>Type: functional</li>
+<li>Given the key <code>QDRANT_API_KEY</code></li>
+<li>When the drift test checks the 3 places</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-045-drift-test-qdrant_collection">QA-045 Drift test QDRANT_COLLECTION<a class="headerlink" href="#qa-045-drift-test-qdrant_collection" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key QDRANT_COLLECTION</li>
+<li>Type: functional</li>
+<li>Given the key <code>QDRANT_COLLECTION</code></li>
+<li>When the drift test checks the 3 places</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-046-drift-test-otel_exporter_otlp_endpoint">QA-046 Drift test OTEL_EXPORTER_OTLP_ENDPOINT<a class="headerlink" href="#qa-046-drift-test-otel_exporter_otlp_endpoint" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key OTEL_EXPORTER_OTLP_ENDPOINT</li>
+<li>Type: functional</li>
+<li>Given the key <code>OTEL_EXPORTER_OTLP_ENDPOINT</code></li>
+<li>When the drift test checks the 3 places</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-047-drift-test-otel_service_name">QA-047 Drift test OTEL_SERVICE_NAME<a class="headerlink" href="#qa-047-drift-test-otel_service_name" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key OTEL_SERVICE_NAME</li>
+<li>Type: functional</li>
+<li>Given the key <code>OTEL_SERVICE_NAME</code></li>
+<li>When the drift test checks the 3 places</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-048-drift-test-min_confidence">QA-048 Drift test MIN_CONFIDENCE<a class="headerlink" href="#qa-048-drift-test-min_confidence" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key MIN_CONFIDENCE</li>
+<li>Type: functional</li>
+<li>Given the key <code>MIN_CONFIDENCE</code></li>
+<li>When the drift test checks the 3 places</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-049-drift-test-rerank_model_name">QA-049 Drift test RERANK_MODEL_NAME<a class="headerlink" href="#qa-049-drift-test-rerank_model_name" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key RERANK_MODEL_NAME</li>
+<li>Type: functional</li>
+<li>Given the key <code>RERANK_MODEL_NAME</code></li>
+<li>When the drift test checks the 3 places</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-050-drift-test-rerank_model_path">QA-050 Drift test RERANK_MODEL_PATH<a class="headerlink" href="#qa-050-drift-test-rerank_model_path" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric drift test, key RERANK_MODEL_PATH</li>
+<li>Type: functional</li>
+<li>Given the key <code>RERANK_MODEL_PATH</code></li>
+<li>When the drift test checks the 3 places</li>
+<li>Then the key is found in all 3</li>
+</ul>
+<h3 id="qa-051-drift-test-catches-a-missing-key">QA-051 Drift test catches a missing key<a class="headerlink" href="#qa-051-drift-test-catches-a-missing-key" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision drift test limits drift risk</li>
+<li>Type: failure</li>
+<li>Given a copy of <code>docker/.env.example</code> with the <code>MIN_CONFIDENCE</code> line deleted</li>
+<li>When the drift test runs against that copy</li>
+<li>Then the test fails for the key <code>MIN_CONFIDENCE</code></li>
+</ul>
+<h3 id="qa-052-docstring-table-lists-the-migration-lock-key">QA-052 Docstring table lists the migration lock key<a class="headerlink" href="#qa-052-docstring-table-lists-the-migration-lock-key" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision add missing MIGRATION_LOCK_TIMEOUT_S row</li>
+<li>Type: functional</li>
+<li>Given the Settings module docstring table</li>
+<li>When an operator reads the row for <code>MIGRATION_LOCK_TIMEOUT_S</code></li>
+<li>Then the row exists with default <code>300</code></li>
+</ul>
+<h3 id="qa-053-developer-env-cannot-change-default-tests">QA-053 Developer .env cannot change default tests<a class="headerlink" href="#qa-053-developer-env-cannot-change-default-tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Decision add 8 keys to the test key list; T1 isolation scenario</li>
+<li>Type: edge</li>
+<li>Given a developer environment that sets <code>MIN_CONFIDENCE=0.9</code> and <code>QDRANT_URL=http://dev:1</code></li>
+<li>When the default tests run</li>
+<li>Then they read 0.5 and <code>http://localhost:6333</code></li>
+</ul>
+<h3 id="qa-054-existing-llm-and-embedding-keys-unchanged">QA-054 Existing LLM and embedding keys unchanged<a class="headerlink" href="#qa-054-existing-llm-and-embedding-keys-unchanged" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Technical Constraints keep LLM and embedding keys unchanged</li>
+<li>Type: functional</li>
+<li>Given the existing LLM and embedding properties, each with its old test</li>
+<li>When the unit tests for them run</li>
+<li>Then all of them pass with no edit to their expected values</li>
+</ul>
+<h3 id="qa-055-lint-check-passes">QA-055 Lint check passes<a class="headerlink" href="#qa-055-lint-check-passes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric gate, ruff check; T3</li>
+<li>Type: functional</li>
+<li>Given the branch with T1 and T2 applied</li>
+<li>When <code>ruff check</code> runs</li>
+<li>Then it exits 0</li>
+</ul>
+<h3 id="qa-056-format-check-passes">QA-056 Format check passes<a class="headerlink" href="#qa-056-format-check-passes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric gate, ruff format --check; T3</li>
+<li>Type: functional</li>
+<li>Given the same branch</li>
+<li>When <code>ruff format --check</code> runs</li>
+<li>Then it exits 0</li>
+</ul>
+<h3 id="qa-057-type-check-passes">QA-057 Type check passes<a class="headerlink" href="#qa-057-type-check-passes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric gate, pyright; T3</li>
+<li>Type: functional</li>
+<li>Given the same branch</li>
+<li>When pyright runs</li>
+<li>Then it exits 0</li>
+</ul>
+<h3 id="qa-058-fast-tests-pass">QA-058 Fast tests pass<a class="headerlink" href="#qa-058-fast-tests-pass" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric gate, fast tests; T3</li>
+<li>Type: functional</li>
+<li>Given the same branch</li>
+<li>When <code>pytest -m "not integration"</code> runs</li>
+<li>Then it exits 0 and at least 16 new key cases and 5 MIN_CONFIDENCE rejection cases ran</li>
+</ul>
+<h3 id="qa-059-changed-line-coverage">QA-059 Changed-line coverage<a class="headerlink" href="#qa-059-changed-line-coverage" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Covers: Success Metric gate, diff-cover 90%</li>
+<li>Type: performance</li>
+<li>Given the same branch and the coverage data of the fast tests</li>
+<li>When diff-cover compares with <code>main</code></li>
+<li>Then the report shows 90% or more on changed lines</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 &ndash;2026 Yevhen D.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
