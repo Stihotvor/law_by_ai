@@ -427,6 +427,31 @@ BAD_URLS: list[str] = [
     "https://example.org:bad/a",
     "https://example.org:65536/a",
     BASE + "a" * (MAX_URL_LENGTH - len(BASE) + 1),
+    "http://localhost/a",
+    "http://LocalHost./a",
+    "http://app.localhost/a",
+    "http://intranet/a",
+    "http://printer.local/a",
+    "http://metadata.google.internal/a",
+    "http://127.0.0.1/a",
+    "http://127.1.2.3:8080/a",
+    "http://10.0.0.5/a",
+    "http://172.16.0.1/a",
+    "http://192.168.1.1/a",
+    "http://169.254.169.254/latest/meta-data",
+    "http://100.64.0.1/a",
+    "http://0.0.0.0/a",
+    "http://[::1]/a",
+    "http://[::]/a",
+    "http://[fe80::1]/a",
+    "http://[fc00::1]/a",
+    "http://[fd00:ec2::254]/a",
+    "http://[::ffff:127.0.0.1]/a",
+    "http://[::ffff:169.254.169.254]/a",
+    "http://2130706433/a",
+    "http://0x7f.0.0.1/a",
+    "http://0177.0.0.1/a",
+    "http://127.1/a",
 ]
 
 
@@ -441,6 +466,9 @@ GOOD_URLS: list[str] = [
     "https://example.org/zażółć",
     "https://example.org:8443/a",
     "https://example.org/a",
+    "https://8.8.8.8/a",
+    "https://[2606:4700:4700::1111]/a",
+    "https://sub.eli.gov.pl./a",
 ]
 
 
