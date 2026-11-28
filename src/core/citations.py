@@ -17,8 +17,9 @@ http(s), holds credentials, a bad port (not a number or above 65535), any
 Unicode whitespace or control/format character (categories C* and Z*) or a
 backslash, a host that is internal (loopback, private, link-local, metadata
 or other non-global IP literal, numeric IPv4 forms, ``localhost``, ``.local``,
-``.internal``, a name with no dot), or is longer than ``MAX_URL_LENGTH`` (the ``source_url`` column)
-are dropped. Other non-ASCII text (e.g. Polish letters) is kept.
+``.internal``, a name with no dot, a percent-encoded or non-ASCII host), or
+is longer than ``MAX_URL_LENGTH`` (the ``source_url`` column) are dropped.
+Other non-ASCII text in the path (e.g. Polish letters) is kept.
 Valid hits are sorted by confidence, highest first (ties keep input order). Hits with
 ``confidence >= min_confidence`` form an ``Answer``. If none qualify, the
 result is ``NoReliableAnswer`` with the top 3 valid hits as closest sources.
@@ -122,7 +123,7 @@ def _has_bad_char(url: str) -> bool:
     return any(ch == "\\" or unicodedata.category(ch)[0] in "CZ" for ch in url)
 
 
-_INTERNAL_SUFFIXES = (".localhost", ".local", ".internal", ".localdomain", ".home.arpa")
+_INTERNAL_NAMESPACES = ("localhost", "local", "internal", "localdomain", "home.arpa")
 
 
 def _is_public_host(host: str) -> bool:
@@ -133,6 +134,8 @@ def _is_public_host(host: str) -> bool:
     are rejected, because resolvers read them as IPv4 and ``ipaddress`` does not.
     """
     host = host.lower().rstrip(".")
+    if "%" in host or not host.isascii():
+        return False
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
@@ -143,7 +146,8 @@ def _is_public_host(host: str) -> bool:
     last_label = host.rsplit(".", 1)[-1]
     if last_label.isdigit() or last_label.startswith("0x"):
         return False
-    return "." in host and not host.endswith(_INTERNAL_SUFFIXES)
+    in_internal = any(host == ns or host.endswith("." + ns) for ns in _INTERNAL_NAMESPACES)
+    return "." in host and not in_internal
 
 
 def _valid_url(url: str) -> bool:

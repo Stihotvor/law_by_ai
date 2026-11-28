@@ -452,6 +452,13 @@ BAD_URLS: list[str] = [
     "http://0x7f.0.0.1/a",
     "http://0177.0.0.1/a",
     "http://127.1/a",
+    "http://127.0.0.%31/a",
+    "http://%6c%6f%63%61%6c%68%6f%73%74/a",
+    "http://home.arpa/a",
+    "http://local/a",
+    "http://internal/a",
+    "http://\uff11\uff12\uff17.0.0.1/a",
+    "http://127\u30020\u30020\u30021/a",
 ]
 
 
@@ -469,6 +476,8 @@ GOOD_URLS: list[str] = [
     "https://8.8.8.8/a",
     "https://[2606:4700:4700::1111]/a",
     "https://sub.eli.gov.pl./a",
+    "https://notlocal.example.org/a",
+    "https://myhome.arpa.example.org/a",
 ]
 
 
